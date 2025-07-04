@@ -98,7 +98,3 @@ button:focus-visible {
     box-shadow: 0 6px 16px rgba(165, 180, 252, 0.3);
   }
 }
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
