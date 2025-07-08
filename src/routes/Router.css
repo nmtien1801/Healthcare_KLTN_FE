@@ -1,18 +1,54 @@
-/* Nếu không dùng Tailwind */
-.app-layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+.navbar-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  transition: background 0.3s ease;
 }
 
-.main-content {
-  display: flex;
-  flex-grow: 1;
+.navbar-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
 }
 
-.content-area {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 1rem;
-  height: calc(100vh - 64px); /* Giả sử Header cao 64px */
+.navbar-item:hover::before {
+  left: 100%;
+}
+
+/* Enhanced gradient background */
+.navbar-gradient {
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f8fafd 20%,
+    #eef2ff 40%,
+    #e0e7ff 60%,
+    #c4b5fd 80%,
+    #9333ea 100%
+  );
+  color: white;
+}
+
+.navbar-item:focus,
+.navbar-item:active {
+   background: linear-gradient(135deg, #5f2c82, #3f55e0) !important; /* tím + xanh */
+  box-shadow: 0 4px 20px rgba(95, 44, 130, 0.5); /* tím đậm hơn */
+  color: white !important;
+}
+
+/* Responsive fix */
+@media (max-width: 768px) {
+  .navbar-container {
+    width: 100% !important;
+  }
 }

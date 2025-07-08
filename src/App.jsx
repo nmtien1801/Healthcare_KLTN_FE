@@ -47,10 +47,14 @@ function App() {
     <Router>
       <div className="d-flex flex-column vh-100 w-100 bg-gray-50 text-gray-800 font-sans">
         {/* Header */}
-        <Header />
+        <div className="header bg-white shadow-sm w-100 fixed top-0"
+          style={{ zIndex: 1050 }}>
+          <Header />
+        </div>
 
         {/* NavbarLeft */}
-        <div className="d-flex flex-grow-1 overflow-hidden">
+        <div className="d-flex flex-grow-1 overflow-hidden"
+          style={{ marginTop: "80px" }}>
           {/* {isLoggedIn && <NavbarLeft />} */}
           <NavbarLeft />
 

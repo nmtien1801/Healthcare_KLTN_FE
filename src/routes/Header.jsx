@@ -1,18 +1,17 @@
 import React, { useState } from "react";
-import { Container, Row, Col, Navbar, Badge, Image } from "react-bootstrap";
+import { Container, Row, Col, Badge, Image } from "react-bootstrap";
 import { FaHeartbeat, FaBell } from "react-icons/fa";
 
 const Header = () => {
   const [notifications, setNotifications] = useState(5);
 
   return (
-    <Navbar
-      bg="white"
-      className="shadow-sm fixed w-full py-3 top-0"
+    <div
+      className="shadow-sm py-3 px-4 bg-white w-100 position-fixed top-0"
       style={{ zIndex: 1050 }}
     >
-     <Container fluid className="p-0" style={{ maxWidth: "100%" }}>
-        <Row className="w-100 align-items-center justify-content-between">
+      <Container fluid>
+        <Row className="align-items-center justify-content-between">
           {/* Logo & Title */}
           <Col xs="auto" className="d-flex align-items-center">
             <FaHeartbeat size={24} className="text-primary me-2" />
@@ -21,7 +20,7 @@ const Header = () => {
 
           {/* Notifications & Info */}
           <Col xs="auto" className="d-flex align-items-center">
-            {/* Bell Icon with badge */}
+            {/* Bell Icon */}
             <div className="position-relative me-4">
               <FaBell size={20} className="text-secondary" />
               {notifications > 0 && (
@@ -29,7 +28,11 @@ const Header = () => {
                   bg="danger"
                   pill
                   className="position-absolute top-0 start-100 translate-middle"
-                  style={{ fontSize: "0.6rem", width: "1.2rem", height: "1.2rem" }}
+                  style={{
+                    fontSize: "0.6rem",
+                    width: "1.2rem",
+                    height: "1.2rem",
+                  }}
                 >
                   {notifications}
                 </Badge>
@@ -51,7 +54,6 @@ const Header = () => {
                 height={40}
                 className="border border-primary object-fit-cover"
               />
-              {/* Online status dot */}
               <span
                 className="position-absolute bottom-0 end-0 translate-middle p-1 bg-success border border-white rounded-circle"
                 style={{ width: "12px", height: "12px" }}
@@ -60,7 +62,7 @@ const Header = () => {
           </Col>
         </Row>
       </Container>
-    </Navbar>
+    </div>
   );
 };
 
