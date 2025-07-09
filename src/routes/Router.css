@@ -52,3 +52,58 @@
     width: 100% !important;
   }
 }
+
+/* Nút toggle */
+.navbar-slide {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 40;
+  transition: transform 0.3s ease-in-out;
+  width: 250px;
+  overflow-y: auto; /* Thêm dòng này để cho phép cuộn dọc */
+}
+
+.navbar-show {
+  transform: translateX(0);
+}
+
+.navbar-hide {
+  transform: translateX(-100%);
+}
+
+.toggle-btn {
+  position: fixed;
+  top: 80px;
+  z-index: 50;
+  padding: 0.75rem;
+  border-radius: 9999px;
+  background: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+  opacity: 0.6; /* làm mờ ban đầu */
+}
+
+.toggle-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+  opacity: 1; /* đậm hơn khi hover */
+}
+
+.transition-sidebar {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Ẩn nút toggle khi sidebar mở */
+.hidden {
+ opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+}
+
+.parent:hover .toggle-btn.hidden {
+  opacity: 1;
+  pointer-events: auto;
+}
