@@ -1,0 +1,11 @@
+.gradient{
+  background: linear-gradient(
+    270deg,
+    #7c3aed 0%,     /* Đậm bên phải */
+    #c4b5fd 25%,    /* Trung gian */
+    #c4b5fd 50%,    /* Nhạt ở giữa */
+    #c4b5fd 75%,    /* Trung gian */
+    #7c3aed 100%    /* Đậm bên trái */
+  );
+  color: #333;
+}

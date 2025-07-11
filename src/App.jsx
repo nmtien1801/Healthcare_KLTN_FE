@@ -27,6 +27,8 @@ import AppointmentTab from "./pages/doctor/AppointmentTab";
 import PatientTab from "./pages/doctor/PatientTab";
 import SettingTabs from "./pages/doctor/SettingTabs";
 import Header from "./routes/Header";
+import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
+import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
 
 function App() {
   const dispatch = useDispatch();
@@ -74,6 +76,8 @@ function App() {
 
               <Route path="/home" element={<Home />} />
               <Route path="/healthTabs" element={<HealthTabs />} />
+              <Route path="/nutrition" element={<FoodTrackerApp />} />
+              <Route path="/suggestedFood" element={<SuggestedFood />} />
               <Route path="/bookingTabs" element={<BookingTabs />} />
               <Route path="/personalTabs" element={<PersonalTabs />} />
 
