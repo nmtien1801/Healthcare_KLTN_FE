@@ -2,69 +2,7 @@
 
 import { useState } from "react"
 import { Clock, CalendarDays, User, Stethoscope, FileText } from "lucide-react"
-
-// Custom Button Component (duplicated for self-containment, ideally shared)
-const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, type, ...props }) => {
-    const baseClasses =
-        "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm"
-
-    const variants = {
-        primary: "btn-primary text-white",
-        secondary: "btn-light text-dark border",
-        success: "btn-success text-white",
-        danger: "btn-danger text-white",
-        warning: "btn-warning text-dark",
-        info: "btn-info text-white",
-        light: "btn-light text-dark",
-        dark: "btn-dark text-white",
-        outline: "btn-outline-primary",
-        ghost: "btn-light text-muted border-0 shadow-none",
-    }
-
-    const sizes = {
-        sm: "btn-sm px-2 py-1",
-        md: "btn-md px-3 py-2",
-        lg: "btn-lg px-4 py-3",
-    }
-
-    return (
-        <button
-            className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
-            onClick={onClick}
-            disabled={disabled}
-            type={type}
-            style={{ borderRadius: "8px" }}
-            {...props}
-        >
-            {children}
-        </button>
-    )
-}
-
-// Custom Input Component (duplicated for self-containment, ideally shared)
-const Input = ({ className = "", ...props }) => {
-    return (
-        <input
-            className={`form-control border-0 shadow-sm ${className}`}
-            style={{ borderRadius: "8px", backgroundColor: "#f8f9fa" }}
-            {...props}
-        />
-    )
-}
-
-// Custom Select Component (duplicated for self-containment, ideally shared)
-const Select = ({ children, value, onChange, className = "" }) => {
-    return (
-        <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className={`form-select border-0 shadow-sm ${className}`}
-            style={{ borderRadius: "8px", backgroundColor: "#f8f9fa" }}
-        >
-            {children}
-        </select>
-    )
-}
+import { Button, Input, Select } from "../common-ui-components"
 
 const AddAppointmentModal = ({ show, onHide, onSave }) => {
     const [formData, setFormData] = useState({

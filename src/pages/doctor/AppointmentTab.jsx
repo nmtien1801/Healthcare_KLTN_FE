@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react"
 import { ChevronLeft, ChevronRight, Search, Clock, CalendarDays, Plus, Trash2, Edit, Eye } from "lucide-react"
-import AddAppointmentModal from "../../components/doctor/AddAppointmentModal"
-import ViewAppointmentModal from "../../components/doctor/ViewAppointmentModal"
-import EditAppointmentModal from "../../components/doctor/EditAppointmentModal"
+import AddAppointmentModal from "../../components/doctor/appointment/AddAppointmentModal"
+import ViewAppointmentModal from "../../components/doctor/appointment/ViewAppointmentModal"
+import EditAppointmentModal from "../../components/doctor/appointment/EditAppointmentModal"
 
 // Custom Button Component
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {

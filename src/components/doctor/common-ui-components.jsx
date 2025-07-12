@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { ChevronDown } from "lucide-react"
 
-// Custom Components
-const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
+// Custom Button Component
+const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, type, ...props }) => {
     const baseClasses =
         "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm"
 
@@ -32,6 +32,7 @@ const Button = ({ children, className = "", variant = "primary", size = "md", on
             className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
             onClick={onClick}
             disabled={disabled}
+            type={type}
             style={{ borderRadius: "8px" }}
             {...props}
         >
@@ -40,6 +41,7 @@ const Button = ({ children, className = "", variant = "primary", size = "md", on
     )
 }
 
+// Custom Input Component
 const Input = ({ className = "", ...props }) => {
     return (
         <input
@@ -50,6 +52,7 @@ const Input = ({ className = "", ...props }) => {
     )
 }
 
+// Custom Select Component
 const Select = ({ children, value, onChange, className = "" }) => {
     return (
         <div className={`position-relative ${className}`}>
@@ -70,6 +73,19 @@ const Select = ({ children, value, onChange, className = "" }) => {
     )
 }
 
+// Custom Badge Component
+const Badge = ({ children, className = "" }) => {
+    return (
+        <span
+            className={`badge ${className}`}
+            style={{ borderRadius: "6px", fontSize: "0.75rem", padding: "0.375rem 0.75rem" }}
+        >
+            {children}
+        </span>
+    )
+}
+
+// Custom Avatar Component
 const Avatar = ({ src, alt, fallback, className = "" }) => {
     const [imageError, setImageError] = useState(false)
 
@@ -93,4 +109,4 @@ const Avatar = ({ src, alt, fallback, className = "" }) => {
     )
 }
 
-export { Button, Input, Select, Avatar }
+export { Button, Input, Select, Badge, Avatar }

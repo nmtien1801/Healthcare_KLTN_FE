@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react"
 import { Search, Filter, Plus, Eye, Edit, Trash2, Users, ChevronDown } from "lucide-react"
-import AddPatientModal from "../../components/doctor/AddPatientModal"
-import ViewPatientModal from "../../components/doctor/ViewPatientModal"
-import EditPatientModal from "../../components/doctor/EditPatientModal"
+import AddPatientModal from "../../components/doctor/patient/AddPatientModal"
+import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal"
+import EditPatientModal from "../../components/doctor/patient/EditPatientModal"
 
 const initialPatients = [
   {
