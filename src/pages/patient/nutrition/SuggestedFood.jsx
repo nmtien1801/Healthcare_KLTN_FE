@@ -106,7 +106,7 @@ export default function SuggestedFood() {
         <div className="mb-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5>Buổi {mealLabel}</h5>
-                <small className="text-muted">{caloriesByMeal[mealLabel] || 0} cal</small>
+                <small className="text-white">{caloriesByMeal[mealLabel] || 0} cal</small>
             </div>
 
             {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
@@ -116,8 +116,8 @@ export default function SuggestedFood() {
                     </div>
                     <div className="flex-grow-1">
                         <h6 className="mb-0">{item.name}</h6>
-                        <small className="text-muted">{item.details}</small>
-                        <div className="d-flex gap-3 mt-1 text-muted">
+                        <small className="text-white">{item.details}</small>
+                        <div className="d-flex gap-3 mt-1 text-white">
                             {item.macros.map((macro, i) => (
                                 <span key={i} className="d-flex align-items-center gap-1">
                                     <span
@@ -257,7 +257,7 @@ export default function SuggestedFood() {
                     {/* Tổng calo ở trên */}
                     <div className="mb-1 d-flex align-items-center gap-2">
                         <div className="fw-semibold fs-5">{targetCalo}</div>
-                        <small className="text-muted">CALO</small>
+                        <small className="text-white">CALO</small>
                     </div>
 
                     {/* 3 chất dinh dưỡng ở dưới */}

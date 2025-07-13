@@ -106,7 +106,7 @@ export default function FoodTrackerApp() {
         <div className="mb-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5>Buổi {mealLabel}</h5>
-                <small className="text-muted">{caloriesByMeal[mealLabel] || 0} cal</small>
+                <small className="text-white">{caloriesByMeal[mealLabel] || 0} cal</small>
             </div>
 
             {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
@@ -116,8 +116,8 @@ export default function FoodTrackerApp() {
                     </div>
                     <div className="flex-grow-1">
                         <h6 className="mb-0">{item.name}</h6>
-                        <small className="text-muted">{item.details}</small>
-                        <div className="d-flex gap-3 mt-1 text-muted">
+                        <small className="text-white">{item.details}</small>
+                        <div className="d-flex gap-3 mt-1 text-white">
                             {item.macros.map((macro, i) => (
                                 <span key={i} className="d-flex align-items-center gap-1">
                                     <span
@@ -144,105 +144,108 @@ export default function FoodTrackerApp() {
     return (
         <div className="min-vh-100 bg-white text-dark p-3">
             {/* Overview */}
-            <div className="my-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5>Tổng quan</h5>
-                        <small className="text-muted">Mục tiêu cao</small>
+            <div className="my-2">
+                <div className='gradient rounded shadow-sm border p-3 mb-4'>
+                    <div className="d-flex justify-content-between align-items-center ">
+                        <div>
+                            <h5>Tổng quan</h5>
+                            <small className="text-white">Mục tiêu cao</small>
+                        </div>
                     </div>
-                </div>
 
-                {/* Calorie Circle (static SVG) */}
-                <div className="d-flex justify-content-center my-3">
-                    <div className="position-relative" style={{ width: '200px', height: '200px' }}>
-                        <svg className="w-100 h-100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                            <circle cx="50" cy="50" r="45" stroke="#374151" strokeWidth="8" fill="none" />
-                            <circle
-                                cx="50"
-                                cy="50"
-                                r="45"
-                                stroke="#9333ea"
-                                strokeWidth="8"
-                                fill="none"
-                                strokeDasharray={`${(totalCalo / targetCalo) * 283} 283`}
-                                strokeLinecap="round"
+                    {/* Calorie Circle (static SVG) */}
+                    <div className="d-flex justify-content-center my-3">
+                        <div className="position-relative" style={{ width: '200px', height: '200px' }}>
+                            <svg className="w-100 h-100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                                <circle cx="50" cy="50" r="45" stroke="#374151" strokeWidth="8" fill="none" />
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r="45"
+                                    stroke="#9333ea"
+                                    strokeWidth="8"
+                                    fill="none"
+                                    strokeDasharray={`${(totalCalo / targetCalo) * 283} 283`}
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                            <div className="position-absolute top-50 start-50 translate-middle text-center">
+                                <h2 className="fw-bold">{targetCalo - totalCalo}</h2>
+                                <small className="text-white">Calo còn lại</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="row text-center mb-4">
+                        <div className="col">
+                            <div className="fs-4 fw-bold">{targetCalo}</div>
+                            <small className="text-white">
+                                <span className="d-inline-block rounded-circle bg-secondary me-1" style={{ width: 8, height: 8 }}></span>
+                                Mục tiêu
+                            </small>
+                        </div>
+                        <div className="col">
+                            <div className="fs-4 fw-bold">{totalCalo}</div>
+                            <small className="text-white">
+                                <span className="d-inline-block rounded-circle bg-primary me-1" style={{ width: 8, height: 8 }}></span>
+                                Đã nạp
+                            </small>
+                        </div>
+                    </div>
+
+                    {/* Macros */}
+                    <div className="row text-center mb-4">
+                        <div className="col">
+                            <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                <span className="d-inline-block rounded-circle bg-danger" style={{ width: 10, height: 10 }}></span>
+                                <span>Chất đạm</span>
+                            </div>
+                            <ProgressBar
+                                now={(totalProtein / targetProtein) * 100}
+                                variant="danger"
+                                className="mb-1"
+                                label={`${Math.round((totalProtein / targetProtein) * 100)}%`}
                             />
-                        </svg>
-                        <div className="position-absolute top-50 start-50 translate-middle text-center">
-                            <h2 className="fw-bold">{targetCalo - totalCalo}</h2>
-                            <small className="text-muted">Calo còn lại</small>
+                            <small>
+                                {totalProtein.toFixed(1)} <span className="text-white">/ {targetProtein}g</span>
+                            </small>
+                        </div>
+
+                        <div className="col">
+                            <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                <span className="d-inline-block rounded-circle bg-info" style={{ width: 10, height: 10 }}></span>
+                                <span>Đường bột</span>
+                            </div>
+                            <ProgressBar
+                                now={(totalCarbs / targetCarbs) * 100}
+                                variant="info"
+                                className="mb-1"
+                                label={`${Math.round((totalCarbs / targetCarbs) * 100)}%`}
+                            />
+                            <small>
+                                {totalCarbs.toFixed(1)} <span className="text-white">/ {targetCarbs}g</span>
+                            </small>
+                        </div>
+
+                        <div className="col">
+                            <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                <span className="d-inline-block rounded-circle bg-warning" style={{ width: 10, height: 10 }}></span>
+                                <span>Chất béo</span>
+                            </div>
+                            <ProgressBar
+                                now={(totalFat / targetFat) * 100}
+                                variant="warning"
+                                className="mb-1"
+                                label={`${Math.round((totalFat / targetFat) * 100)}%`}
+                            />
+                            <small>
+                                {totalFat.toFixed(1)} <span className="text-white">/ {targetFat}g</span>
+                            </small>
                         </div>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="row text-center mb-4">
-                    <div className="col">
-                        <div className="fs-4 fw-bold">{targetCalo}</div>
-                        <small className="text-muted">
-                            <span className="d-inline-block rounded-circle bg-secondary me-1" style={{ width: 8, height: 8 }}></span>
-                            Mục tiêu
-                        </small>
-                    </div>
-                    <div className="col">
-                        <div className="fs-4 fw-bold">{totalCalo}</div>
-                        <small className="text-muted">
-                            <span className="d-inline-block rounded-circle bg-primary me-1" style={{ width: 8, height: 8 }}></span>
-                            Đã nạp
-                        </small>
-                    </div>
-                </div>
-
-                {/* Macros */}
-                <div className="row text-center mb-4">
-                    <div className="col">
-                        <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                            <span className="d-inline-block rounded-circle bg-danger" style={{ width: 10, height: 10 }}></span>
-                            <span>Chất đạm</span>
-                        </div>
-                        <ProgressBar
-                            now={(totalProtein / targetProtein) * 100}
-                            variant="danger"
-                            className="mb-1"
-                            label={`${Math.round((totalProtein / targetProtein) * 100)}%`}
-                        />
-                        <small>
-                            {totalProtein.toFixed(1)} <span className="text-muted">/ {targetProtein}g</span>
-                        </small>
-                    </div>
-
-                    <div className="col">
-                        <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                            <span className="d-inline-block rounded-circle bg-info" style={{ width: 10, height: 10 }}></span>
-                            <span>Đường bột</span>
-                        </div>
-                        <ProgressBar
-                            now={(totalCarbs / targetCarbs) * 100}
-                            variant="info"
-                            className="mb-1"
-                            label={`${Math.round((totalCarbs / targetCarbs) * 100)}%`}
-                        />
-                        <small>
-                            {totalCarbs.toFixed(1)} <span className="text-muted">/ {targetCarbs}g</span>
-                        </small>
-                    </div>
-
-                    <div className="col">
-                        <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                            <span className="d-inline-block rounded-circle bg-warning" style={{ width: 10, height: 10 }}></span>
-                            <span>Chất béo</span>
-                        </div>
-                        <ProgressBar
-                            now={(totalFat / targetFat) * 100}
-                            variant="warning"
-                            className="mb-1"
-                            label={`${Math.round((totalFat / targetFat) * 100)}%`}
-                        />
-                        <small>
-                            {totalFat.toFixed(1)} <span className="text-muted">/ {targetFat}g</span>
-                        </small>
-                    </div>
-                </div>
 
 
                 {renderMeal('sáng')}
