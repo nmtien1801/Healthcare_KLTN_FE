@@ -1,160 +1,324 @@
 import React, { useState } from "react";
-import { Hospital, Video, Calendar, Clock, ChevronDown } from 'lucide-react';
+import { Hospital, Video, Calendar, Clock, MapPin, Star, CheckCircle, MessageCircle, Shield, Award, ClockIcon as Clock24 } from 'lucide-react';
 
+const upcomingAppointment = () => {
+  const [isConfirmed, setIsConfirmed] = useState(true);
 
-const BookingTabs = () => {
-  const [userData, setUserData] = useState({
-    name: "Nguyễn Văn A",
-    age: 45,
-    gender: "Nam",
-    condition: "Tiểu đường type 2",
-    doctor: "Bác sĩ Trần Thị B",
-    nextAppointment: "2025-06-30",
-    bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 6.3],
-  });
-
-  const formattedDate = new Date(userData.nextAppointment).toLocaleDateString(
-    "vi-VN"
-  );
-
-  const timeSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30"];
+  const handleToggleStatus = () => {
+    setIsConfirmed((prev) => !prev);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center mb-2">
-        <h2 className="font-semibold text-lg">Đặt lịch khám</h2>
-      </div>
-
-      <div className="bg-white rounded shadow-sm p-4">
-        <h3 className="fw-semibold mb-3">Lịch hẹn sắp tới</h3>
-
-        <div className="bg-light p-4 rounded">
-          <div className="d-flex justify-content-between align-items-start">
-            <div>
-              <div className="fw-medium text-primary">{userData.doctor}</div>
-              <div className="text-muted small">Chuyên khoa Nội tiết</div>
-              <div className="text-muted small mt-1 d-flex align-items-center gap-1">
-                <Calendar size={16} className="text-muted" />
-                {formattedDate}
-              </div>
-              <div className="text-muted small d-flex align-items-center gap-1">
-                <Clock size={16} className="text-muted" />
-                09:30 - 10:00
-              </div>
-            </div>
-
-            <div className="d-flex flex-column gap-2">
-              <button className="btn btn-sm btn-primary rounded-pill d-flex align-items-center gap-1">
-                <Video size={16} />
-                Khám online
-              </button>
-              <button className="btn btn-sm btn-outline-primary rounded-pill">
-                Hủy lịch
-              </button>
-            </div>
+    <div className="container my-3" >
+      <div className="bg-white rounded shadow border p-4">
+        <div className="">
+          {/* Header */}
+          <div className="d-flex align-items-center mb-4">
+            <Calendar className="text-primary me-2" size={24} />
+            <h4 className="mb-0 fw-bold text-dark">Lịch hẹn sắp tới</h4>
           </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded shadow-sm p-4">
-        <h3 className="fw-semibold mb-3">Đặt lịch khám mới</h3>
-        <div className="d-flex flex-column gap-3">
-          {/* Loại hình khám */}
-          <div>
-            <label className="form-label small fw-medium text-muted">
-              Loại hình khám
-            </label>
-            <div className="row g-3">
-              <div className="col-6">
-                <div className="border border-primary bg-light rounded text-center p-3 cursor-pointer">
-                  <Hospital size={20} className="text-primary mb-2 d-block mx-auto" />
-                  <div className="small fw-medium text-primary">
-                    Khám tại phòng khám
+          {/* Appointment Card */}
+          <div
+            className="card shadow-sm mb-4"
+            style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
+          >
+            <div className="card-body p-4">
+              {/* Doctor Info */}
+              <div className="d-flex align-items-start justify-content-between mb-3">
+                <div className="d-flex align-items-center">
+                  <div className="position-relative me-3">
+                    <img
+                      src="https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+                      alt="Doctor Avatar"
+                      className="rounded-circle"
+                      style={{ width: "60px", height: "60px", objectFit: "cover" }}
+                    />
+                  </div>
+                  <div>
+                    <h5 className="mb-1 fw-bold text-dark">Bác sĩ Trần Thị B</h5>
+                    <p className="mb-0 text-muted">Chuyên khoa Nội tiết</p>
                   </div>
                 </div>
+                <div className="d-flex flex-column align-items-end">
+                  <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
+                    <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Online
+                  </span>
+                  <button className="btn btn-primary btn-sm rounded-pill d-flex align-items-center px-3 py-2">
+                    <MessageCircle size={16} className="me-1" />
+                    Chat
+                  </button>
+                </div>
               </div>
-              <div className="col-6">
-                <div className="border border-secondary rounded text-center p-3 cursor-pointer">
-                  <Video
-                    size={20}
-                    className="text-secondary mb-2 d-block mx-auto"
+
+              {/* Appointment Details */}
+              <div className="mb-3">
+                <div className="d-flex align-items-center mb-2">
+                  <Calendar className="text-primary me-2" size={18} />
+                  <span className="text-dark">23/6/2023</span>
+                </div>
+                <div className="d-flex align-items-center mb-3">
+                  <Clock className="text-primary me-2" size={18} />
+                  <span className="text-dark">09:30 - 10:00</span>
+                </div>
+              </div>
+
+              {/* Status and Actions */}
+              <div className="d-flex align-items-center justify-content-between">
+                {/* Trạng thái xác nhận */}
+                <div className="d-flex align-items-center">
+                  <CheckCircle
+                    className={isConfirmed ? "text-success me-2" : "text-warning me-2"}
+                    size={18}
                   />
-                  <div className="small fw-medium text-secondary">
-                    Khám trực tuyến
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Chọn bác sĩ */}
-          <div>
-            <label className="form-label small fw-medium text-muted">
-              Chọn bác sĩ
-            </label>
-            <div className="position-relative">
-              <select className="form-select form-select-sm">
-                <option>Bác sĩ Trần Thị B - Chuyên khoa Nội tiết</option>
-                <option>Bác sĩ Lê Văn C - Chuyên khoa Nội tiết</option>
-                <option>Bác sĩ Phạm Thị D - Chuyên khoa Nội tiết</option>
-              </select>
-              <div className="position-absolute top-50 end-0 translate-middle-y pe-3 pointer-events-none">
-                <ChevronDown size={16} className="text-muted" />
-              </div>
-            </div>
-          </div>
-
-          {/* Chọn ngày */}
-          <div>
-            <label className="form-label small fw-medium text-muted">
-              Chọn ngày
-            </label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              min="2025-06-24"
-            />
-          </div>
-
-          {/* Chọn giờ */}
-          <div>
-            <label className="form-label small fw-medium text-muted">
-              Chọn giờ
-            </label>
-            <div className="row g-2">
-              {timeSlots.map((time, index) => (
-                <div key={index} className="col-4">
-                  <div
-                    className={`text-center small p-2 rounded border ${index === 3
-                      ? "border-primary bg-light text-primary"
-                      : "border-secondary text-secondary"
-                      } cursor-pointer`}
+                  <span
+                    className={isConfirmed ? "text-success fw-medium" : "text-warning fw-medium"}
                   >
-                    {time}
-                  </div>
+                    {isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
+                  </span>
                 </div>
-              ))}
+
+                {/* Nút xác nhận hoặc hủy */}
+                <button
+                  className={`btn btn-sm rounded-pill px-3 py-2 ${isConfirmed ? "btn-outline-danger" : "btn-outline-primary"
+                    }`}
+                  onClick={handleToggleStatus}
+                >
+                  {isConfirmed ? "Hủy lịch" : "Xác nhận"}
+                </button>
+              </div>
+
             </div>
           </div>
 
-          {/* Lý do khám */}
-          <div>
-            <label className="form-label small fw-medium text-muted">
-              Lý do khám
-            </label>
-            <textarea
-              rows={3}
-              className="form-control form-control-sm"
-              placeholder="Mô tả ngắn gọn lý do bạn muốn khám"
-            ></textarea>
+          {/* Features Section */}
+          <div className="row g-3">
+            <div className="col-4">
+              <div className="text-center d-flex align-items-center justify-content-center gap-2">
+                <div className="d-flex justify-content-center mb-2">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{ width: "40px", height: "40px", backgroundColor: "#e8f5e8" }}
+                  >
+                    <Shield className="text-success" size={20} />
+                  </div>
+                </div>
+                <small className="text-dark fw-medium">Bảo mật 100%</small>
+              </div>
+            </div>
+            <div className="col-4">
+              <div className="text-center d-flex align-items-center justify-content-center gap-2">
+                <div className="d-flex justify-content-center mb-2">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{ width: "40px", height: "40px", backgroundColor: "#fff3cd" }}
+                  >
+                    <Award className="text-warning" size={20} />
+                  </div>
+                </div>
+                <small className="text-dark fw-medium">Bác sĩ chuyên nghiệp</small>
+              </div>
+            </div>
+            <div className="col-4">
+              <div className="text-center d-flex align-items-center justify-content-center gap-2">
+                <div className="d-flex justify-content-center mb-2">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{ width: "40px", height: "40px", backgroundColor: "#cce7ff" }}
+                  >
+                    <Clock24 className="text-primary" size={20} />
+                  </div>
+                </div>
+                <small className="text-dark fw-medium">Hỗ trợ 24/7</small>
+              </div>
+            </div>
           </div>
-
-          {/* Nút xác nhận */}
-          <button className="btn btn-primary w-100 fw-medium">
-            Xác nhận đặt lịch
-          </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+const BookingNew = (doctors, timeSlots, handleSubmit) => {
+  const [appointmentType, setAppointmentType] = useState('clinic');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [reason, setReason] = useState('');
+
+  return <div className="container my-4">
+    <div className="bg-white rounded shadow border p-4">
+      <h2 className="h5 mb-2">Đặt lịch khám mới</h2>
+      <p className="text-muted mb-4">Vui lòng điền đầy đủ thông tin để đặt lịch</p>
+
+      {/* Appointment Type */}
+      <div className="mb-4">
+        <label className="form-label fw-semibold">Loại hình khám</label>
+        <div className="row g-2">
+          <div className="col">
+            <button
+              className={`btn w-100 ${appointmentType === 'clinic' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+              onClick={() => setAppointmentType('clinic')}
+            >
+              <MapPin size={18} className="mb-1" /><br />Tại phòng khám
+            </button>
+          </div>
+          <div className="col">
+            <button
+              className={`btn w-100 ${appointmentType === 'online' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+              onClick={() => setAppointmentType('online')}
+            >
+              <Video size={18} className="mb-1" /><br />Khám trực tuyến
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Doctor Selection */}
+      <div className="mb-4">
+        <label className="form-label fw-semibold">Chọn bác sĩ</label>
+        <div className="row g-3">
+          {doctors.map((doctor) => (
+            <div className="col-md-6" key={doctor.id}>
+              <div
+                className={`card p-3 cursor-pointer ${selectedDoctor === doctor.id ? 'border-primary shadow' : ''}`}
+                onClick={() => setSelectedDoctor(doctor.id)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="d-flex align-items-center">
+                  <img
+                    src={doctor.image}
+                    alt={doctor.name}
+                    className="rounded-circle me-3"
+                    style={{ width: 50, height: 50, objectFit: 'cover' }}
+                  />
+                  <div className="flex-grow-1">
+                    <h6 className="mb-0">{doctor.name}</h6>
+                    <small className="text-muted d-block">{doctor.specialty}</small>
+                    <small className="text-muted">{doctor.experience}</small>
+                  </div>
+                  <div className="text-end">
+                    <div className="d-flex align-items-center text-warning">
+                      <Star size={14} fill="currentColor" />
+                      <span className="ms-1 small">{doctor.rating}</span>
+                    </div>
+                    <small className="text-muted">{doctor.patients}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Date */}
+      <div className="mb-4">
+        <label className="form-label fw-semibold">Chọn ngày</label>
+        <input
+          type="date"
+          className="form-control"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          min={new Date().toISOString().split('T')[0]}
+        />
+      </div>
+
+      {/* Time */}
+      <div className="mb-4">
+        <label className="form-label fw-semibold">Chọn giờ</label>
+        <div className="row g-2">
+          {timeSlots.map((time) => (
+            <div className="col-3" key={time}>
+              <button
+                className={`btn w-100 btn-sm ${selectedTime === time ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+                onClick={() => setSelectedTime(time)}
+              >
+                {time}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reason */}
+      <div className="mb-4">
+        <label className="form-label fw-semibold">Lý do khám</label>
+        <textarea
+          className="form-control"
+          rows="3"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Mô tả ngắn gọn lý do bạn muốn khám..."
+        />
+      </div>
+
+      {/* Submit */}
+      <button className="btn btn-primary w-100 py-3 fw-semibold" onClick={handleSubmit}>
+        Xác nhận đặt lịch khám
+      </button>
+
+      <p className="text-center text-muted small mt-3">
+        Bằng cách đặt lịch, bạn đồng ý với
+        <a href="#" className="text-decoration-none ms-1">điều khoản sử dụng</a> và
+        <a href="#" className="text-decoration-none ms-1">chính sách bảo mật</a>
+      </p>
+    </div>
+  </div>
+}
+
+const BookingTabs = () => {
+  const [selectedTime, setSelectedTime] = useState("09:30")
+  const [appointmentType, setAppointmentType] = useState("clinic")
+  const [selectedDate, setSelectedDate] = useState("")
+  const [selectedDoctor, setSelectedDoctor] = useState("tran-thi-b")
+  const [reason, setReason] = useState("")
+
+  const timeSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30"]
+
+  const doctors = [
+    {
+      id: "tran-thi-b",
+      name: "Bác sĩ Trần Thị B",
+      specialty: "Chuyên khoa Nội tiết",
+      experience: "15 năm kinh nghiệm",
+      rating: 4.9,
+      patients: "2,500+",
+      image: "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+    },
+    {
+      id: "nguyen-van-a",
+      name: "Bác sĩ Nguyễn Văn A",
+      specialty: "Chuyên khoa Tim mạch",
+      experience: "12 năm kinh nghiệm",
+      rating: 4.8,
+      patients: "1,800+",
+      image: "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+    },
+    {
+      id: "le-thi-c",
+      name: "Bác sĩ Lê Thị C",
+      specialty: "Chuyên khoa Da liễu",
+      experience: "10 năm kinh nghiệm",
+      rating: 4.9,
+      patients: "2,200+",
+      image: "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+    }
+  ]
+
+  const handleSubmit = () => {
+    console.log("Booking appointment:", {
+      type: appointmentType,
+      doctor: selectedDoctor,
+      date: selectedDate,
+      time: selectedTime,
+      reason
+    })
+  }
+
+  return (
+    <div >
+      {upcomingAppointment()}
+      {BookingNew(doctors, timeSlots, handleSubmit)}
     </div>
   );
 };

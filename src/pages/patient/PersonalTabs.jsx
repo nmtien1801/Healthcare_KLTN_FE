@@ -10,6 +10,7 @@ const PersonalTabs = () => {
     doctor: "Bác sĩ Trần Thị B",
     nextAppointment: "2025-06-30",
     bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 6.3],
+    avatar: "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
   });
   const [address, setAddress] = useState("123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh");
 
@@ -19,9 +20,12 @@ const PersonalTabs = () => {
       <div>
         <h2 className="fw-semibold fs-5 mb-2">Hồ sơ cá nhân</h2>
         <div className="bg-white rounded shadow-sm p-4 text-center">
-          <div className="rounded-circle bg-indigo text-white d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: 80, height: 80, fontSize: 32, backgroundColor: "#eef2ff", color: "#4f46e5" }}>
-            {userData.name.charAt(0)}
-          </div>
+          <img
+            src={userData.avatar}
+            alt={userData.name}
+            className="rounded-circle me-3"
+            style={{ width: 100, height: 100, objectFit: 'cover' }}
+          />
           <h3 className="fw-semibold fs-5">{userData.name}</h3>
           <p className="text-muted small">ID: BN12345678</p>
           <button type="button" className="btn btn-link text-indigo p-0 mt-2 d-inline-flex align-items-center gap-1">
