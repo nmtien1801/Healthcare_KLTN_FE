@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Camera, ChevronDown } from "lucide-react";
 
 const PersonalTabs = () => {
@@ -12,31 +12,38 @@ const PersonalTabs = () => {
     bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 6.3],
     avatar: "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
   });
+
   const [address, setAddress] = useState("123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh");
 
   return (
-    <div className="d-flex flex-column gap-4">
+    <div className="d-flex flex-column gap-4" style={{ backgroundColor: "#F8FAFC", padding: 20, borderRadius: 12 }}>
+      
       {/* Hồ sơ cá nhân */}
       <div>
-        <h2 className="fw-semibold fs-5 mb-2">Hồ sơ cá nhân</h2>
-        <div className="bg-white rounded shadow-sm p-4 text-center">
+        <h2 className="fw-semibold fs-5 mb-2" style={{ color: "#4F46E5" }}>Hồ sơ cá nhân</h2>
+        <div style={{ backgroundColor: "#FFFFFF", borderRadius: 12, boxShadow: "0 2px 6px rgba(0,0,0,0.05)", padding: 20, textAlign: "center" }}>
           <img
             src={userData.avatar}
             alt={userData.name}
             className="rounded-circle me-3"
             style={{ width: 100, height: 100, objectFit: 'cover' }}
           />
-          <h3 className="fw-semibold fs-5">{userData.name}</h3>
-          <p className="text-muted small">ID: BN12345678</p>
-          <button type="button" className="btn btn-link text-indigo p-0 mt-2 d-inline-flex align-items-center gap-1">
+          <h3 className="fw-semibold fs-5 mt-3">{userData.name}</h3>
+          <p style={{ color: "#94A3B8", fontSize: 12 }}>ID: BN12345678</p>
+
+          <button
+            type="button"
+            className="btn p-0 mt-2 d-inline-flex align-items-center gap-1"
+            style={{ color: "#4F46E5", fontSize: 14, fontWeight: 500 }}
+          >
             <Camera size={16} /> Thay đổi ảnh
           </button>
         </div>
       </div>
 
       {/* Thông tin cá nhân */}
-      <div className="bg-white rounded shadow-sm p-4">
-        <h3 className="fw-semibold mb-3">Thông tin cá nhân</h3>
+      <div style={{ backgroundColor: "#FFFFFF", borderRadius: 12, boxShadow: "0 2px 6px rgba(0,0,0,0.05)", padding: 20 }}>
+        <h3 className="fw-semibold mb-3" style={{ color: "#4F46E5" }}>Thông tin cá nhân</h3>
         <div className="d-flex flex-column gap-3">
 
           <div>
@@ -52,13 +59,13 @@ const PersonalTabs = () => {
             <div className="col-md-6">
               <label className="form-label small fw-medium">Giới tính</label>
               <div className="position-relative">
-                <select className="form-select form-select-sm pe-5">
+                <select className="form-select form-select-sm pe-5" defaultValue={userData.gender}>
                   <option>Nam</option>
                   <option>Nữ</option>
                   <option>Khác</option>
                 </select>
                 <div className="position-absolute top-50 end-0 translate-middle-y pe-2">
-                  <ChevronDown size={16} className="text-muted" />
+                  <ChevronDown size={16} style={{ color: "#94A3B8" }} />
                 </div>
               </div>
             </div>
@@ -84,44 +91,56 @@ const PersonalTabs = () => {
             />
           </div>
 
-          <button className="btn btn-indigo w-100 text-white fw-medium" style={{ backgroundColor: "#4f46e5" }}>
+          <button
+            className="btn w-100 text-white fw-medium"
+            style={{
+              backgroundColor: "#4F46E5",
+              borderRadius: 8,
+              padding: "10px 0",
+              transition: "background 0.3s"
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = "#4338CA"}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = "#4F46E5"}
+          >
             Cập nhật thông tin
           </button>
+
         </div>
       </div>
 
       {/* Thông tin bệnh án */}
-      <div className="bg-white rounded shadow-sm p-4">
-        <h3 className="fw-semibold mb-3">Thông tin bệnh án</h3>
+      <div style={{ backgroundColor: "#FFFFFF", borderRadius: 12, boxShadow: "0 2px 6px rgba(0,0,0,0.05)", padding: 20 }}>
+        <h3 className="fw-semibold mb-3" style={{ color: "#4F46E5" }}>Thông tin bệnh án</h3>
         <div className="d-flex flex-column gap-3">
 
-          <div className="d-flex justify-content-between p-3 bg-light rounded">
+          <div className="d-flex justify-content-between p-3" style={{ backgroundColor: "#F8FAFC", borderRadius: 8 }}>
             <div className="small">
-              <div className="text-muted">Chẩn đoán</div>
+              <div style={{ color: "#94A3B8" }}>Chẩn đoán</div>
               <div className="fw-medium">{userData.condition}</div>
             </div>
             <div className="small text-end">
-              <div className="text-muted">Từ ngày</div>
+              <div style={{ color: "#94A3B8" }}>Từ ngày</div>
               <div className="fw-medium">15/03/2023</div>
             </div>
           </div>
 
-          <div className="p-3 bg-light rounded">
+          <div className="p-3" style={{ backgroundColor: "#F8FAFC", borderRadius: 8 }}>
             <div className="small">
-              <div className="text-muted">Tiền sử bệnh</div>
+              <div style={{ color: "#94A3B8" }}>Tiền sử bệnh</div>
               <div className="fw-medium">Tăng huyết áp (2018), Rối loạn lipid máu (2020)</div>
             </div>
           </div>
 
-          <div className="p-3 bg-light rounded">
+          <div className="p-3" style={{ backgroundColor: "#F8FAFC", borderRadius: 8 }}>
             <div className="small">
-              <div className="text-muted">Dị ứng</div>
+              <div style={{ color: "#94A3B8" }}>Dị ứng</div>
               <div className="fw-medium">Không</div>
             </div>
           </div>
 
         </div>
       </div>
+
     </div>
   );
 };

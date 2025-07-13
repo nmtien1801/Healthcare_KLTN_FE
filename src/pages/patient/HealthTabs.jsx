@@ -12,27 +12,27 @@ const following = (userData) => {
     border: latestReading < 6 ? 'border-success' : latestReading < 7 ? 'border-warning' : 'border-danger'
   };
 
-  return <div className="container py-4">
+  return <div className="container py-3">
     {/* Header */}
-    <div className="bg-white rounded shadow-sm border p-4 mb-4">
+    <div className="bg-white rounded shadow-sm border p-3 mb-3">
       <div className="d-flex justify-content-between align-items-center">
         <div>
-          <h2 className="fw-bold text-dark mb-1">Theo dõi sức khỏe</h2>
+          <h2 className="fw-bold text-dark mb-1 fs-4">Theo dõi sức khỏe</h2>
           <p className="text-muted">Quản lý chỉ số đường huyết của bạn</p>
         </div>
-        <div className="d-flex align-items-center gap-3">
+        <div className="d-flex align-items-center gap-2">
           <div className="text-end">
             <div className="text-muted small">Lần đo gần nhất</div>
-            <div className={`fw-semibold fs-5 ${readingStatus.color}`}>{latestReading} mmol/L</div>
+            <div className={`fw-semibold fs-6 ${readingStatus.color}`}>{latestReading} mmol/L</div>
           </div>
-          <div className={`p-3 rounded-circle border ${readingStatus.bg} ${readingStatus.border}`}>
-            <Heart size={24} className={readingStatus.color} />
+          <div className={`p-2 rounded-circle border ${readingStatus.bg} ${readingStatus.border}`}>
+            <Heart size={20} className={readingStatus.color} />
           </div>
         </div>
       </div>
     </div>
 
-    <div className="row g-4 align-items-stretch">
+    <div className="row g-2 align-items-stretch">
       {/* User Info */}
       <div className="col-lg-4">
         <div className="bg-white rounded shadow-sm border p-4 h-100">
@@ -70,7 +70,7 @@ const following = (userData) => {
             })}
           </div>
           <div className="d-flex justify-content-center align-items-center gap-1 text-muted small">
-            <Clock size={14} /> <span>Nhớ chuẩn bị trước 30 phút</span>
+            <Clock size={14} className="text-danger" /> <span className="text-danger">Nhớ chuẩn bị trước 30 phút</span>
           </div>
         </div>
       </div>
