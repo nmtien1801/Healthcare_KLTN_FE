@@ -1,4 +1,4 @@
-"use client"
+
 
 import { Clock, CalendarDays, Stethoscope, FileText, MessageSquare, Phone } from "lucide-react"
 import { Button, Badge, Avatar } from "../common-ui-components" // Import from common-ui-components

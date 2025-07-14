@@ -1,4 +1,4 @@
-"use client"
+
 
 import { Mail, Phone, MapPin } from "lucide-react"
 import { Avatar } from "../common-ui-components" // Reusing Avatar

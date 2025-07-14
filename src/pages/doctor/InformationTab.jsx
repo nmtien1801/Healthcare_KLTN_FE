@@ -1,15 +1,10 @@
-"use client"
+import { useState } from "react";
+import { Card, Button, Row, Col, Image } from "react-bootstrap";
+import { Edit } from "lucide-react";
 
-import { useState } from "react"
-import { Edit } from "lucide-react"
-import ProfileHeader from "../../components/doctor/information/ProfileHeader"
-import InfoSection from "../../components/doctor/information/InfoSection"
-import SummaryCards from "../../components/doctor/information/SummaryCards"
-import { Button } from "../../components/doctor/common-ui-components" // Reusing Button from PatientTab
-
+// Mock initial doctor data
 const initialDoctorData = {
-  avatar:
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
   name: "BS. Nguyễn Văn An",
   specialty: "Bác sĩ chuyên khoa Tim mạch",
   hospital: "Bệnh viện Đa khoa Trung ương",
@@ -25,11 +20,189 @@ const initialDoctorData = {
     experienceYears: "15 năm",
     license: "00123456/BYT-CCHN",
   },
-}
+};
+
+// Simplified ProfileHeader component
+const ProfileHeader = ({ doctor }) => (
+  <Card className="shadow-sm mb-4">
+    <Card.Body className="d-flex flex-column align-items-center text-center">
+      <Image roundedCircle width={80} height={80} src={doctor.avatar} alt="Bác sĩ" className="mb-3" />
+      <div>
+        <h4 className="mb-1">{doctor.name}</h4>
+        <div className="text-muted">{doctor.specialty}</div>
+        <div className="text-muted">{doctor.hospital}</div>
+      </div>
+    </Card.Body>
+  </Card>
+);
+
+// Simplified InfoSection component
+const InfoSection = ({ doctor, isEditing, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    fullName: doctor.basicInfo.fullName,
+    email: doctor.basicInfo.email,
+    phone: doctor.basicInfo.phone,
+    dob: doctor.basicInfo.dob,
+    specialty: doctor.professionalInfo.specialty,
+    hospital: doctor.professionalInfo.hospital,
+    experienceYears: doctor.professionalInfo.experienceYears,
+    license: doctor.professionalInfo.license,
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = () => {
+    onSave(formData);
+  };
+
+  return (
+    <div>
+      <h5 className="mb-3">Thông tin cá nhân và chuyên môn</h5>
+      {isEditing ? (
+        <Row>
+          <Col md={6}>
+            <div className="mb-3">
+              <label className="form-label">Họ và tên</label>
+              <input
+                type="text"
+                className="form-control"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-control"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Số điện thoại</label>
+              <input
+                type="text"
+                className="form-control"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Ngày sinh</label>
+              <input
+                type="text"
+                className="form-control"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+              />
+            </div>
+          </Col>
+          <Col md={6}>
+            <div className="mb-3">
+              <label className="form-label">Chuyên khoa</label>
+              <input
+                type="text"
+                className="form-control"
+                name="specialty"
+                value={formData.specialty}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Bệnh viện</label>
+              <input
+                type="text"
+                className="form-control"
+                name="hospital"
+                value={formData.hospital}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Số năm kinh nghiệm</label>
+              <input
+                type="text"
+                className="form-control"
+                name="experienceYears"
+                value={formData.experienceYears}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Số giấy phép</label>
+              <input
+                type="text"
+                className="form-control"
+                name="license"
+                value={formData.license}
+                onChange={handleChange}
+              />
+            </div>
+          </Col>
+          <div className="d-flex justify-content-end mt-4">
+            <Button variant="outline-secondary" className="me-2" onClick={onCancel}>
+              Hủy
+            </Button>
+            <Button variant="primary" onClick={handleSubmit}>
+              Lưu
+            </Button>
+          </div>
+        </Row>
+      ) : (
+        <Row>
+          <Col md={6}>
+            <div className="mb-2"><strong>Họ và tên:</strong> {doctor.basicInfo.fullName}</div>
+            <div className="mb-2"><strong>Email:</strong> {doctor.basicInfo.email}</div>
+            <div className="mb-2"><strong>Số điện thoại:</strong> {doctor.basicInfo.phone}</div>
+            <div className="mb-2"><strong>Ngày sinh:</strong> {doctor.basicInfo.dob}</div>
+          </Col>
+          <Col md={6}>
+            <div className="mb-2"><strong>Chuyên khoa:</strong> {doctor.professionalInfo.specialty}</div>
+            <div className="mb-2"><strong>Bệnh viện:</strong> {doctor.professionalInfo.hospital}</div>
+            <div className="mb-2"><strong>Số năm kinh nghiệm:</strong> {doctor.professionalInfo.experienceYears}</div>
+            <div className="mb-2"><strong>Số giấy phép:</strong> {doctor.professionalInfo.license}</div>
+          </Col>
+        </Row>
+      )}
+    </div>
+  );
+};
+
+// Simplified SummaryCards component
+const SummaryCards = ({ doctor }) => (
+  <Row className="g-4">
+    {[
+      { icon: "user-md", title: "Chuyên khoa", value: doctor.professionalInfo.specialty, color: "primary" },
+      { icon: "hospital", title: "Bệnh viện", value: doctor.professionalInfo.hospital, color: "success" },
+      { icon: "briefcase", title: "Kinh nghiệm", value: doctor.professionalInfo.experienceYears, color: "warning" },
+    ].map((item, index) => (
+      <Col md={4} key={index}>
+        <Card className="shadow-sm h-100">
+          <Card.Body className="d-flex align-items-center">
+            <div className={`bg-${item.color} bg-opacity-10 rounded-circle p-3 me-3`}>
+              <i className={`fas fa-${item.icon} text-${item.color} fs-5`}></i>
+            </div>
+            <div>
+              <div className="text-muted" style={{ fontSize: "0.85rem" }}>{item.title}</div>
+              <div className="fw-semibold" style={{ fontSize: "1.2rem" }}>{item.value}</div>
+            </div>
+          </Card.Body>
+        </Card>
+      </Col>
+    ))}
+  </Row>
+);
 
 export default function DoctorProfile() {
-  const [doctorData, setDoctorData] = useState(initialDoctorData)
-  const [isEditing, setIsEditing] = useState(false)
+  const [doctorData, setDoctorData] = useState(initialDoctorData);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleSave = (updatedData) => {
     setDoctorData((prevData) => ({
@@ -48,45 +221,35 @@ export default function DoctorProfile() {
         experienceYears: updatedData.experienceYears,
         license: updatedData.license,
       },
-      name: updatedData.fullName, // Update main name
-      specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`, // Update main specialty
-      hospital: updatedData.hospital, // Update main hospital
-    }))
-    setIsEditing(false)
-  }
+      name: updatedData.fullName,
+      specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
+      hospital: updatedData.hospital,
+    }));
+    setIsEditing(false);
+  };
 
   const handleCancel = () => {
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-indigo-100 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Page Title */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Thông tin cá nhân</h1>
-          <p className="text-gray-600">Quản lý thông tin cá nhân và chuyên môn của bạn</p>
-        </div>
-
-        {/* Profile Header Section */}
-        <ProfileHeader doctor={doctorData} />
-
-        {/* Info Section (Basic & Professional) */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 mt-6">
+    <div className="container mt-4">
+      <h3 className="mb-4">Thông tin cá nhân</h3>
+      <ProfileHeader doctor={doctorData} />
+      <Card className="shadow-sm mb-4">
+        <Card.Body>
           <InfoSection doctor={doctorData} isEditing={isEditing} onSave={handleSave} onCancel={handleCancel} />
           {!isEditing && (
             <div className="d-flex justify-content-end mt-4">
-              <Button variant="primary" onClick={() => setIsEditing(true)} className="d-flex align-items-center gap-2">
+              <Button variant="primary" className="d-flex align-items-center gap-2" onClick={() => setIsEditing(true)}>
                 <Edit size={16} />
                 Chỉnh sửa thông tin
               </Button>
             </div>
           )}
-        </div>
-
-        {/* Summary Cards Section */}
-        <SummaryCards doctor={doctorData} />
-      </div>
+        </Card.Body>
+      </Card>
+      <SummaryCards doctor={doctorData} />
     </div>
-  )
+  );
 }

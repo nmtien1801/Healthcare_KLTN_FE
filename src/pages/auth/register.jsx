@@ -1,4 +1,4 @@
-"use client";
+;
 
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
@@ -75,8 +75,8 @@ export default function LoginForm() {
       let res = await dispatch(register(formData));
       if (res.payload.EC === 0) {
         navigate("/login");
-      }else{
-      setErrorMessage(res.payload.EM);
+      } else {
+        setErrorMessage(res.payload.EM);
       }
     }
 

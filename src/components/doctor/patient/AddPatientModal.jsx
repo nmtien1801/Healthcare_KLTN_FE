@@ -1,4 +1,4 @@
-"use client"
+
 
 import { useState } from "react"
 import { Button, Input, Select } from "../common-ui-components" // Import from common-ui-components
