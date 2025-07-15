@@ -59,7 +59,7 @@ const Router = (props) => {
         <Container fluid className="d-flex flex-column align-items-center">
           {/* Menu content */}
           <Nav className="d-flex flex-column w-100 gap-2">
-            {/* <Nav.Link as={NavLink} to="/overviewTab" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
+            <Nav.Link as={NavLink} to="/overviewTab" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
               <LayoutDashboard size={20} />
               <span>Tổng quan</span>
             </Nav.Link>
@@ -78,10 +78,10 @@ const Router = (props) => {
             <Nav.Link as={NavLink} to="/settingTabs" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
               <Settings size={20} />
               <span>Cài đặt</span>
-            </Nav.Link> */}
+            </Nav.Link>
 
 
-            <Nav.Link as={NavLink} to="/home" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item" >
+            {/* <Nav.Link as={NavLink} to="/home" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item" >
               <Home size={20} />
               <span>Trang chủ</span>
             </Nav.Link>
@@ -128,7 +128,7 @@ const Router = (props) => {
             <Nav.Link as={NavLink} to="/personalTabs" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
               <User size={20} />
               <span>Cá nhân</span>
-            </Nav.Link>
+            </Nav.Link> */}
           </Nav>
         </Container>
       </Navbar>
