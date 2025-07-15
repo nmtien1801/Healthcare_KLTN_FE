@@ -1,4 +1,4 @@
-"use client"
+
 
 import { Moon } from "lucide-react"
 import { Select } from "../common-ui-components" // Reusing Select

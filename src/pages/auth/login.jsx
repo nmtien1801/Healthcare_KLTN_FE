@@ -1,4 +1,4 @@
-"use client";
+;
 
 import { useState } from "react";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";

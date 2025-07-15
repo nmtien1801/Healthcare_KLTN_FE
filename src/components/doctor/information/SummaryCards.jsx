@@ -1,4 +1,4 @@
-"use client"
+
 
 import { Clock, Stethoscope, FileText } from "lucide-react"
 

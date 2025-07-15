@@ -1,4 +1,4 @@
-"use client"
+
 
 import { User, Mail, Phone, CalendarDays, Stethoscope, Hospital, Clock, FileText } from "lucide-react"
 import { Input, Button } from "../common-ui-components" // Reusing Input, Select, Button from PatientTab

@@ -1,4 +1,4 @@
-"use client"
+
 
 import { Camera, Stethoscope, Hospital } from "lucide-react"
 import { Avatar } from "../common-ui-components" // Reusing Avatar from PatientTab

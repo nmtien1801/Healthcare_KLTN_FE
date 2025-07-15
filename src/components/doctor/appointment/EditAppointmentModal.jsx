@@ -1,4 +1,4 @@
-"use client"
+
 
 import { useState, useEffect } from "react"
 import { Clock, CalendarDays, User, Stethoscope, FileText } from "lucide-react"

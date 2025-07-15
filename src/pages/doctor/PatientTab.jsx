@@ -1,8 +1,5 @@
-"use client"
-
 import { useState, useMemo } from "react"
-import { Search, Filter, Plus, Eye, Edit, Trash2, Users, ChevronDown } from "lucide-react"
-import AddPatientModal from "../../components/doctor/patient/AddPatientModal"
+import { Search, Filter, Eye, Edit, MessageSquare, Phone, ChevronDown } from "lucide-react"
 import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal"
 import EditPatientModal from "../../components/doctor/patient/EditPatientModal"
 
@@ -33,7 +30,7 @@ const initialPatients = [
     name: "Nguyễn Thị Mai",
     age: 52,
     patientCount: "52 tuổi",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     disease: "Tiểu đường type 2",
     patientId: "BHYT: BH987654321",
     status: "Đang điều trị",
@@ -57,9 +54,9 @@ const initialPatients = [
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     disease: "Viêm phổi",
     patientId: "BHYT: BH456789123",
-    status: "Theo dõi",
-    statusColor: "bg-info",
-    statusTextColor: "text-dark",
+    status: "Cần theo dõi",
+    statusColor: "bg-danger",
+    statusTextColor: "text-white",
     lastVisit: "21/06/2025",
     lastVisitDate: new Date("2025-06-21"),
     phone: "0923456789",
@@ -73,6 +70,69 @@ const initialPatients = [
   {
     id: 4,
     name: "Phạm Thị Hương",
+    age: 72,
+    patientCount: "72 tuổi",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    disease: "Suy tim, Tăng huyết áp",
+    patientId: "BHYT: BH789123456",
+    status: "Ổn định",
+    statusColor: "bg-success",
+    statusTextColor: "text-white",
+    lastVisit: "18/06/2025",
+    lastVisitDate: new Date("2025-06-18"),
+    phone: "0934567890",
+    email: "",
+    address: "321 Đường JKL, Quận 7, TP.HCM",
+    bloodType: "AB",
+    allergies: "Aspirin",
+    emergencyContact: "Phạm Văn Minh - 0954321098 (Con trai)",
+    notes: "Tình trạng ổn định, tiếp tục dùng thuốc theo đơn",
+  },
+  {
+    id: 5,
+    name: "Phạm Thị Hương1",
+    age: 72,
+    patientCount: "72 tuổi",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    disease: "Suy tim, Tăng huyết áp",
+    patientId: "BHYT: BH789123456",
+    status: "Ổn định",
+    statusColor: "bg-success",
+    statusTextColor: "text-white",
+    lastVisit: "18/06/2025",
+    lastVisitDate: new Date("2025-06-18"),
+    phone: "0934567890",
+    email: "",
+    address: "321 Đường JKL, Quận 7, TP.HCM",
+    bloodType: "AB",
+    allergies: "Aspirin",
+    emergencyContact: "Phạm Văn Minh - 0954321098 (Con trai)",
+    notes: "Tình trạng ổn định, tiếp tục dùng thuốc theo đơn",
+  },
+  {
+    id: 6,
+    name: "Phạm Thị Hương12",
+    age: 72,
+    patientCount: "72 tuổi",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    disease: "Suy tim, Tăng huyết áp",
+    patientId: "BHYT: BH789123456",
+    status: "Ổn định",
+    statusColor: "bg-success",
+    statusTextColor: "text-white",
+    lastVisit: "18/06/2025",
+    lastVisitDate: new Date("2025-06-18"),
+    phone: "0934567890",
+    email: "",
+    address: "321 Đường JKL, Quận 7, TP.HCM",
+    bloodType: "AB",
+    allergies: "Aspirin",
+    emergencyContact: "Phạm Văn Minh - 0954321098 (Con trai)",
+    notes: "Tình trạng ổn định, tiếp tục dùng thuốc theo đơn",
+  },
+  {
+    id: 7,
+    name: "Phạm Thị Hương3",
     age: 72,
     patientCount: "72 tuổi",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
@@ -147,7 +207,7 @@ const Select = ({ children, value, onChange, className = "" }) => {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="form-select border-0 shadow-sm"
-        style={{ borderRadius: "8px", backgroundColor: "#f8f9fa", paddingRight: "2.5rem" }}
+        style={{ borderRadius: "8px", backgroundColor: "#f8f9fa", paddingRight: "2.5rem", paddingLeft: "2.5rem" }}
       >
         {children}
       </select>
@@ -199,9 +259,10 @@ export default function PatientTab() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name")
   const [patientList, setPatientList] = useState(initialPatients)
+  const [currentPage, setCurrentPage] = useState(1)
+  const patientsPerPage = 5
 
   // Modal states
-  const [showAddModal, setShowAddModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState(null)
@@ -237,46 +298,18 @@ export default function PatientTab() {
     return filtered
   }, [patientList, searchTerm, statusFilter, sortBy])
 
-  // Thêm bệnh nhân mới
-  const handleAddPatient = (newPatient) => {
-    const statusColors = {
-      "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
-      "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
-      "Theo dõi": { color: "bg-info", textColor: "text-dark" },
-      "Ổn định": { color: "bg-success", textColor: "text-white" },
-    }
-
-    const patient = {
-      id: Date.now(),
-      name: newPatient.name,
-      age: Number.parseInt(newPatient.age),
-      patientCount: `${newPatient.age} tuổi`,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(newPatient.name)}&size=150&background=random`,
-      disease: newPatient.disease,
-      patientId: newPatient.patientId,
-      status: newPatient.status,
-      statusColor: statusColors[newPatient.status].color,
-      statusTextColor: statusColors[newPatient.status].textColor,
-      lastVisit: new Date().toLocaleDateString("vi-VN"),
-      lastVisitDate: new Date(),
-      phone: newPatient.phone,
-      email: newPatient.email,
-      address: newPatient.address,
-      bloodType: newPatient.bloodType,
-      allergies: newPatient.allergies,
-      emergencyContact: newPatient.emergencyContact,
-      notes: newPatient.notes,
-    }
-
-    setPatientList([...patientList, patient])
-  }
+  // Phân trang
+  const totalPages = Math.ceil(filteredAndSortedPatients.length / patientsPerPage)
+  const paginatedPatients = filteredAndSortedPatients.slice(
+    (currentPage - 1) * patientsPerPage,
+    currentPage * patientsPerPage
+  )
 
   // Cập nhật bệnh nhân
   const handleUpdatePatient = (updatedPatient) => {
     const statusColors = {
       "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
       "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
-      "Theo dõi": { color: "bg-info", textColor: "text-dark" },
       "Ổn định": { color: "bg-success", textColor: "text-white" },
     }
 
@@ -289,13 +322,6 @@ export default function PatientTab() {
 
     setPatientList(patientList.map((p) => (p.id === updated.id ? updated : p)))
     setShowViewModal(false)
-  }
-
-  // Xóa bệnh nhân
-  const handleDeletePatient = (patientId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa bệnh nhân này?")) {
-      setPatientList(patientList.filter((p) => p.id !== patientId))
-    }
   }
 
   // Xem chi tiết bệnh nhân
@@ -311,23 +337,61 @@ export default function PatientTab() {
     setShowEditModal(true)
   }
 
+  // Nhắn tin cho bệnh nhân
+  const handleMessagePatient = (patient) => {
+    if (patient.phone) {
+      window.location.href = `sms:${patient.phone}`
+    } else {
+      alert("Không có số điện thoại để nhắn tin")
+    }
+  }
+
+  // Gọi điện cho bệnh nhân
+  const handleCallPatient = (patient) => {
+    if (patient.phone) {
+      window.location.href = `tel:${patient.phone}`
+    } else {
+      alert("Không có số điện thoại để gọi")
+    }
+  }
+
+  // Điều hướng trang
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
+
   return (
-    <div className="container-fluid p-0">
-      {/* Header */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div className="mb-3 mb-md-0">
-          <h1 className="h2 fw-bold text-dark mb-2">Quản lý bệnh nhân</h1>
-          <p className="text-muted mb-0">Theo dõi và quản lý thông tin bệnh nhân</p>
-        </div>
-        <Button variant="primary" className="d-flex align-items-center gap-2" onClick={() => setShowAddModal(true)}>
-          <Plus size={16} />
-          Thêm bệnh nhân
-        </Button>
+    <div className="container mt-4">
+      <h3 className="mb-4">Quản lý bệnh nhân</h3>
+
+      {/* Thống kê */}
+      <div className="row mb-4">
+        {[
+          { icon: "exclamation-circle", title: "Cần theo dõi", value: patientList.filter((p) => p.status === "Cần theo dõi").length, color: "danger" },
+          { icon: "hospital-user", title: "Đang điều trị", value: patientList.filter((p) => p.status === "Đang điều trị").length, color: "warning" },
+          { icon: "check-circle", title: "Ổn định", value: patientList.filter((p) => p.status === "Ổn định").length, color: "success" },
+        ].map((item, index) => (
+          <div className="col-md-4" key={index}>
+            <div className="card shadow-sm">
+              <div className="card-body d-flex align-items-center">
+                <div className={`bg-${item.color} bg-opacity-10 rounded-circle p-3 me-3`}>
+                  <i className={`fas fa-${item.icon} text-${item.color} fs-5`}></i>
+                </div>
+                <div>
+                  <div className="text-muted small">{item.title}</div>
+                  <div className="fs-4 fw-semibold">{item.value}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Search and Filters */}
       <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
-        <div className="card-body">
+        <div className="card-body p-4">
           <div className="row g-3">
             <div className="col-12 col-md-6">
               <div className="position-relative">
@@ -351,11 +415,10 @@ export default function PatientTab() {
                   size={16}
                   style={{ left: "12px", zIndex: 10 }}
                 />
-                <Select value={statusFilter} onChange={setStatusFilter} style={{ paddingLeft: "2.5rem" }}>
+                <Select value={statusFilter} onChange={setStatusFilter}>
                   <option value="all">Tất cả tình trạng</option>
                   <option value="Cần theo dõi">Cần theo dõi</option>
                   <option value="Đang điều trị">Đang điều trị</option>
-                  <option value="Theo dõi">Theo dõi</option>
                   <option value="Ổn định">Ổn định</option>
                 </Select>
               </div>
@@ -373,20 +436,20 @@ export default function PatientTab() {
       </div>
 
       {/* Patient Table */}
-      <div className="card shadow-sm" style={{ borderRadius: "12px", border: "none" }}>
+      <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
         <div className="table-responsive">
-          <table className="table table-hover mb-0">
+          <table className="table hover responsive">
             <thead style={{ backgroundColor: "#f8f9fa" }}>
               <tr>
-                <th className="fw-semibold text-uppercase text-muted small py-3 border-0">BỆNH NHÂN</th>
-                <th className="fw-semibold text-uppercase text-muted small py-3 border-0">THÔNG TIN</th>
-                <th className="fw-semibold text-uppercase text-muted small py-3 border-0">TÌNH TRẠNG</th>
-                <th className="fw-semibold text-uppercase text-muted small py-3 border-0">LẦN KHÁM GẦN NHẤT</th>
-                <th className="fw-semibold text-uppercase text-muted small py-3 border-0">HÀNH ĐỘNG</th>
+                <th className="fw-bold text-muted small py-3 border-0">Bệnh nhân</th>
+                <th className="fw-bold text-muted small py-3 border-0">Thông tin</th>
+                <th className="fw-bold text-muted small py-3 border-0">Tình trạng</th>
+                <th className="fw-bold text-muted small py-3 border-0">Lần khám gần nhất</th>
+                <th className="fw-bold text-muted small py-3 border-0">Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {filteredAndSortedPatients.map((patient) => (
+              {paginatedPatients.map((patient) => (
                 <tr key={patient.id} style={{ borderTop: "1px solid #f1f3f4" }}>
                   <td className="py-3 border-0">
                     <div className="d-flex align-items-center gap-3">
@@ -401,10 +464,7 @@ export default function PatientTab() {
                       />
                       <div>
                         <div className="fw-semibold text-dark">{patient.name}</div>
-                        <div className="small text-muted d-flex align-items-center gap-1">
-                          <Users size={12} />
-                          {patient.patientCount}
-                        </div>
+                        <div className="small text-muted">{patient.patientCount}</div>
                       </div>
                     </div>
                   </td>
@@ -429,7 +489,7 @@ export default function PatientTab() {
                         onClick={() => handleViewPatient(patient)}
                         title="Xem chi tiết"
                       >
-                        <Eye size={14} />
+                        <Eye size={16} />
                       </Button>
                       <Button
                         variant="success"
@@ -438,16 +498,25 @@ export default function PatientTab() {
                         onClick={() => handleEditPatient(patient)}
                         title="Chỉnh sửa"
                       >
-                        <Edit size={14} />
+                        <Edit size={16} />
                       </Button>
                       <Button
-                        variant="danger"
+                        variant="primary"
                         size="sm"
                         className="p-2"
-                        onClick={() => handleDeletePatient(patient.id)}
-                        title="Xóa"
+                        onClick={() => handleMessagePatient(patient)}
+                        title="Nhắn tin"
                       >
-                        <Trash2 size={14} />
+                        <MessageSquare size={16} />
+                      </Button>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        className="p-2"
+                        onClick={() => handleCallPatient(patient)}
+                        title="Gọi điện"
+                      >
+                        <Phone size={16} />
                       </Button>
                     </div>
                   </td>
@@ -458,9 +527,41 @@ export default function PatientTab() {
         </div>
       </div>
 
+      {/* Pagination */}
+      {filteredAndSortedPatients.length > 0 && (
+        <div className="d-flex justify-content-center align-items-center gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Trước
+          </Button>
+          {[...Array(totalPages).keys()].map((page) => (
+            <Button
+              key={page + 1}
+              variant={currentPage === page + 1 ? "primary" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(page + 1)}
+            >
+              {page + 1}
+            </Button>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Sau
+          </Button>
+        </div>
+      )}
+
       {/* Empty State */}
       {filteredAndSortedPatients.length === 0 && (
-        <div className="card shadow-sm mt-4" style={{ borderRadius: "12px", border: "none" }}>
+        <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
           <div className="card-body text-center py-5">
             <div className="text-muted mb-2">Không tìm thấy bệnh nhân nào</div>
             <div className="small text-muted">Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</div>
@@ -468,61 +569,13 @@ export default function PatientTab() {
         </div>
       )}
 
-      {/* Thống kê */}
-      <div className="row mt-4">
-        <div className="col-12">
-          <div className="card shadow-sm" style={{ borderRadius: "12px", border: "none" }}>
-            <div className="card-body">
-              <h6 className="fw-bold mb-3">Thống kê tình trạng bệnh nhân</h6>
-              <div className="row g-3">
-                <div className="col-6 col-md-3">
-                  <div className="text-center">
-                    <div className="h4 fw-bold text-danger mb-1">
-                      {patientList.filter((p) => p.status === "Cần theo dõi").length}
-                    </div>
-                    <div className="small text-muted">Cần theo dõi</div>
-                  </div>
-                </div>
-                <div className="col-6 col-md-3">
-                  <div className="text-center">
-                    <div className="h4 fw-bold text-warning mb-1">
-                      {patientList.filter((p) => p.status === "Đang điều trị").length}
-                    </div>
-                    <div className="small text-muted">Đang điều trị</div>
-                  </div>
-                </div>
-                <div className="col-6 col-md-3">
-                  <div className="text-center">
-                    <div className="h4 fw-bold text-info mb-1">
-                      {patientList.filter((p) => p.status === "Theo dõi").length}
-                    </div>
-                    <div className="small text-muted">Theo dõi</div>
-                  </div>
-                </div>
-                <div className="col-6 col-md-3">
-                  <div className="text-center">
-                    <div className="h4 fw-bold text-success mb-1">
-                      {patientList.filter((p) => p.status === "Ổn định").length}
-                    </div>
-                    <div className="small text-muted">Ổn định</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Modals */}
-      <AddPatientModal show={showAddModal} onHide={() => setShowAddModal(false)} onSave={handleAddPatient} />
-
       <ViewPatientModal
         show={showViewModal}
         onHide={() => setShowViewModal(false)}
         patient={selectedPatient}
         onEdit={handleEditPatient}
       />
-
       <EditPatientModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}

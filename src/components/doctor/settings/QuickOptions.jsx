@@ -1,4 +1,4 @@
-"use client"
+
 
 import { ShieldCheck, HelpCircle, ChevronRight } from "lucide-react"
 import { Button } from "../common-ui-components" // Reusing Button

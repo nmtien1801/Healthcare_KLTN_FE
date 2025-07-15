@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState, useRef } from "react"
 import * as echarts from "echarts"
 import { Card, Button, Table, Row, Col, Image, Badge } from "react-bootstrap"
@@ -183,7 +181,7 @@ const OverviewTab = () => {
 
   return (
     <div className="container mt-4">
-      <h2 className="mb-4">Tổng quan</h2>
+      <h3 className="mb-4">Tổng quan</h3>
       <Row className="mb-4">
         {[
           { icon: "user-plus", title: "Bệnh nhân mới", value: mockData.summary.newPatients, change: mockData.summary.newPatientsChange, color: "primary" },

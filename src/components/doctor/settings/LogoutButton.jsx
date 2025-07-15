@@ -1,4 +1,4 @@
-"use client"
+
 
 import { LogOut } from "lucide-react"
 import { Button } from "../common-ui-components"
