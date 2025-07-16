@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import * as echarts from "echarts";
 import { Check, MessageCircleMore, X, Bot, Send } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState("health");
+  const navigate = useNavigate();
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [chatMessages, setChatMessages] = useState([
@@ -26,40 +27,6 @@ const Home = () => {
     { name: "Metformin", dosage: "500mg", time: "20:00", taken: false },
   ]);
 
-  useEffect(() => {
-    if (activeTab === "health") {
-      const chartDom = document.getElementById("health-chart");
-      if (chartDom) {
-        const myChart = echarts.init(chartDom);
-        const dates = ["17/06", "18/06", "19/06", "20/06", "21/06", "22/06", "23/06"];
-
-        const option = {
-          title: { text: "Đường huyết 7 ngày gần nhất", left: "center", textStyle: { fontSize: 14 } },
-          tooltip: { trigger: "axis" },
-          xAxis: { type: "category", data: dates },
-          yAxis: { type: "value", min: 4, max: 8 },
-          series: [
-            {
-              data: userData.bloodSugar,
-              type: "line",
-              smooth: true,
-              lineStyle: { color: "#4f46e5" },
-              itemStyle: { color: "#4f46e5" },
-              markLine: {
-                data: [
-                  { yAxis: 5.6, lineStyle: { color: "#10b981" }, label: { formatter: "Mức chuẩn" } },
-                  { yAxis: 7.0, lineStyle: { color: "#ef4444" }, label: { formatter: "Ngưỡng cao" } },
-                ],
-              },
-            },
-          ],
-        };
-
-        myChart.setOption(option);
-        return () => myChart.dispose();
-      }
-    }
-  }, [activeTab]);
 
   const handleMedicationToggle = (index) => {
     const updated = [...medications];
@@ -100,7 +67,7 @@ const Home = () => {
         <div className="row g-3">
 
           {/* Thông tin bệnh nhân */}
-          <div className="col-12 col-md-4">
+          <div className="col-12 col-md-6">
             <div className="bg-white rounded-4 shadow-sm p-3">
               <div className="d-flex align-items-center gap-3">
                 <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style={{ width: 50, height: 50 }}>
@@ -134,15 +101,15 @@ const Home = () => {
           </div>
 
           {/* Chỉ số đường huyết */}
-          <div className="col-12 col-md-8">
+          <div className="col-12 col-md-6">
             <div className="bg-white rounded-4 shadow-sm p-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <h6 className="fw-semibold mb-0">Đường huyết hôm nay</h6>
                 <button
-                  onClick={() => setActiveTab(activeTab === "health" ? "" : "health")}
-                  className={`btn btn-sm ${activeTab === "health" ? "btn-primary text-white" : "btn-outline-primary"}`}
+                  onClick={() => navigate('/healthTabs')}
+                  className={`btn btn-sm btn-outline-primary`}
                 >
-                  {activeTab === "health" ? "Thu gọn" : "Chi tiết"}
+                  Xem Chi tiết
                 </button>
               </div>
               <div className="bg-light rounded-3 p-3 text-center">
@@ -152,7 +119,6 @@ const Home = () => {
                   <span className="badge bg-warning text-dark">Cao hơn bình thường</span>
                 </div>
               </div>
-              {activeTab === "health" && <div id="health-chart" style={{ height: 200, marginTop: 10 }} />}
             </div>
           </div>
 
