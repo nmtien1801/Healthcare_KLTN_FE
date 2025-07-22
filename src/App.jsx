@@ -57,8 +57,7 @@ function App() {
         {/* NavbarLeft */}
         <div className="d-flex flex-grow-1 overflow-hidden"
           style={{ marginTop: "80px" }}>
-          {/* {isLoggedIn && <NavbarLeft />} */}
-          <NavbarLeft />
+          {isLoggedIn && <NavbarLeft />}
 
           {/* Nội dung chính */}
           <div className="content flex-grow-1 overflow-auto p-3">

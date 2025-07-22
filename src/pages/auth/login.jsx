@@ -12,7 +12,7 @@ export default function LoginForm() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    phoneNumber: "",
+    email: "",
     password: "",
     captcha: "",
   });
@@ -31,7 +31,12 @@ export default function LoginForm() {
     let res = await dispatch(Login(formData));
 
     if (res.payload.EC === 0) {
-      navigate("/chat");
+      if (res.payload.DT.role === "doctor") {
+        navigate("/overviewTab");
+
+      } else if (res.payload.DT.role === "patient") {
+        navigate("/home");
+      }
       localStorage.setItem("access_Token", res.payload.DT.access_Token);
       localStorage.setItem("refresh_Token", res.payload.DT.refresh_Token);
     }
@@ -46,7 +51,7 @@ export default function LoginForm() {
         <div className="card-body p-4">
           {/* Logo and Title */}
           <div className="text-center mb-4">
-            <h1 className="display-6 text-primary fw-bold mb-3">Zata</h1>
+            <h1 className="display-6 text-primary fw-bold mb-3">DiaTech</h1>
             <h2 className="fs-5 fw-medium text-dark">Đăng nhập với mật khẩu</h2>
           </div>
 
@@ -55,15 +60,12 @@ export default function LoginForm() {
             {/* Phone Number Input */}
             <div className="mb-3">
               <div className="input-group">
-                <select className="form-select" style={{ maxWidth: "100px" }}>
-                  <option value="+84">+84</option>
-                </select>
                 <input
-                  type="text"
+                  type="email"
                   className="form-control"
-                  placeholder="Số tài khoản"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
+                  placeholder="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleChange}
                 />
               </div>

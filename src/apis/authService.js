@@ -1,8 +1,8 @@
 import customizeAxios from "../components/customizeAxios";
 
-const loginService = (phoneNumber, password) => {
+const loginService = (email, password) => {
   return customizeAxios.post("/login", {
-    phoneNumber,
+    email,
     password,
   });
 };
