@@ -1,9 +1,66 @@
-import React, { useState } from "react";
-import { Container, Row, Col, Badge, Image } from "react-bootstrap";
+import React, { useState, forwardRef } from "react";
+import { Container, Row, Col, Badge, Image, Dropdown } from "react-bootstrap";
 import { FaHeartbeat, FaBell } from "react-icons/fa";
+import { useDispatch } from "react-redux";
+import { logout } from "../redux/authSlice";
+import { useNavigate } from "react-router-dom";
+import { logoutUserService } from "../apis/authService";
+
+const CustomToggle = forwardRef(({ onClick }, ref) => (
+  <div
+    ref={ref}
+    onClick={(e) => {
+      e.preventDefault();
+      onClick(e);
+    }}
+    style={{ cursor: "pointer" }}
+  >
+    <div className="position-relative">
+      <Image
+        src="https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=50&height=50&seq=doctor1&orientation=squarish"
+        roundedCircle
+        width={40}
+        height={40}
+        className="border border-primary object-fit-cover"
+      />
+      <span
+        className="position-absolute bottom-0 end-0 translate-middle p-1 bg-success border border-white rounded-circle"
+        style={{ width: "12px", height: "12px" }}
+      ></span>
+    </div>
+  </div>
+));
 
 const Header = () => {
   const [notifications, setNotifications] = useState(5);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      const response = await logoutUserService();
+
+      if (response.EC === 2) {
+        dispatch(logout());
+
+        localStorage.removeItem("access_Token");
+        localStorage.removeItem("refresh_Token");
+
+        alert("Đăng xuất thành công!");
+        navigate("/login");
+      } else {
+        alert(response.EM || "Đăng xuất thất bại!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi logout:", error);
+      alert("Đã xảy ra lỗi khi đăng xuất.");
+    }
+
+  };
+
+  const handleChangePassword = () => {
+    navigate("/forgot-password");
+  };
 
   return (
     <div
@@ -39,26 +96,23 @@ const Header = () => {
               )}
             </div>
 
-            {/* Doctor Info */}
             <div className="me-4 text-end">
               <div className="fw-medium">BS. Nguyễn Văn An</div>
               <div className="text-muted small">Khoa Tim mạch</div>
             </div>
 
-            {/* Avatar */}
-            <div className="position-relative">
-              <Image
-                src="https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=50&height=50&seq=doctor1&orientation=squarish"
-                roundedCircle
-                width={40}
-                height={40}
-                className="border border-primary object-fit-cover"
-              />
-              <span
-                className="position-absolute bottom-0 end-0 translate-middle p-1 bg-success border border-white rounded-circle"
-                style={{ width: "12px", height: "12px" }}
-              ></span>
-            </div>
+            {/* Avatar Dropdown */}
+            <Dropdown align="end">
+              <Dropdown.Toggle as={CustomToggle} id="dropdown-avatar" />
+
+              <Dropdown.Menu>
+                <Dropdown.Item onClick={handleChangePassword}>
+                  Đổi mật khẩu
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item onClick={handleLogout}>Đăng xuất</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
           </Col>
         </Row>
       </Container>

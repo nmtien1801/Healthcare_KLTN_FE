@@ -44,7 +44,9 @@ const verifyEmailService = (email) => {
 };
 
 const logoutUserService = () => {
-  return customizeAxios.post("/logout");
+  return customizeAxios.post("/logout", {
+    refresh_Token: localStorage.getItem("refresh_Token"),
+  });
 };
 
 const generateQRLoginService = () => {

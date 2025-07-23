@@ -34,29 +34,46 @@ function App() {
   const dispatch = useDispatch();
   let isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const user = useSelector((state) => state.auth.userInfo);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // const fetchDataAccount = async () => {
-  //   if (!user || !user?.access_Token) {
-  //     await dispatch(doGetAccount()).unwrap(); // Chờ API hoàn tất
-  //   }
-  // };
+  const fetchDataAccount = async () => {
+    if (!user || !user?.access_Token) {
+      try {
+        await dispatch(doGetAccount()).unwrap();
+      } catch (error) {
+        // Có thể cho chuyển hướng login nếu cần
+      }
+    }
+    setIsLoading(false);
+  };
 
-  // useEffect(() => {
-  //   fetchDataAccount();
-  // }, [dispatch, user?.access_Token]); // Chỉ phụ thuộc vào dispatch và access_Token
+  useEffect(() => {
+    fetchDataAccount();
+  }, [dispatch, user?.access_Token]); // Chỉ phụ thuộc vào dispatch và access_Token
+
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Router>
       <div className="d-flex flex-column vh-100 w-100 bg-gray-50 text-gray-800 font-sans">
         {/* Header */}
-        <div className="header bg-white shadow-sm w-100 fixed top-0"
+        {isLoggedIn && <div className="header bg-white shadow-sm w-100 fixed top-0"
           style={{ zIndex: 1050 }}>
           <Header />
-        </div>
+        </div>}
+
 
         {/* NavbarLeft */}
         <div className="d-flex flex-grow-1 overflow-hidden"
-          style={{ marginTop: "80px" }}>
+          style={{ marginTop: isLoggedIn ? "80px" : "0px" }}>
           {isLoggedIn && <NavbarLeft />}
 
           {/* Nội dung chính */}
