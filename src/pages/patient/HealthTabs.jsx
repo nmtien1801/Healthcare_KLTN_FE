@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, AlertTriangle } from "lucide-react";
+import axios from "axios";
 
 const following = (userData) => {
   const latestReading = 7.2;
@@ -120,7 +121,49 @@ const char = () => {
   </div>
 }
 
+const Plan = (aiPlan) => {
+  return (
+    <>
+      {/* KẾ HOẠCH THUỐC */}
+      <div className="bg-light border rounded p-3 mt-3">
+        <h5 className="fw-semibold mb-2">📋 Kế hoạch dùng thuốc</h5>
+        <ul className="list-unstyled small mb-3">
+          <li><strong>Sáng:</strong> {aiPlan.thuoc.sang || "Không dùng"}</li>
+          <li><strong>Trưa:</strong> {aiPlan.thuoc.trua || "Không dùng"}</li>
+          <li><strong>Tối:</strong> {aiPlan.thuoc.toi || "Không dùng"}</li>
+        </ul>
+        <div className="d-flex justify-content-end">
+          <button className="btn btn-sm btn-success" onClick={() => alert("Đã áp dụng kế hoạch thuốc!")}>
+            Áp dụng thuốc
+          </button>
+        </div>
+      </div>
+
+      {/* KẾ HOẠCH DINH DƯỠNG */}
+      <div className="bg-light border rounded p-3 mt-3">
+        <h5 className="fw-semibold mb-2">🥗 Kế hoạch dinh dưỡng</h5>
+        <div className="mb-2"><strong>Calo/ngày:</strong> {aiPlan.cheDoAn.caloNgay}</div>
+        <ul className="list-unstyled mt-2 small">
+          <li><strong>Sáng:</strong> {aiPlan.cheDoAn.buaAn.sang.mon} ({aiPlan.cheDoAn.buaAn.sang.kcal} Kcal)</li>
+          <li><strong>Trưa:</strong> {aiPlan.cheDoAn.buaAn.trua.mon} ({aiPlan.cheDoAn.buaAn.trua.kcal} Kcal)</li>
+          <li><strong>Tối:</strong> {aiPlan.cheDoAn.buaAn.toi.mon} ({aiPlan.cheDoAn.buaAn.toi.kcal} Kcal)</li>
+          <li><strong>Phụ:</strong> {aiPlan.cheDoAn.buaAn.phu.mon} ({aiPlan.cheDoAn.buaAn.phu.kcal} Kcal)</li>
+        </ul>
+        <div className="d-flex justify-content-end">
+          <button className="btn btn-sm btn-success" onClick={() => alert("Đã áp dụng chế độ ăn!")}>
+            Áp dụng chế độ ăn
+          </button>
+        </div>
+      </div>
+
+    </>
+  )
+}
+
 const HealthTabs = () => {
+  const [messageInput, setMessageInput] = useState([]);
+  const [aiPlan, setAiPlan] = useState(null);
+
   const [userData, setUserData] = useState({
     name: "Nguyễn Văn A",
     age: 45,
@@ -210,6 +253,97 @@ const HealthTabs = () => {
     }
   }, [userData.bloodSugar]);
 
+  const extractInfo = (text) => {
+    const getValue = (regex, src = text) => {
+      const match = src.match(regex);
+      return match ? match[1].trim() : "";
+    };
+
+    const getNumber = (regex, src = text) => {
+      const val = getValue(regex, src);
+      return val ? parseInt(val, 10) : 0;
+    };
+
+    // --- 1. THUỐC (tách từng bữa từ 1 dòng) ---
+    const thuocRaw = getValue(/- Thuốc \(Tên & Liều\):\s*(.+?)\n/i);
+    const thuocMap = { sáng: "", trưa: "", tối: "" };
+
+    if (thuocRaw) {
+      const sangMatch = thuocRaw.match(/Sáng:\s*(.*?)(?=Trưa:|Tối:|$)/i);
+      const truaMatch = thuocRaw.match(/Trưa:\s*(.*?)(?=Tối:|$)/i);
+      const toiMatch = thuocRaw.match(/Tối:\s*(.*)/i);
+
+      if (sangMatch) thuocMap["sáng"] = sangMatch[1].trim();
+      if (truaMatch) thuocMap["trưa"] = truaMatch[1].trim();
+      if (toiMatch) thuocMap["tối"] = toiMatch[1].trim();
+    }
+
+    // --- 2. CALO ---
+    const caloNgay = getNumber(/Calo\/ngày:\s*(\d+)/i);
+    const kcalSang = getNumber(/Sáng\s*\(Kcal\):\s*(\d+)/i);
+    const kcalTrua = getNumber(/Trưa\s*\(Kcal\):\s*(\d+)/i);
+    const kcalToi = getNumber(/Tối\s*\(Kcal\):\s*(\d+)/i);
+    const kcalPhu = getNumber(/Món phụ\s*\(Kcal\):\s*(\d+)/i);
+
+    // --- 3. MÓN ĂN (tách từ chuỗi dài) ---
+    const monRaw = getValue(/- Món ăn cụ thể:\s*(.*)/i);
+    const monAnMap = { sáng: "", trưa: "", tối: "", phu: "" };
+
+    if (monRaw) {
+      const monSang = monRaw.match(/Sáng:\s*(.*?)(?=Trưa:|Tối:|Phụ:|$)/i);
+      const monTrua = monRaw.match(/Trưa:\s*(.*?)(?=Tối:|Phụ:|$)/i);
+      const monToi = monRaw.match(/Tối:\s*(.*?)(?=Phụ:|$)/i);
+      const monPhu = monRaw.match(/Phụ:\s*(.*)/i);
+
+      if (monSang) monAnMap["sáng"] = monSang[1].trim();
+      if (monTrua) monAnMap["trưa"] = monTrua[1].trim();
+      if (monToi) monAnMap["tối"] = monToi[1].trim();
+      if (monPhu) monAnMap["phu"] = monPhu[1].trim();
+    }
+
+    return {
+      thuoc: {
+        sang: thuocMap["sáng"],
+        trua: thuocMap["trưa"],
+        toi: thuocMap["tối"]
+      },
+      cheDoAn: {
+        caloNgay,
+        buaAn: {
+          sang: { kcal: kcalSang, mon: monAnMap["sáng"] },
+          trua: { kcal: kcalTrua, mon: monAnMap["trưa"] },
+          toi: { kcal: kcalToi, mon: monAnMap["tối"] },
+          phu: { kcal: kcalPhu, mon: monAnMap["phu"] }
+        }
+      }
+    };
+  };
+
+  const handleAiAgent = async () => {
+    if (messageInput.trim() === "") return;
+    setMessageInput("");
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5678/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
+        {
+          message: {
+            text: messageInput,
+          }
+        },
+      );
+
+      const botResponse = res.data.myField;
+
+      let parsedResult = extractInfo(botResponse);
+      setAiPlan(parsedResult);
+
+      console.log("Bot response AI:", parsedResult);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return (
     <div className="d-flex flex-column gap-4">
       {/* tiêu đề */}
@@ -227,13 +361,19 @@ const HealthTabs = () => {
               type="text"
               className="form-control form-control-sm"
               placeholder="Nhập chỉ số đường huyết"
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAiAgent()}
             />
-            <button className="btn btn-sm btn-primary fw-medium">Lưu</button>
+            <button className="btn btn-sm btn-primary fw-medium"
+              onClick={() => handleAiAgent()}
+            >Lưu</button>
           </div>
           <div className="mt-3 text-secondary small d-flex align-items-center">
             <Info size={14} className="me-1" />
             Nhập chỉ số đường huyết theo đơn vị mmol/L
           </div>
+          {aiPlan && Plan(aiPlan)}
         </div>
 
         {/* Thông tin thêm */}
