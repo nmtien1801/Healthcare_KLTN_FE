@@ -17,9 +17,9 @@ import {
   Menu,
   ChevronLeft,
   Utensils,
-  CalendarDays, // Đã thêm import CalendarDays
-  ChevronUp,    // Đã thêm ChevronUp cho chỉ báo thả xuống
-  ChevronDown   // Đã thêm ChevronDown cho chỉ báo thả xuống
+  CalendarDays,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import "./Router.css";
@@ -77,7 +77,7 @@ const Router = (props) => {
                   <span>Lịch hẹn</span>
                 </Nav.Link>
                 <Nav.Link as={NavLink} to="/attendanceTab" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
-                  <CalendarDays size={20} /> {/* Đã sử dụng icon CalendarDays */}
+                  <CalendarDays size={20} />
                   <span>Chấm công</span>
                 </Nav.Link>
 
@@ -101,8 +101,6 @@ const Router = (props) => {
                   <span>Sức khỏe</span>
                 </Nav.Link>
 
-                {/* Phần Dinh dưỡng đã được sửa đổi để bật tắt đúng cách */}
-                {/* Đã thay đổi div bên ngoài thành Nav.Link để có hành vi mục điều hướng nhất quán */}
                 <Nav.Link
                   className="d-flex align-items-center justify-content-between gap-2 nav-link ms-3 navbar-item"
                   onClick={() => setShowNutrition(!showNutrition)}
@@ -112,7 +110,6 @@ const Router = (props) => {
                     <Utensils size={20} />
                     <span>Dinh dưỡng</span>
                   </div>
-                  {/* Thêm mũi tên để chỉ trạng thái mở rộng/thu gọn */}
                   {showNutrition ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </Nav.Link>
 
@@ -134,7 +131,6 @@ const Router = (props) => {
                     </Nav.Link>
                   </Nav>
                 )}
-                {/* Kết thúc phần Dinh dưỡng đã sửa đổi */}
 
 
                 <Nav.Link as={NavLink} to="/bookingTabs" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">

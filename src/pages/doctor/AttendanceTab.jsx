@@ -263,12 +263,6 @@ const SavedSchedulesModal = ({
 
 // CurrentSchedule component (tương tự upcomingAppointment)
 const CurrentSchedule = () => {
-    const [isConfirmed, setIsConfirmed] = useState(true);
-
-    const handleToggleStatus = () => {
-        setIsConfirmed((prev) => !prev);
-    };
-
     return (
         <div className="container my-3">
             <div className="bg-white rounded shadow border p-4">
@@ -320,27 +314,7 @@ const CurrentSchedule = () => {
                                 </div>
                             </div>
 
-                            {/* Status and Actions */}
-                            <div className="d-flex align-items-center justify-content-between">
-                                <div className="d-flex align-items-center">
-                                    <CheckCircle
-                                        className={isConfirmed ? "text-success me-2" : "text-warning me-2"}
-                                        size={18}
-                                    />
-                                    <span
-                                        className={isConfirmed ? "text-success fw-medium" : "text-warning fw-medium"}
-                                    >
-                                        {isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
-                                    </span>
-                                </div>
-                                <button
-                                    className={`btn btn-sm rounded-pill px-3 py-2 ${isConfirmed ? "btn-outline-danger" : "btn-outline-primary"
-                                        }`}
-                                    onClick={handleToggleStatus}
-                                >
-                                    {isConfirmed ? "Hủy lịch" : "Xác nhận"}
-                                </button>
-                            </div>
+
                         </div>
                     </div>
 
