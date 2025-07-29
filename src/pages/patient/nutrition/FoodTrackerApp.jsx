@@ -1,54 +1,14 @@
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, TrendingUp, TrendingDown } from 'lucide-react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
 
-export default function FoodTrackerApp() {
-    const [activeTab, setActiveTab] = useState('menu');
-    const [foods, setFoods] = useState([
-        {
-            icon: '🍳',
-            name: 'Trứng gà chiên',
-            details: '94g • 90 cal',
-            macros: ['6.5g', '1g', '7.1g'],
-            colors: ['danger', 'info', 'warning'],
-            checked: true,
-            meal: 'sáng'
-        },
-        {
-            icon: '🍅',
-            name: 'Quả cà chua',
-            details: '90g • 16 cal',
-            macros: ['0.7g', '3.5g', '0g'],
-            colors: ['danger', 'info', 'warning'],
-            checked: true,
-            meal: 'trưa'
-        },
-        {
-            icon: '🍞',
-            name: 'Bánh mì Sandwich lát',
-            details: '30g • 144 cal',
-            macros: ['5g', '25.9g', '2.5g'],
-            colors: ['danger', 'info', 'warning'],
-            checked: false,
-            meal: 'ăn vặt'
-        },
-        {
-            icon: '🥬',
-            name: 'Rau xà lách',
-            details: '80g • 12 cal',
-            macros: ['1.4g', '2.9g', '0.2g'],
-            colors: ['danger', 'info', 'warning'],
-            checked: false,
-            meal: 'tối'
-        }
-    ]);
-
-
-    const toggleChecked = (index) => {
-        const updatedFoods = [...foods];
-        updatedFoods[index].checked = !updatedFoods[index].checked;
-        setFoods(updatedFoods);
+const StatsGrid = (foods) => {
+    const targetCalo = 2117; // Mục tiêu calo
+    const macroRatios = {
+        protein: 0.2, // 20%
+        carbs: 0.5,   // 50%
+        fat: 0.3      // 30%
     };
 
     const calculateTotals = () => {
@@ -56,13 +16,6 @@ export default function FoodTrackerApp() {
         let totalProtein = 0;
         let totalCarbs = 0;
         let totalFat = 0;
-
-        const caloriesByMeal = {
-            sáng: 0,
-            trưa: 0,
-            tối: 0,
-            'ăn vặt': 0
-        };
 
         foods.forEach(food => {
             if (food.checked) {
@@ -73,10 +26,6 @@ export default function FoodTrackerApp() {
                 totalCarbs += carbs;
                 totalFat += fat;
                 totalCalo += cal;
-
-                if (food.meal in caloriesByMeal) {
-                    caloriesByMeal[food.meal] += cal;
-                }
             }
         });
 
@@ -85,28 +34,158 @@ export default function FoodTrackerApp() {
             totalProtein,
             totalCarbs,
             totalFat,
-            caloriesByMeal
         };
-    };
-
-
-    const targetCalo = 2117; // Mục tiêu calo
-    const macroRatios = {
-        protein: 0.2, // 20%
-        carbs: 0.5,   // 50%
-        fat: 0.3      // 30%
     };
 
     const targetProtein = Math.round((targetCalo * macroRatios.protein) / 4);
     const targetCarbs = Math.round((targetCalo * macroRatios.carbs) / 4);
     const targetFat = Math.round((targetCalo * macroRatios.fat) / 9);
-    const { totalCalo, totalProtein, totalCarbs, totalFat, caloriesByMeal } = calculateTotals();
+    const { totalCalo, totalProtein, totalCarbs, totalFat } = calculateTotals();
+
+    const stats = [
+        {
+            title: "Calories hôm nay",
+            value: totalCalo,
+            target: targetCalo,
+            percentage: Math.round((totalCalo / targetCalo) * 100),
+            trend: "up",
+            color: "primary",
+        },
+        {
+            title: "Chất đạm",
+            value: totalProtein,
+            target: targetProtein,
+            percentage: Math.round((totalProtein / targetProtein) * 100),
+            trend: "up",
+            color: "success",
+        },
+        {
+            title: "Đường bột",
+            value: totalCarbs,
+            target: targetCarbs,
+            percentage: Math.round((totalCarbs / targetCarbs) * 100),
+            trend: "down",
+            color: "warning",
+        },
+        {
+            title: "Chất béo",
+            value: totalFat,
+            target: targetFat,
+            percentage: Math.round((totalFat / targetFat) * 100),
+            trend: "up",
+            color: "danger",
+        },
+    ];
+
+    return (
+        <div className="row g-4">
+            {stats.map((stat, index) => (
+                <div key={index} className="col-12 col-md-6 col-lg-3">
+                    <div className="bg-white rounded shadow border p-4 h-100">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h6 className="text-muted mb-0">{stat.title}</h6>
+                            {stat.trend === "up" ? (
+                                <TrendingUp size={16} color="green" />
+                            ) : (
+                                <TrendingDown size={16} color="red" />
+                            )}
+                        </div>
+
+                        <div className="mb-3">
+                            <div className="d-flex align-items-baseline gap-2">
+                                <span className="fs-4 fw-bold text-dark">{stat.value}</span>
+                                <span className="text-muted small">/ {stat.target}</span>
+                            </div>
+                        </div>
+
+                        <div className="progress mb-2" style={{ height: '8px' }}>
+                            <div
+                                className={`progress-bar bg-${stat.color}`}
+                                role="progressbar"
+                                style={{ width: `${stat.percentage}%` }}
+                                aria-valuenow={stat.percentage}
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            ></div>
+                        </div>
+                        <p className="text-muted small mb-0">{stat.percentage}% mục tiêu</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+
+export default function FoodTrackerApp() {
+    const [foods, setFoods] = useState([
+        {
+            icon: '🍳',
+            name: 'Trứng gà chiên',
+            details: '94g • 90 cal',
+            macros: ['6.5g', '1g', '7.1g'],
+            colors: ['success', 'warning', 'danger'],
+            checked: true,
+            meal: 'sáng'
+        },
+        {
+            icon: '🍅',
+            name: 'Quả cà chua',
+            details: '90g • 16 cal',
+            macros: ['0.7g', '3.5g', '0g'],
+            colors: ['success', 'warning', 'danger'],
+            checked: true,
+            meal: 'trưa'
+        },
+        {
+            icon: '🍞',
+            name: 'Bánh mì Sandwich lát',
+            details: '30g • 144 cal',
+            macros: ['5g', '25.9g', '2.5g'],
+            colors: ['success', 'warning', 'danger'],
+            checked: false,
+            meal: 'ăn vặt'
+        },
+        {
+            icon: '🥬',
+            name: 'Rau xà lách',
+            details: '80g • 12 cal',
+            macros: ['1.4g', '2.9g', '0.2g'],
+            colors: ['success', 'warning', 'danger'],
+            checked: false,
+            meal: 'tối'
+        }
+    ]);
+
+    const toggleChecked = (index) => {
+        const updatedFoods = [...foods];
+        updatedFoods[index].checked = !updatedFoods[index].checked;
+        setFoods(updatedFoods);
+    };
+
+    const caloriesByMeal = (foods) => {
+        const result = {
+            sáng: 0,
+            trưa: 0,
+            tối: 0,
+            'ăn vặt': 0
+        };
+
+        foods.forEach((food) => {
+            if (food.checked) {
+                const cal = parseFloat(food.details.split('•')[1].replace('cal', '').trim());
+                result[food.meal] += cal;
+            }
+        });
+
+        return result;
+    };
 
     const renderMeal = (mealLabel) => (
-        <div className="mb-4">
+        <div className="mb-4 mt-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5>Buổi {mealLabel}</h5>
-                <small className="text-white">{caloriesByMeal[mealLabel] || 0} cal</small>
+                <small>{caloriesByMeal(foods)[mealLabel] || 0} cal</small>
             </div>
 
             {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
@@ -145,108 +224,12 @@ export default function FoodTrackerApp() {
         <div className="min-vh-100 bg-white text-dark p-3">
             {/* Overview */}
             <div className="my-2">
-                <div className='gradient rounded shadow-sm border p-3 mb-4'>
-                    <div className="d-flex justify-content-between align-items-center ">
-                        <div>
-                            <h5>Tổng quan</h5>
-                            <small className="text-white">Mục tiêu cao</small>
-                        </div>
-                    </div>
-
-                    {/* Calorie Circle (static SVG) */}
-                    <div className="d-flex justify-content-center my-3">
-                        <div className="position-relative" style={{ width: '200px', height: '200px' }}>
-                            <svg className="w-100 h-100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                                <circle cx="50" cy="50" r="45" stroke="#374151" strokeWidth="8" fill="none" />
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r="45"
-                                    stroke="#9333ea"
-                                    strokeWidth="8"
-                                    fill="none"
-                                    strokeDasharray={`${(totalCalo / targetCalo) * 283} 283`}
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            <div className="position-absolute top-50 start-50 translate-middle text-center">
-                                <h2 className="fw-bold">{targetCalo - totalCalo}</h2>
-                                <small className="text-white">Calo còn lại</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="row text-center mb-4">
-                        <div className="col">
-                            <div className="fs-4 fw-bold">{targetCalo}</div>
-                            <small className="text-white">
-                                <span className="d-inline-block rounded-circle bg-secondary me-1" style={{ width: 8, height: 8 }}></span>
-                                Mục tiêu
-                            </small>
-                        </div>
-                        <div className="col">
-                            <div className="fs-4 fw-bold">{totalCalo}</div>
-                            <small className="text-white">
-                                <span className="d-inline-block rounded-circle bg-primary me-1" style={{ width: 8, height: 8 }}></span>
-                                Đã nạp
-                            </small>
-                        </div>
-                    </div>
-
-                    {/* Macros */}
-                    <div className="row text-center mb-4">
-                        <div className="col">
-                            <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                                <span className="d-inline-block rounded-circle bg-danger" style={{ width: 10, height: 10 }}></span>
-                                <span>Chất đạm</span>
-                            </div>
-                            <ProgressBar
-                                now={(totalProtein / targetProtein) * 100}
-                                variant="danger"
-                                className="mb-1"
-                                label={`${Math.round((totalProtein / targetProtein) * 100)}%`}
-                            />
-                            <small>
-                                {totalProtein.toFixed(1)} <span className="text-white">/ {targetProtein}g</span>
-                            </small>
-                        </div>
-
-                        <div className="col">
-                            <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                                <span className="d-inline-block rounded-circle bg-info" style={{ width: 10, height: 10 }}></span>
-                                <span>Đường bột</span>
-                            </div>
-                            <ProgressBar
-                                now={(totalCarbs / targetCarbs) * 100}
-                                variant="info"
-                                className="mb-1"
-                                label={`${Math.round((totalCarbs / targetCarbs) * 100)}%`}
-                            />
-                            <small>
-                                {totalCarbs.toFixed(1)} <span className="text-white">/ {targetCarbs}g</span>
-                            </small>
-                        </div>
-
-                        <div className="col">
-                            <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                                <span className="d-inline-block rounded-circle bg-warning" style={{ width: 10, height: 10 }}></span>
-                                <span>Chất béo</span>
-                            </div>
-                            <ProgressBar
-                                now={(totalFat / targetFat) * 100}
-                                variant="warning"
-                                className="mb-1"
-                                label={`${Math.round((totalFat / targetFat) * 100)}%`}
-                            />
-                            <small>
-                                {totalFat.toFixed(1)} <span className="text-white">/ {targetFat}g</span>
-                            </small>
-                        </div>
+                <div className="d-flex justify-content-between align-items-center ">
+                    <div className='mb-4'>
+                        <h4>Tổng quan</h4>
                     </div>
                 </div>
-
-
+                {StatsGrid(foods)}
 
                 {renderMeal('sáng')}
                 {renderMeal('trưa')}
