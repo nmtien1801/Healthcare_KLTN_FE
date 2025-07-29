@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as echarts from "echarts";
 import { Check, MessageCircleMore, X, Bot, Send } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -34,27 +35,37 @@ const Home = () => {
     setMedications(updated);
   };
 
-  const sendMessage = () => {
+
+  const sendMessage = async () => {
     if (messageInput.trim() === "") return;
 
     setChatMessages((prev) => [...prev, { text: messageInput, sender: "user" }]);
+    const userMessage = messageInput;
     setMessageInput("");
 
-    setTimeout(() => {
-      let response = "Tôi sẽ ghi nhận thông tin và chuyển đến bác sĩ.";
-      const lower = messageInput.toLowerCase();
+    try {
+      const res = await axios.post(
+        "https://nmtien1801.app.n8n.cloud/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
+        {
+          message: {
+            text: userMessage,
+          }
+        },
+      );
 
-      if (lower.includes("đường huyết")) {
-        response = "Chỉ số bình thường khi đói: 3.9 - 5.5 mmol/L. Sau ăn: không quá 7.8 mmol/L.";
-      } else if (lower.includes("ăn")) {
-        response = "Bạn nên ăn nhiều rau xanh, hạn chế đường và tinh bột.";
-      } else if (lower.includes("thuốc")) {
-        response = "Metformin giúp kiểm soát đường huyết. Nên uống sau bữa ăn.";
-      }
+      const botResponse = res.data.myField;
+      console.log("Bot response:", res);
 
-      setChatMessages((prev) => [...prev, { text: response, sender: "bot" }]);
-    }, 800);
+      setChatMessages((prev) => [...prev, { text: botResponse, sender: "bot" }]);
+    } catch (err) {
+      console.error(err);
+      setChatMessages((prev) => [
+        ...prev,
+        { text: "Lỗi kết nối đến máy chủ.", sender: "bot" }
+      ]);
+    }
   };
+
 
   return (
     <div className="bg-light min-vh-100 p-3">
