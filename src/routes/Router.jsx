@@ -106,7 +106,7 @@ const Router = (props) => {
                   onClick={() => setShowNutrition(!showNutrition)}
                   style={{ cursor: "pointer" }}
                 >
-                  <div className="d-flex align-items-center gap-2">
+                  <div className="d-flex align-items-center gap-2 navbar-item">
                     <Utensils size={20} />
                     <span>Dinh dưỡng</span>
                   </div>
@@ -114,7 +114,7 @@ const Router = (props) => {
                 </Nav.Link>
 
                 {showNutrition && (
-                  <Nav className="flex-column ms-4 mt-1">
+                  <Nav className="flex-column ms-4 mt-1 navbar-item">
                     <Nav.Link
                       as={NavLink}
                       to="/nutrition"
