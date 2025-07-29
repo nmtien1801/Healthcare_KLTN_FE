@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, AlertTriangle } from "lucide-react";
 import axios from "axios";
+import { useSelector, useDispatch } from "react-redux";
 
 const following = (userData) => {
   const latestReading = 7.2;
@@ -122,6 +123,33 @@ const char = () => {
 }
 
 const Plan = (aiPlan) => {
+  let user = useSelector((state) => state.auth.userInfo);
+
+  const applyMedicine = async (medicinePlan) => {
+    let data = {
+      email: user.email,
+      medicinePlan: medicinePlan,
+    }
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
+        {
+          message: {
+            text: data,
+          }
+        },
+      );
+
+      const botResponse = res.data.myField;
+
+
+      console.log("Bot response AI:", botResponse);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return (
     <>
       {/* KẾ HOẠCH THUỐC */}
@@ -133,7 +161,7 @@ const Plan = (aiPlan) => {
           <li><strong>Tối:</strong> {aiPlan.thuoc.toi || "Không dùng"}</li>
         </ul>
         <div className="d-flex justify-content-end">
-          <button className="btn btn-sm btn-success" onClick={() => alert("Đã áp dụng kế hoạch thuốc!")}>
+          <button className="btn btn-sm btn-success" onClick={() => applyMedicine(aiPlan.thuoc)}>
             Áp dụng thuốc
           </button>
         </div>
