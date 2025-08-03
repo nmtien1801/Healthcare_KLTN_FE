@@ -4,7 +4,7 @@ import { FaHeartbeat, FaBell } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
-import { logoutUserService } from "../apis/authService";
+import { getAuth, signOut } from "firebase/auth";
 
 const CustomToggle = forwardRef(({ onClick }, ref) => (
   <div
@@ -32,28 +32,20 @@ const CustomToggle = forwardRef(({ onClick }, ref) => (
 ));
 
 const Header = () => {
+  const auth = getAuth();
   const [notifications, setNotifications] = useState(5);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      const response = await logoutUserService();
-
-      if (response.EC === 2) {
-        dispatch(logout());
-
-        localStorage.removeItem("access_Token");
-        localStorage.removeItem("refresh_Token");
-
-        alert("Đăng xuất thành công!");
-        navigate("/login");
-      } else {
-        alert(response.EM || "Đăng xuất thất bại!");
-      }
+      await signOut(auth); // Firebase sign out
+      dispatch(logout());  // Xóa Redux user
+      localStorage.removeItem("access_Token");
+      localStorage.removeItem("refresh_Token");
+      navigate("/login");
     } catch (error) {
-      console.error("Lỗi khi logout:", error);
-      alert("Đã xảy ra lỗi khi đăng xuất.");
+      console.error("Lỗi khi logout: ", error);
     }
 
   };

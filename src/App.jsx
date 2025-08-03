@@ -14,7 +14,7 @@ import Login from "./pages/auth/login";
 import NavbarLeft from "./routes/Router";
 import Register from "./pages/auth/register";
 import { useSelector, useDispatch } from "react-redux";
-import { doGetAccount } from "./redux/authSlice";
+import { setUser, clearUser } from "./redux/authSlice";
 import ResetPassword from "./pages/auth/ResetPassword";
 import './App.css'
 import HealthTabs from "./pages/patient/HealthTabs";
@@ -29,43 +29,38 @@ import SettingTabs from "./pages/doctor/SettingTabs";
 import Header from "./routes/Header";
 import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
 import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
+import { getAuth } from 'firebase/auth';
 
 function App() {
   const dispatch = useDispatch();
-  let isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const user = useSelector((state) => state.auth.userInfo);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDataAccount = async () => {
-    if (!user || !user?.access_Token) {
-      try {
-        await dispatch(doGetAccount()).unwrap();
-      } catch (error) {
-        // Có thể cho chuyển hướng login nếu cần
-      }
-    }
-    setIsLoading(false);
-  };
+  const auth = getAuth();
 
+  // authContext -> duy trì trạng thái đăng nhập của người dùng
   useEffect(() => {
-    fetchDataAccount();
-  }, [dispatch, user?.access_Token]); // Chỉ phụ thuộc vào dispatch và access_Token
+    const unsubscribe = auth.onIdTokenChanged((user) => {
+      if (user) {
+        dispatch(setUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        }));
+        // localStorage.setItem("access_Token", user.accessToken);
+      } else {
+        dispatch(clearUser());
+      }
+    });
 
-  if (isLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+    return () => unsubscribe();
+  }, [auth, dispatch]);
 
   return (
     <Router>
       <div className="d-flex flex-column vh-100 w-100 bg-gray-50 text-gray-800 font-sans">
         {/* Header */}
-        {isLoggedIn && <div className="header bg-white shadow-sm w-100 fixed top-0"
+        {user && <div className="header bg-white shadow-sm w-100 fixed top-0"
           style={{ zIndex: 1050 }}>
           <Header />
         </div>}
@@ -73,8 +68,8 @@ function App() {
 
         {/* NavbarLeft */}
         <div className="d-flex flex-grow-1 overflow-hidden"
-          style={{ marginTop: isLoggedIn ? "80px" : "0px" }}>
-          {isLoggedIn && <NavbarLeft />}
+          style={{ marginTop: user ? "80px" : "0px" }}>
+          {user && <NavbarLeft />}
 
           {/* Nội dung chính */}
           <div className="content flex-grow-1 overflow-auto p-3">

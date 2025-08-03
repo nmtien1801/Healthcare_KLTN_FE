@@ -5,6 +5,8 @@ import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Login } from "../../redux/authSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, provider } from '../../../firebase';
 
 export default function LoginForm() {
   const dispatch = useDispatch();
@@ -25,20 +27,59 @@ export default function LoginForm() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleEmailAndPasswordLogin = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    let res = await dispatch(Login(formData));
+    try {
+      let result = await signInWithEmailAndPassword(auth, formData.email, formData.password);
 
-    if (res.payload.EC === 0) {
-      if (res.payload.DT.role === "doctor") {
-        navigate("/overviewTab");
+      let user = result.user;
+      if (user) {
+        let res = await dispatch(Login({ user }));
+        if (res.payload.EC === 0) {
+          if (res.payload.DT.role === "doctor") {
+            navigate("/overviewTab");
 
-      } else if (res.payload.DT.role === "patient") {
-        navigate("/home");
+          } else if (res.payload.DT.role === "patient") {
+            navigate("/home");
+          }
+          // localStorage.setItem("access_Token", res.payload.DT.access_Token);
+          // localStorage.setItem("refresh_Token", res.payload.DT.refresh_Token);
+        }
       }
-      localStorage.setItem("access_Token", res.payload.DT.access_Token);
-      localStorage.setItem("refresh_Token", res.payload.DT.refresh_Token);
+    } catch (error) {
+      console.error(`Đăng nhập thất bại: ${error.code} - ${error.message}`);
+      // Xử lý lỗi cụ thể
+      switch (error.code) {
+        case 'auth/invalid-credential':
+          alert('Email này đã được đăng ký với google. Vui lòng đăng nhập bằng Google!');
+          break;
+
+        default:
+          alert(`Lỗi không xác định: ${error.message}`);
+      }
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      let result = await signInWithPopup(auth, provider);
+
+      let user = result.user;
+      if (user) {
+        let res = await dispatch(Login({ user }));
+        if (res.payload.EC === 0) {
+          if (res.payload.DT.role === "doctor") {
+            navigate("/overviewTab");
+
+          } else if (res.payload.DT.role === "patient") {
+            navigate("/home");
+          }
+          // localStorage.setItem("access_Token", res.payload.DT.access_Token);
+          // localStorage.setItem("refresh_Token", res.payload.DT.refresh_Token);
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
     }
   };
 
@@ -56,7 +97,7 @@ export default function LoginForm() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleEmailAndPasswordLogin}>
             {/* Phone Number Input */}
             <div className="mb-3">
               <div className="input-group">
@@ -93,27 +134,6 @@ export default function LoginForm() {
               </div>
             </div>
 
-            {/* Captcha Input */}
-            {/* <div className="mb-3">
-              <div className="input-group">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Mã kiểm tra"
-                  name="captcha"
-                  value={formData.captcha}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => console.log("Refresh captcha")}
-                >
-                  <RefreshCw size={20} />
-                </button>
-              </div>
-            </div> */}
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -122,6 +142,22 @@ export default function LoginForm() {
             >
               Đăng nhập
             </button>
+
+            {/* Google Login Button */}
+            <div className="text-center mb-3">
+              <button
+                type="button"
+                className="btn btn-outline-danger w-100 py-2"
+                onClick={handleGoogleLogin}
+              >
+                <img
+                  src="https://developers.google.com/identity/images/g-logo.png"
+                  alt="Google"
+                  style={{ width: "20px", marginRight: "10px", verticalAlign: "middle" }}
+                />
+                Đăng nhập với Google
+              </button>
+            </div>
 
             {/* Forgot Password Link */}
             <div className="text-center mb-3">
