@@ -42,8 +42,7 @@ export default function LoginForm() {
           } else if (res.payload.DT.role === "patient") {
             navigate("/home");
           }
-          // localStorage.setItem("access_Token", res.payload.DT.access_Token);
-          // localStorage.setItem("refresh_Token", res.payload.DT.refresh_Token);
+          localStorage.setItem("access_Token", user.accessToken);
         }
       }
     } catch (error) {
@@ -74,8 +73,7 @@ export default function LoginForm() {
           } else if (res.payload.DT.role === "patient") {
             navigate("/home");
           }
-          // localStorage.setItem("access_Token", res.payload.DT.access_Token);
-          // localStorage.setItem("refresh_Token", res.payload.DT.refresh_Token);
+          localStorage.setItem("access_Token", user.accessToken);
         }
       }
     } catch (error) {

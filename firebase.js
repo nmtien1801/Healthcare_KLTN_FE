@@ -5,15 +5,14 @@ import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDcis3qmp7pQmd-pbnQ4ZhwcL9Q6SjDrSw",
-  authDomain: "test-chat-firebase-8ef22.firebaseapp.com",
-  projectId: "test-chat-firebase-8ef22",
-  storageBucket: "test-chat-firebase-8ef22.firebasestorage.app",
-  messagingSenderId: "1099403948301",
-  appId: "1:1099403948301:web:fa16665eb9dfb40ec44044",
-  measurementId: "G-6SVYBYHMZD",
-  databaseURL:
-    "https://test-chat-firebase-8ef22-default-rtdb.asia-southeast1.firebasedatabase.app",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 };
 
 // Khởi tạo Firebase

@@ -3,7 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
+  useNavigate,
 } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
@@ -34,6 +34,7 @@ import { getAuth } from 'firebase/auth';
 function App() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.userInfo);
+  const [isLoading, setIsLoading] = useState(true);
 
   const auth = getAuth();
 
@@ -47,14 +48,33 @@ function App() {
           displayName: user.displayName,
           photoURL: user.photoURL,
         }));
-        // localStorage.setItem("access_Token", user.accessToken);
+        if (user.accessToken !== localStorage.getItem('access_Token')) {
+          localStorage.setItem("access_Token", user.accessToken);
+          window.location.reload();
+        }
+        setIsLoading(false);
+        return;
       } else {
-        dispatch(clearUser());
+        // reset user info
+        console.log('reset');
+        setIsLoading(false);
+        dispatch(setUser(null));
+        localStorage.clear();
       }
     });
 
     return () => unsubscribe();
   }, [auth, dispatch]);
+
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Router>
