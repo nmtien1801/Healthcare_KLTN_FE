@@ -5,7 +5,7 @@ import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Login } from "../../redux/authSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { signInWithPopup, signInWithEmailAndPassword, fetchSignInMethodsForEmail, linkWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, provider } from '../../../firebase';
 
 export default function LoginForm() {
