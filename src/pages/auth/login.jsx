@@ -5,7 +5,7 @@ import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Login } from "../../redux/authSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword, fetchSignInMethodsForEmail, linkWithPopup } from 'firebase/auth';
 import { auth, provider } from '../../../firebase';
 
 export default function LoginForm() {
@@ -35,6 +35,7 @@ export default function LoginForm() {
       let user = result.user;
       if (user) {
         let res = await dispatch(Login({ user }));
+
         if (res.payload.EC === 0) {
           if (res.payload.DT.role === "doctor") {
             navigate("/overviewTab");
@@ -50,9 +51,14 @@ export default function LoginForm() {
       // Xử lý lỗi cụ thể
       switch (error.code) {
         case 'auth/invalid-credential':
-          alert('Email này đã được đăng ký với google. Vui lòng đăng nhập bằng Google!');
+          alert('Email hoặc mật khẩu không đúng, hoặc tài khoản này đã bị xoá mật khẩu. Nếu trước đây bạn đăng nhập Google, hãy dùng nút "Đăng nhập Google" hoặc đặt lại mật khẩu.');
           break;
-
+        case 'auth/user-not-found':
+          alert('Không tìm thấy tài khoản. Vui lòng đăng ký.');
+          break;
+        case 'auth/wrong-password':
+          alert('Sai mật khẩu.');
+          break;
         default:
           alert(`Lỗi không xác định: ${error.message}`);
       }

@@ -50,7 +50,7 @@ function App() {
         }));
         if (user.accessToken !== localStorage.getItem('access_Token')) {
           localStorage.setItem("access_Token", user.accessToken);
-          window.location.reload();
+          // window.location.reload();
         }
         setIsLoading(false);
         return;
@@ -75,6 +75,7 @@ function App() {
       </div>
     );
   }
+console.log('user', user);
 
   return (
     <Router>
