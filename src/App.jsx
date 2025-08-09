@@ -30,6 +30,7 @@ import Header from "./routes/Header";
 import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
 import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
 import { getAuth } from 'firebase/auth';
+import AttendanceTab from "./pages/doctor/AttendanceTab";
 
 function App() {
   const dispatch = useDispatch();
@@ -105,6 +106,7 @@ console.log('user', user);
               <Route path="/appointmentTab" element={<AppointmentTab />} />
               <Route path="/settingTabs" element={<SettingTabs />} />
               <Route path="/informationTab" element={<InformationTab />} />
+              <Route path="/attendanceTab" element={<AttendanceTab />} />
 
               <Route path="/home" element={<Home />} />
               <Route path="/healthTabs" element={<HealthTabs />} />
@@ -112,6 +114,7 @@ console.log('user', user);
               <Route path="/suggestedFood" element={<SuggestedFood />} />
               <Route path="/bookingTabs" element={<BookingTabs />} />
               <Route path="/personalTabs" element={<PersonalTabs />} />
+
 
             </Routes>
           </div>
