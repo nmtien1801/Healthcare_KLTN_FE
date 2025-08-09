@@ -349,6 +349,26 @@ const HealthTabs = () => {
 
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
+
+    // xử lý dữ liệu
+    let result = '';
+
+    if (messageInput < 3.9) {
+      result = '<3.9 (Hạ đường huyết)';
+    } else if (messageInput >= 3.9 && messageInput <= 5.6) {
+      result = '3.9 – 5.6 (Bình thường)';
+    } else if (messageInput > 5.6 && messageInput <= 7.8) {
+      result = '5.7 – 7.8 (Tiền tiểu đường)';
+    } else if (messageInput > 7.8 && messageInput <= 10) {
+      result = '7.8 – 10 (Tiểu đường)';
+    } else if (messageInput > 10 && messageInput <= 13.9) {
+      result = '10 – 13.9 (Tiểu đường cao)';
+    } else if (messageInput > 13.9) {
+      result = '>13.9 (Nguy hiểm)';
+    } else {
+      result = 'Giá trị không hợp lệ';
+    }
+
     setMessageInput("");
 
     try {
@@ -356,7 +376,8 @@ const HealthTabs = () => {
         "http://localhost:5678/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
         {
           message: {
-            text: messageInput,
+           input: messageInput, 
+           type: result
           }
         },
       );
