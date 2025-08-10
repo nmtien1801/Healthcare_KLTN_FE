@@ -122,9 +122,7 @@ const char = () => {
   </div>
 }
 
-const Plan = (aiPlan) => {
-  let user = useSelector((state) => state.auth.userInfo);
-
+const Plan = (aiPlan, user) => {
   const applyMedicine = async (medicinePlan) => {
     let data = {
       email: user.email,
@@ -149,6 +147,7 @@ const Plan = (aiPlan) => {
       console.error(err);
     }
   }
+console.log("sấccsacsac ", aiPlan);
 
   return (
     <>
@@ -156,9 +155,9 @@ const Plan = (aiPlan) => {
       <div className="bg-light border rounded p-3 mt-3">
         <h5 className="fw-semibold mb-2">📋 Kế hoạch dùng thuốc</h5>
         <ul className="list-unstyled small mb-3">
-          <li><strong>Sáng:</strong> {aiPlan.thuoc.sang || "Không dùng"}</li>
-          <li><strong>Trưa:</strong> {aiPlan.thuoc.trua || "Không dùng"}</li>
-          <li><strong>Tối:</strong> {aiPlan.thuoc.toi || "Không dùng"}</li>
+          <li><strong>Sáng:</strong> {aiPlan.thuoc.sang?.length > 0 ? aiPlan.thuoc.sang : "Không dùng"}</li>
+          <li><strong>Trưa:</strong> {aiPlan.thuoc.trua.length > 0 ?  aiPlan.thuoc.trua : "Không dùng"}</li>
+          <li><strong>Tối:</strong> {aiPlan.thuoc.toi.length > 0  ? aiPlan.thuoc.toi : "Không dùng"}</li>
         </ul>
         <div className="d-flex justify-content-end">
           <button className="btn btn-sm btn-success" onClick={() => applyMedicine(aiPlan.thuoc)}>
@@ -191,6 +190,7 @@ const Plan = (aiPlan) => {
 const HealthTabs = () => {
   const [messageInput, setMessageInput] = useState([]);
   const [aiPlan, setAiPlan] = useState(null);
+  let user = useSelector((state) => state.auth.userInfo);
 
   const [userData, setUserData] = useState({
     name: "Nguyễn Văn A",
@@ -281,74 +281,28 @@ const HealthTabs = () => {
     }
   }, [userData.bloodSugar]);
 
-  const extractInfo = (text) => {
-    const getValue = (regex, src = text) => {
-      const match = src.match(regex);
-      return match ? match[1].trim() : "";
-    };
-
-    const getNumber = (regex, src = text) => {
-      const val = getValue(regex, src);
-      return val ? parseInt(val, 10) : 0;
-    };
-
-    // --- 1. THUỐC (tách từng bữa từ 1 dòng) ---
-    const thuocRaw = getValue(/- Thuốc \(Tên & Liều\):\s*(.+?)\n/i);
-    const thuocMap = { sáng: "", trưa: "", tối: "" };
-
-    if (thuocRaw) {
-      const sangMatch = thuocRaw.match(/Sáng:\s*(.*?)(?=Trưa:|Tối:|$)/i);
-      const truaMatch = thuocRaw.match(/Trưa:\s*(.*?)(?=Tối:|$)/i);
-      const toiMatch = thuocRaw.match(/Tối:\s*(.*)/i);
-
-      if (sangMatch) thuocMap["sáng"] = sangMatch[1].trim();
-      if (truaMatch) thuocMap["trưa"] = truaMatch[1].trim();
-      if (toiMatch) thuocMap["tối"] = toiMatch[1].trim();
-    }
-
-    // --- 2. CALO ---
-    const caloNgay = getNumber(/Calo\/ngày:\s*(\d+)/i);
-    const kcalSang = getNumber(/Sáng\s*\(Kcal\):\s*(\d+)/i);
-    const kcalTrua = getNumber(/Trưa\s*\(Kcal\):\s*(\d+)/i);
-    const kcalToi = getNumber(/Tối\s*\(Kcal\):\s*(\d+)/i);
-    const kcalPhu = getNumber(/Món phụ\s*\(Kcal\):\s*(\d+)/i);
-
-    // --- 3. MÓN ĂN (tách từ chuỗi dài) ---
-    const monRaw = getValue(/- Món ăn cụ thể:\s*(.*)/i);
-    const monAnMap = { sáng: "", trưa: "", tối: "", phu: "" };
-
-    if (monRaw) {
-      const monSang = monRaw.match(/Sáng:\s*(.*?)(?=Trưa:|Tối:|Phụ:|$)/i);
-      const monTrua = monRaw.match(/Trưa:\s*(.*?)(?=Tối:|Phụ:|$)/i);
-      const monToi = monRaw.match(/Tối:\s*(.*?)(?=Phụ:|$)/i);
-      const monPhu = monRaw.match(/Phụ:\s*(.*)/i);
-
-      if (monSang) monAnMap["sáng"] = monSang[1].trim();
-      if (monTrua) monAnMap["trưa"] = monTrua[1].trim();
-      if (monToi) monAnMap["tối"] = monToi[1].trim();
-      if (monPhu) monAnMap["phu"] = monPhu[1].trim();
-    }
-
-    return {
-      thuoc: {
-        sang: thuocMap["sáng"],
-        trua: thuocMap["trưa"],
-        toi: thuocMap["tối"]
-      },
-      cheDoAn: {
-        caloNgay,
-        buaAn: {
-          sang: { kcal: kcalSang, mon: monAnMap["sáng"] },
-          trua: { kcal: kcalTrua, mon: monAnMap["trưa"] },
-          toi: { kcal: kcalToi, mon: monAnMap["tối"] },
-          phu: { kcal: kcalPhu, mon: monAnMap["phu"] }
-        }
-      }
-    };
-  };
-
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
+
+    // xử lý dữ liệu
+    let result = '';
+
+    if (messageInput < 3.9) {
+      result = '<3.9 (Hạ đường huyết)';
+    } else if (messageInput >= 3.9 && messageInput <= 5.6) {
+      result = '3.9 – 5.6 (Bình thường)';
+    } else if (messageInput > 5.6 && messageInput <= 7.8) {
+      result = '5.7 – 7.8 (Tiền tiểu đường)';
+    } else if (messageInput > 7.8 && messageInput <= 10) {
+      result = '7.8 – 10 (Tiểu đường)';
+    } else if (messageInput > 10 && messageInput <= 13.9) {
+      result = '10 – 13.9 (Tiểu đường cao)';
+    } else if (messageInput > 13.9) {
+      result = '>13.9 (Nguy hiểm)';
+    } else {
+      result = 'Giá trị không hợp lệ';
+    }
+
     setMessageInput("");
 
     try {
@@ -356,17 +310,16 @@ const HealthTabs = () => {
         "http://localhost:5678/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
         {
           message: {
-            text: messageInput,
+            input: messageInput,
+            type: result
           }
         },
       );
 
-      const botResponse = res.data.myField;
+      const botResponse = res.data;
+      console.log('ssssssssssssssssssss ', botResponse);
 
-      let parsedResult = extractInfo(botResponse);
-      setAiPlan(parsedResult);
-
-      console.log("Bot response AI:", parsedResult);
+      setAiPlan(botResponse);
     } catch (err) {
       console.error(err);
     }
@@ -401,7 +354,7 @@ const HealthTabs = () => {
             <Info size={14} className="me-1" />
             Nhập chỉ số đường huyết theo đơn vị mmol/L
           </div>
-          {aiPlan && Plan(aiPlan)}
+          {aiPlan && Plan(aiPlan, user)}
         </div>
 
         {/* Thông tin thêm */}
