@@ -31,6 +31,7 @@ import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
 import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
 import { getAuth } from 'firebase/auth';
 import AttendanceTab from "./pages/doctor/AttendanceTab";
+import PrivateRoute from "./routes/PrivateRoute";
 
 function App() {
   const dispatch = useDispatch();
@@ -38,6 +39,23 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   const auth = getAuth();
+
+  // Các route cần đăng nhập (private)
+  const privateRoutes = [
+    { path: '/overviewTab', element: <OverviewTab /> },
+    { path: '/patientTab', element: <PatientTab /> },
+    { path: '/appointmentTab', element: <AppointmentTab /> },
+    { path: '/settingTabs', element: <SettingTabs /> },
+    { path: '/informationTab', element: <InformationTab /> },
+    { path: '/attendanceTab', element: <AttendanceTab /> },
+
+    { path: '/home', element: <Home /> },
+    { path: '/healthTabs', element: <HealthTabs /> },
+    { path: '/nutrition', element: <FoodTrackerApp /> },
+    { path: '/suggestedFood', element: <SuggestedFood /> },
+    { path: '/bookingTabs', element: <BookingTabs /> },
+    { path: '/personalTabs', element: <PersonalTabs /> },
+  ];
 
   // authContext -> duy trì trạng thái đăng nhập của người dùng
   useEffect(() => {
@@ -76,7 +94,7 @@ function App() {
       </div>
     );
   }
-console.log('user', user);
+  console.log('user', user);
 
   return (
     <Router>
@@ -101,20 +119,13 @@ console.log('user', user);
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ResetPassword />} />
 
-              <Route path="/overviewTab" element={<OverviewTab />} />
-              <Route path="/patientTab" element={<PatientTab />} />
-              <Route path="/appointmentTab" element={<AppointmentTab />} />
-              <Route path="/settingTabs" element={<SettingTabs />} />
-              <Route path="/informationTab" element={<InformationTab />} />
-              <Route path="/attendanceTab" element={<AttendanceTab />} />
-
-              <Route path="/home" element={<Home />} />
-              <Route path="/healthTabs" element={<HealthTabs />} />
-              <Route path="/nutrition" element={<FoodTrackerApp />} />
-              <Route path="/suggestedFood" element={<SuggestedFood />} />
-              <Route path="/bookingTabs" element={<BookingTabs />} />
-              <Route path="/personalTabs" element={<PersonalTabs />} />
-
+              {privateRoutes.map(({ path, element }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={<PrivateRoute>{element}</PrivateRoute>}
+                />
+              ))}
 
             </Routes>
           </div>
