@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
-import { Login } from "../../redux/authSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { register, verifyEmail } from "../../redux/authSlice";
+import { auth, provider } from '../../../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginForm() {
   const dispatch = useDispatch();
@@ -20,6 +21,7 @@ export default function LoginForm() {
     username: "",
     email: "",
     phoneNumber: "",
+    address: "",
     password: "",
     confirmPassword: "",
     captcha: "",
@@ -53,7 +55,13 @@ export default function LoginForm() {
 
     // kiểm tra tài khoản 10 ký tự bất kì
     if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
-      setErrorMessage("Số tài khoản phải bao gồm đúng 10 ký tự!");
+      setErrorMessage("Số điện thoại phải bao gồm đúng 10 ký tự!");
+      return;
+    }
+
+    // Kiểm tra mật khẩu > 6 ký tự
+    if (formData.password.length < 6) {
+      setErrorMessage("Mật khẩu phải có ít nhất 6 ký tự!");
       return;
     }
 
@@ -71,9 +79,15 @@ export default function LoginForm() {
     } else if (+formData.captcha !== +code.code) {
       setErrorMessage("❌ Mã không đúng");
     } else {
-      // Gửi thông tin đăng ký đi
+      // Gửi thông tin đăng ký đi mongo
       let res = await dispatch(register(formData));
       if (res.payload.EC === 0) {
+        // Gửi thông tin đăng ký đi firebase
+        await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
         navigate("/login");
       } else {
         setErrorMessage(res.payload.EM);
@@ -103,7 +117,7 @@ export default function LoginForm() {
         <div className="card-body p-4">
           {/* Logo and Title */}
           <div className="text-center mb-4">
-            <h1 className="display-6 text-primary fw-bold mb-3">Zata</h1>
+            <h1 className="display-6 text-primary fw-bold mb-3">DiaTech</h1>
             <h2 className="fs-5 fw-medium text-dark">Đăng ký với mật khẩu</h2>
           </div>
 
@@ -141,13 +155,26 @@ export default function LoginForm() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Số tài khoản"
+                  placeholder="Số điện thoại"
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
                   required
                 />
               </div>
+            </div>
+
+            {/* address Input */}
+            <div className="mb-3">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             {/* Password Input */}
@@ -223,7 +250,7 @@ export default function LoginForm() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="gender"
+                  placeholder="Gender"
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
@@ -238,7 +265,7 @@ export default function LoginForm() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="dob"
+                  placeholder="Dob"
                   name="dob"
                   value={formData.dob}
                   onChange={handleChange}

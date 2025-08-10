@@ -1,20 +1,13 @@
 import customizeAxios from "../components/customizeAxios";
 
-const loginService = (email, password) => {
-  return customizeAxios.post("/login", {
-    email,
-    password,
-  });
+const loginService = (user) => {
+  return customizeAxios.post("/login", { user });
 };
 
 const registerService = (formData) => {
   return customizeAxios.post("/register", {
     formData,
   });
-};
-
-const doGetAccountService = () => {
-  return customizeAxios.get("/account");
 };
 
 const sendCodeService = (email) => {
@@ -43,29 +36,12 @@ const verifyEmailService = (email) => {
   return customizeAxios.post("/verifyEmail", { email });
 };
 
-const logoutUserService = () => {
-  return customizeAxios.post("/logout", {
-    refresh_Token: localStorage.getItem("refresh_Token"),
-  });
-};
-
-const generateQRLoginService = () => {
-  return customizeAxios.post("/generate-qr-login");
-};
-
-const checkQRStatusService = (sessionId) => {
-  return customizeAxios.get(`/check-qr-status/${sessionId}`);
-};
 
 export {
   loginService,
   registerService,
-  logoutUserService,
-  doGetAccountService,
   sendCodeService,
   resetPasswordService,
   changePasswordService,
   verifyEmailService,
-  generateQRLoginService,
-  checkQRStatusService,
 };
