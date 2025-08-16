@@ -4,7 +4,6 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
 
 export default function SuggestedFood() {
-    const [activeTab, setActiveTab] = useState('menu');
     const [foods, setFoods] = useState([
         {
             icon: '🍳',
@@ -100,7 +99,7 @@ export default function SuggestedFood() {
     const targetProtein = Math.round((targetCalo * macroRatios.protein) / 4);
     const targetCarbs = Math.round((targetCalo * macroRatios.carbs) / 4);
     const targetFat = Math.round((targetCalo * macroRatios.fat) / 9);
-    const { totalCalo, totalProtein, totalCarbs, totalFat, caloriesByMeal } = calculateTotals();
+    const { caloriesByMeal } = calculateTotals();
 
     const renderMeal = (mealLabel) => (
         <div className="mb-4">
@@ -205,87 +204,87 @@ export default function SuggestedFood() {
             </div>
 
 
-            <div className="d-flex flex-wrap align-items-center gap-4 my-3">
-                {/* Biểu đồ tròn */}
-                <div className="position-relative" style={{ width: "50px", height: "50px" }}>
-                    <svg className="w-120 h-100" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
-                        <circle cx="50" cy="50" r="45" stroke="#e5e7eb" strokeWidth="8" fill="none" />
+            <div className="d-flex flex-wrap align-items-center justify-content-between my-3">
+                <div className="d-flex flex-wrap align-items-center gap-4">
+                    {/* Biểu đồ tròn */}
+                    <div className="position-relative" style={{ width: "50px", height: "50px" }}>
+                        <svg className="w-120 h-100" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+                            <circle cx="50" cy="50" r="45" stroke="#e5e7eb" strokeWidth="8" fill="none" />
 
-                        {/* Protein */}
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            stroke="#dc2626"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeDasharray={`${proteinArc} 283`}
-                            strokeDashoffset="0"
-                            strokeLinecap="round"
-                        />
+                            {/* Protein */}
+                            <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                stroke="#dc2626"
+                                strokeWidth="8"
+                                fill="none"
+                                strokeDasharray={`${proteinArc} 283`}
+                                strokeDashoffset="0"
+                                strokeLinecap="round"
+                            />
 
-                        {/* Carbs */}
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            stroke="#0ea5e9"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeDasharray={`${carbsArc} 283`}
-                            strokeDashoffset={`-${carbsOffset}`}
-                            strokeLinecap="round"
-                        />
+                            {/* Carbs */}
+                            <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                stroke="#0ea5e9"
+                                strokeWidth="8"
+                                fill="none"
+                                strokeDasharray={`${carbsArc} 283`}
+                                strokeDashoffset={`-${carbsOffset}`}
+                                strokeLinecap="round"
+                            />
 
-                        {/* Fat */}
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            stroke="#facc15"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeDasharray={`${fatArc} 283`}
-                            strokeDashoffset={`-${fatOffset}`}
-                            strokeLinecap="round"
-                        />
-                    </svg>
-                </div>
-
-                {/* Thông tin dinh dưỡng */}
-                <div className="text-center">
-                    {/* Tổng calo ở trên */}
-                    <div className="mb-1 d-flex align-items-center gap-2">
-                        <div className="fw-semibold fs-5">{targetCalo}</div>
-                        <small className="text-white">CALO</small>
+                            {/* Fat */}
+                            <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                stroke="#facc15"
+                                strokeWidth="8"
+                                fill="none"
+                                strokeDasharray={`${fatArc} 283`}
+                                strokeDashoffset={`-${fatOffset}`}
+                                strokeLinecap="round"
+                            />
+                        </svg>
                     </div>
 
-                    {/* 3 chất dinh dưỡng ở dưới */}
-                    <div className="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3">
-                        <div className="d-flex align-items-center gap-2">
-                            <span className="d-inline-block rounded-circle bg-danger" style={{ width: 10, height: 10 }}></span>
-                            <span>Chất đạm: {targetProtein}g</span>
+                    {/* Thông tin dinh dưỡng */}
+                    <div className="text-center">
+                        {/* Tổng calo ở trên */}
+                        <div className="mb-1 d-flex align-items-center gap-2">
+                            <div className="fw-semibold fs-5">{targetCalo}</div>
+                            <small className="text-white">CALO</small>
                         </div>
-                        <div className="d-flex align-items-center gap-2">
-                            <span className="d-inline-block rounded-circle bg-info" style={{ width: 10, height: 10 }}></span>
-                            <span>Đường bột: {targetCarbs}g</span>
-                        </div>
-                        <div className="d-flex align-items-center gap-2">
-                            <span className="d-inline-block rounded-circle bg-warning" style={{ width: 10, height: 10 }}></span>
-                            <span>Chất béo: {targetFat}g</span>
+
+                        {/* 3 chất dinh dưỡng ở dưới */}
+                        <div className="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3">
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="d-inline-block rounded-circle bg-danger" style={{ width: 10, height: 10 }}></span>
+                                <span>Chất đạm: {targetProtein}g</span>
+                            </div>
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="d-inline-block rounded-circle bg-info" style={{ width: 10, height: 10 }}></span>
+                                <span>Đường bột: {targetCarbs}g</span>
+                            </div>
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="d-inline-block rounded-circle bg-warning" style={{ width: 10, height: 10 }}></span>
+                                <span>Chất béo: {targetFat}g</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Buttons: Chỉnh sửa và Áp dụng */}
                 <div className="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-3 ms-5">
-                    <button type="button" className="btn btn-outline-danger d-flex align-items-center gap-2 px-3">
-                        <span className="d-inline-block rounded-circle bg-danger" style={{ width: 10, height: 10 }}></span>
+                    <button type="button" className="btn btn-outline-info d-flex align-items-center gap-2 px-3">
                         Chỉnh sửa
                     </button>
 
                     <button type="button" className="btn btn-info text-white d-flex align-items-center gap-2 px-3">
-                        <span className="d-inline-block rounded-circle bg-white" style={{ width: 10, height: 10 }}></span>
                         Áp dụng
                     </button>
                 </div>

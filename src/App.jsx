@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   useNavigate,
+  Navigate,
 } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
@@ -31,7 +32,6 @@ import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
 import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
 import { getAuth } from 'firebase/auth';
 import AttendanceTab from "./pages/doctor/AttendanceTab";
-import PrivateRoute from "./routes/PrivateRoute";
 
 function App() {
   const dispatch = useDispatch();
@@ -40,35 +40,25 @@ function App() {
 
   const auth = getAuth();
 
-  // Các route cần đăng nhập (private)
-  const privateRoutes = [
-    { path: '/overviewTab', element: <OverviewTab /> },
-    { path: '/patientTab', element: <PatientTab /> },
-    { path: '/appointmentTab', element: <AppointmentTab /> },
-    { path: '/settingTabs', element: <SettingTabs /> },
-    { path: '/informationTab', element: <InformationTab /> },
-    { path: '/attendanceTab', element: <AttendanceTab /> },
-
-    { path: '/home', element: <Home /> },
-    { path: '/healthTabs', element: <HealthTabs /> },
-    { path: '/nutrition', element: <FoodTrackerApp /> },
-    { path: '/suggestedFood', element: <SuggestedFood /> },
-    { path: '/bookingTabs', element: <BookingTabs /> },
-    { path: '/personalTabs', element: <PersonalTabs /> },
-  ];
-
   // authContext -> duy trì trạng thái đăng nhập của người dùng
   useEffect(() => {
-    const unsubscribe = auth.onIdTokenChanged((user) => {
-      if (user) {
+
+    const unsubscribe = auth.onIdTokenChanged((firebaseUser) => {
+      let userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      if (firebaseUser) {
         dispatch(setUser({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          role: userInfo.role,
+          address: userInfo.address,
+          phone: userInfo.phone,
+          dob: userInfo.dob,
+          gender: userInfo.gender,
         }));
-        if (user.accessToken !== localStorage.getItem('access_Token')) {
-          localStorage.setItem("access_Token", user.accessToken);
+        if (firebaseUser.accessToken !== localStorage.getItem('access_Token')) {
+          localStorage.setItem("access_Token", firebaseUser.accessToken);
           // window.location.reload();
         }
         setIsLoading(false);
@@ -85,6 +75,8 @@ function App() {
     return () => unsubscribe();
   }, [auth, dispatch]);
 
+  console.log('user', user);
+
   if (isLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -94,7 +86,6 @@ function App() {
       </div>
     );
   }
-  console.log('user', user);
 
   return (
     <Router>
@@ -114,18 +105,43 @@ function App() {
           {/* Nội dung chính */}
           <div className="content flex-grow-1 overflow-auto p-3">
             <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ResetPassword />} />
+              {!user ? (
+                <>
+                  <Route path="/" element={<Login />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ResetPassword />} />
 
-              {privateRoutes.map(({ path, element }) => (
-                <Route
-                  key={path}
-                  path={path}
-                  element={<PrivateRoute>{element}</PrivateRoute>}
-                />
-              ))}
+                  {/* Nếu user chưa login mà truy cập đường dẫn khác thì redirect về /login */}
+                  <Route path="*" element={<Navigate to="/login" replace />} />
+                </>
+              ) : (
+                <>
+                  {user.role === "doctor" ? (
+                    <>
+                      <Route path="/overviewTab" element={<OverviewTab />} />
+                      <Route path="/patientTab" element={<PatientTab />} />
+                      <Route path="/appointmentTab" element={<AppointmentTab />} />
+                      <Route path="/settingTabs" element={<SettingTabs />} />
+                      <Route path="/informationTab" element={<InformationTab />} />
+                      <Route path="/attendanceTab" element={<AttendanceTab />} />
+                      {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /overviewTab */}
+                      <Route path="*" element={<Navigate to="/overviewTab" replace />} />
+                    </>
+                  ) : (
+                    <>
+                      <Route path="/home" element={<Home />} />
+                      <Route path="/healthTabs" element={<HealthTabs />} />
+                      <Route path="/nutrition" element={<FoodTrackerApp />} />
+                      <Route path="/suggestedFood" element={<SuggestedFood />} />
+                      <Route path="/bookingTabs" element={<BookingTabs />} />
+                      <Route path="/personalTabs" element={<PersonalTabs />} />
+                      {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /home */}
+                      <Route path="*" element={<Navigate to="/home" replace />} />
+                    </>
+                  )}
+                </>
+              )}
 
             </Routes>
           </div>

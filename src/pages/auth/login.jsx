@@ -44,6 +44,7 @@ export default function LoginForm() {
             navigate("/home");
           }
           localStorage.setItem("access_Token", user.accessToken);
+          localStorage.setItem("userInfo", JSON.stringify(res.payload.DT));
         }
       }
     } catch (error) {
@@ -80,6 +81,7 @@ export default function LoginForm() {
             navigate("/home");
           }
           localStorage.setItem("access_Token", user.accessToken);
+          localStorage.setItem("userInfo", JSON.stringify(res.payload.DT));
         }
       }
     } catch (error) {

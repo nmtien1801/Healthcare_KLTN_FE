@@ -147,7 +147,6 @@ const Plan = (aiPlan, user) => {
       console.error(err);
     }
   }
-console.log("sấccsacsac ", aiPlan);
 
   return (
     <>
@@ -155,9 +154,9 @@ console.log("sấccsacsac ", aiPlan);
       <div className="bg-light border rounded p-3 mt-3">
         <h5 className="fw-semibold mb-2">📋 Kế hoạch dùng thuốc</h5>
         <ul className="list-unstyled small mb-3">
-          <li><strong>Sáng:</strong> {aiPlan.thuoc.sang?.length > 0 ? aiPlan.thuoc.sang : "Không dùng"}</li>
-          <li><strong>Trưa:</strong> {aiPlan.thuoc.trua.length > 0 ?  aiPlan.thuoc.trua : "Không dùng"}</li>
-          <li><strong>Tối:</strong> {aiPlan.thuoc.toi.length > 0  ? aiPlan.thuoc.toi : "Không dùng"}</li>
+          <li><strong>Sáng:</strong> {aiPlan.thuoc.sang && aiPlan.thuoc.sang.length > 0 ? aiPlan.thuoc.sang.join(", ") : "Không dùng"}</li>
+          <li><strong>Trưa:</strong> {aiPlan.thuoc.trua && aiPlan.thuoc.trua.length > 0 ? aiPlan.thuoc.trua.join(", ") : "Không dùng"}</li>
+          <li><strong>Tối:</strong> {aiPlan.thuoc.toi && aiPlan.thuoc.toi.length > 0 ? aiPlan.thuoc.toi.join(", ") : "Không dùng"}</li>
         </ul>
         <div className="d-flex justify-content-end">
           <button className="btn btn-sm btn-success" onClick={() => applyMedicine(aiPlan.thuoc)}>
@@ -191,6 +190,7 @@ const HealthTabs = () => {
   const [messageInput, setMessageInput] = useState([]);
   const [aiPlan, setAiPlan] = useState(null);
   let user = useSelector((state) => state.auth.userInfo);
+  const [measurementType, setMeasurementType] = useState("before");
 
   const [userData, setUserData] = useState({
     name: "Nguyễn Văn A",
@@ -287,20 +287,30 @@ const HealthTabs = () => {
     // xử lý dữ liệu
     let result = '';
 
-    if (messageInput < 3.9) {
-      result = '<3.9 (Hạ đường huyết)';
-    } else if (messageInput >= 3.9 && messageInput <= 5.6) {
-      result = '3.9 – 5.6 (Bình thường)';
-    } else if (messageInput > 5.6 && messageInput <= 7.8) {
-      result = '5.7 – 7.8 (Tiền tiểu đường)';
-    } else if (messageInput > 7.8 && messageInput <= 10) {
-      result = '7.8 – 10 (Tiểu đường)';
-    } else if (messageInput > 10 && messageInput <= 13.9) {
-      result = '10 – 13.9 (Tiểu đường cao)';
-    } else if (messageInput > 13.9) {
-      result = '>13.9 (Nguy hiểm)';
-    } else {
-      result = 'Giá trị không hợp lệ';
+    if (measurementType === "before") {
+      if (messageInput < 3.9) {
+        result = '<3,9';
+      } else if (messageInput >= 3.9 && messageInput <= 5.6) {
+        result = '3,9 – 5,6';
+      } else if (messageInput > 5.6 && messageInput <= 6.9) {
+        result = '5,7 – 6,9';
+      } else if (messageInput >= 7) {
+        result = '>=7';
+      } else {
+        result = 'Giá trị không hợp lệ';
+      }
+    } else if (measurementType === "after") {
+      if (messageInput < 3.9) {
+        result = '<3,9';
+      } else if (messageInput >= 3.9 && messageInput <= 7.7) {
+        result = '3,9 – 7,7';
+      } else if (messageInput > 7.8 && messageInput <= 11) {
+        result = '7,8 - 11';
+      } else if (messageInput > 11) {
+        result = '>11';
+      } else {
+        result = 'Giá trị không hợp lệ';
+      }
     }
 
     setMessageInput("");
@@ -311,6 +321,7 @@ const HealthTabs = () => {
         {
           message: {
             input: messageInput,
+            measurementType: measurementType,
             type: result
           }
         },
@@ -335,27 +346,49 @@ const HealthTabs = () => {
 
       <div className="d-flex flex-column flex-lg-row gap-4">
         {/* Nhập chỉ số mới */}
+        {/* Nhập chỉ số mới */}
         <div className="bg-white rounded shadow-lg p-4 flex-fill">
           <h3 className="fw-semibold mb-3 fs-6">Nhập chỉ số mới</h3>
+
           <div className="d-flex flex-column flex-sm-row gap-2">
+            {/* Chọn loại chỉ số */}
+            <select
+              className="form-select form-select-sm w-auto"
+              value={measurementType}
+              onChange={(e) => setMeasurementType(e.target.value)}
+            >
+              <option value="before">Trước ăn</option>
+              <option value="after">Sau ăn</option>
+            </select>
+
+            {/* Ô nhập */}
             <input
               type="text"
-              className="form-control form-control-sm"
+              className={`form-control form-control-sm ${measurementType === "before" ? "border-primary" : "border-warning"
+                }`}
               placeholder="Nhập chỉ số đường huyết"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAiAgent()}
             />
-            <button className="btn btn-sm btn-primary fw-medium"
+
+            {/* Nút lưu */}
+            <button
+              className="btn btn-sm btn-primary fw-medium"
               onClick={() => handleAiAgent()}
-            >Lưu</button>
+            >
+              Lưu
+            </button>
           </div>
+
           <div className="mt-3 text-secondary small d-flex align-items-center">
             <Info size={14} className="me-1" />
             Nhập chỉ số đường huyết theo đơn vị mmol/L
           </div>
+
           {aiPlan && Plan(aiPlan, user)}
         </div>
+
 
         {/* Thông tin thêm */}
         <div className="bg-white rounded shadow-sm p-4 flex-fill">
