@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { api } from "../../../apis/assistant";
-import ChatBox from "./ChatBox";
-
 import {
     Box,
     Typography,
@@ -20,6 +18,20 @@ import {
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
 import SendIcon from '@mui/icons-material/Send';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import { Check, MessageCircleMore, X } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import axios from "axios";
+
+// Giả lập component ChatBox
+const ChatBox = ({ messages }) => (
+    <Box sx={{ maxHeight: '100%', overflowY: 'auto' }}>
+        {messages.map((msg, index) => (
+            <Box key={index} sx={{ mb: 2, p: 1, bgcolor: msg.sender === 'user' ? 'primary.light' : 'grey.200', borderRadius: 2 }}>
+                <Typography>{msg.text}</Typography>
+            </Box>
+        ))}
+    </Box>
+);
 
 const FormPatient = () => {
     const [formData, setFormData] = useState({
@@ -90,11 +102,11 @@ const FormPatient = () => {
     };
 
     return (
-        <Box sx={{ p: 4, maxWidth: '1200px', mx: 'auto' }}>
-            <Grid container spacing={4}>
+        <Box sx={{ p: 4, maxWidth: '1200px', mx: 'auto', height: '80vh' }}>
+            <Grid container spacing={2} sx={{ height: '100%', flexWrap: 'nowrap' }}>
                 {/* Form Section */}
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+                <Grid item xs={6} sx={{ display: 'flex' }}>
+                    <Paper elevation={3} sx={{ p: 4, borderRadius: 3, flex: 1, overflowY: 'auto' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <MedicalInformationIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
                             <Typography variant="h4" component="h2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
@@ -196,15 +208,15 @@ const FormPatient = () => {
                 </Grid>
 
                 {/* Chat Section */}
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 4, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Grid item xs={6} sx={{ display: 'flex' }}>
+                    <Paper elevation={3} sx={{ p: 4, borderRadius: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <ChatBubbleOutlineIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
                             <Typography variant="h4" component="h2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                 Kết quả dự đoán & Chat bot
                             </Typography>
                         </Box>
-                        <Box sx={{ flexGrow: 1, minHeight: 400 }}>
+                        <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 400 }}>
                             <ChatBox messages={messages} />
                         </Box>
                         <Box sx={{ display: 'flex', mt: 2 }}>
