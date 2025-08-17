@@ -106,26 +106,27 @@ const FormPatient = () => {
 
     return (
         <Box className="container" sx={{ maxWidth: "1400px", height: "85vh" }}>
+
             <div className="row g-3 h-100">
                 {/* Form Section */}
                 <div className="col-12 col-md-6 d-flex">
                     <Paper
-                        elevation={2}
+                        elevation={3}
                         className="flex-grow-1 d-flex flex-column"
                         sx={{
-                            p: { xs: 2, md: 3 },
+                            p: { xs: 3, md: 4 },
                             borderRadius: 3,
                             height: "100%",
                             overflow: "hidden",
                         }}
                     >
-                        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                            <MedicalInformationIcon color="primary" sx={{ fontSize: 32, mr: 1 }} />
-                            <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.main" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                            <MedicalInformationIcon color="primary" sx={{ fontSize: 36, mr: 1 }} />
+                            <Typography variant="h5" sx={{ fontWeight: "bold", color: "primary.main" }}>
                                 Thông tin bệnh nhân
                             </Typography>
                         </Box>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 3 }} />
 
                         {/* Scrollable form */}
                         <Box
@@ -146,11 +147,11 @@ const FormPatient = () => {
                                 },
                             }}
                         >
-                            <div className="row g-2">
+                            <div className="row g-3">
                                 {/* Tuổi + Giới tính */}
-                                <div className="col-6">
+                                <div className="col-6 pt-3" >
                                     <TextField
-                                        size="small"
+                                        size="medium"
                                         fullWidth
                                         label="Tuổi"
                                         type="number"
@@ -158,22 +159,29 @@ const FormPatient = () => {
                                         value={formData.age}
                                         onChange={handleChange}
                                         required
+                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
                                     />
                                 </div>
-                                <div className="col-6">
-                                    <FormControl fullWidth size="small">
-                                        <InputLabel>Giới tính</InputLabel>
-                                        <Select name="gender" value={formData.gender} onChange={handleChange}>
+                                <div className="col-6 pt-3">
+                                    <FormControl fullWidth>
+                                        <InputLabel sx={{ fontSize: "1rem" }} shrink>Giới tính</InputLabel>
+                                        <Select
+                                            labelId="gender-label"
+                                            label="Giới tính"
+                                            name="gender"
+                                            value={formData.gender}
+                                            onChange={handleChange}
+                                        >
                                             <MenuItem value="female">Nữ</MenuItem>
                                             <MenuItem value="male">Nam</MenuItem>
                                         </Select>
+
                                     </FormControl>
                                 </div>
 
                                 {/* BMI + HbA1c */}
                                 <div className="col-6">
                                     <TextField
-                                        size="small"
                                         fullWidth
                                         label="BMI"
                                         type="number"
@@ -181,11 +189,11 @@ const FormPatient = () => {
                                         name="bmi"
                                         value={formData.bmi}
                                         onChange={handleChange}
+                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
                                     />
                                 </div>
                                 <div className="col-6">
                                     <TextField
-                                        size="small"
                                         fullWidth
                                         label="HbA1c (%)"
                                         type="number"
@@ -193,17 +201,20 @@ const FormPatient = () => {
                                         name="hbA1c_level"
                                         value={formData.hbA1c_level}
                                         onChange={handleChange}
+                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
                                     />
                                 </div>
+
+                                {/* Đường huyết */}
                                 <div className="col-12">
                                     <TextField
-                                        size="small"
                                         fullWidth
                                         label="Đường huyết (mg/dL)"
                                         type="number"
                                         name="blood_glucose_level"
                                         value={formData.blood_glucose_level}
                                         onChange={handleChange}
+                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
                                     />
                                 </div>
 
@@ -212,32 +223,34 @@ const FormPatient = () => {
                                     <FormControlLabel
                                         control={
                                             <Checkbox
-                                                size="small"
                                                 checked={formData.hypertension === 1}
                                                 onChange={handleChange}
                                                 name="hypertension"
                                             />
                                         }
-                                        label={<Typography variant="body2">Huyết áp cao</Typography>}
+                                        label={<Typography variant="body1">Huyết áp cao</Typography>}
                                     />
                                 </div>
                                 <div className="col-6">
                                     <FormControlLabel
                                         control={
                                             <Checkbox
-                                                size="small"
                                                 checked={formData.heart_disease === 1}
                                                 onChange={handleChange}
                                                 name="heart_disease"
                                             />
                                         }
-                                        label={<Typography variant="body2">Bệnh tim</Typography>}
+                                        label={<Typography variant="body1">Bệnh tim</Typography>}
                                     />
                                 </div>
                                 <div className="col-12">
-                                    <FormControl fullWidth size="small">
-                                        <InputLabel>Lịch sử hút thuốc</InputLabel>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="smoking-label" sx={{ fontSize: "1rem" }}>
+                                            Lịch sử hút thuốc
+                                        </InputLabel>
                                         <Select
+                                            labelId="smoking-label"
+                                            label="Lịch sử hút thuốc"
                                             name="smoking_history"
                                             value={formData.smoking_history}
                                             onChange={handleChange}
@@ -248,6 +261,7 @@ const FormPatient = () => {
                                         </Select>
                                     </FormControl>
                                 </div>
+
                             </div>
 
                             <Button
@@ -255,14 +269,15 @@ const FormPatient = () => {
                                 fullWidth
                                 variant="contained"
                                 endIcon={!loading && <SendIcon />}
-                                sx={{ mt: 3, py: 1.2, fontSize: "0.9rem", textTransform: "none" }}
+                                sx={{ mt: 4, py: 1.5, fontSize: "1rem", textTransform: "none", borderRadius: 2 }}
                                 disabled={loading}
                             >
-                                {loading ? <CircularProgress size={22} color="inherit" /> : "Dự đoán"}
+                                {loading ? <CircularProgress size={24} color="inherit" /> : "Dự đoán"}
                             </Button>
                         </Box>
                     </Paper>
                 </div>
+
 
                 {/* Chat Section */}
                 <div className="col-12 col-md-6 d-flex">
