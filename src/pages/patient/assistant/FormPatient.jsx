@@ -7,7 +7,6 @@ import {
     MenuItem,
     Button,
     Paper,
-    Grid,
     CircularProgress,
     FormControl,
     InputLabel,
@@ -52,20 +51,22 @@ const FormPatient = () => {
         },
     ]);
 
-    // Xử lý thay đổi input
     const handleChange = (e) => {
         const { name, value, checked, type } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: type === "checkbox" ? (checked ? 1 : 0) : isNaN(value) ? value : Number(value),
+            [name]:
+                type === "checkbox" ? (checked ? 1 : 0) : isNaN(value) ? value : Number(value),
         }));
     };
 
-    // Gửi form để dự đoán
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setMessages((prev) => [...prev, { sender: "user", text: "📤 Đã gửi thông tin bệnh nhân" }]);
+        setMessages((prev) => [
+            ...prev,
+            { sender: "user", text: "📤 Đã gửi thông tin bệnh nhân" },
+        ]);
 
         try {
             const res = await api.post("/predict", formData);
@@ -74,13 +75,15 @@ const FormPatient = () => {
             setMessages((prev) => [...prev, { sender: "bot", text: botMsg }]);
         } catch (err) {
             console.error(err);
-            setMessages((prev) => [...prev, { sender: "bot", text: "⚠️ Có lỗi xảy ra. Vui lòng thử lại!" }]);
+            setMessages((prev) => [
+                ...prev,
+                { sender: "bot", text: "⚠️ Có lỗi xảy ra. Vui lòng thử lại!" },
+            ]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Gửi câu hỏi chatbot
     const handleAsk = async () => {
         if (!question.trim()) return;
         setLoadingAsk(true);
@@ -92,19 +95,30 @@ const FormPatient = () => {
             setMessages((prev) => [...prev, { sender: "bot", text: res.data.answer }]);
         } catch (err) {
             console.error(err);
-            setMessages((prev) => [...prev, { sender: "bot", text: "🤖 Xin lỗi, tôi không thể trả lời câu hỏi này." }]);
+            setMessages((prev) => [
+                ...prev,
+                { sender: "bot", text: "🤖 Xin lỗi, tôi không thể trả lời câu hỏi này." },
+            ]);
         } finally {
             setLoadingAsk(false);
         }
     };
 
     return (
-        <Box sx={{ p: 2, maxWidth: "1400px", mx: "auto", height: "85vh" }}>
-            <Grid container spacing={2} sx={{ height: "100%", flexWrap: "nowrap" }}>
-
+        <Box className="container" sx={{ maxWidth: "1400px", height: "85vh" }}>
+            <div className="row g-3 h-100">
                 {/* Form Section */}
-                <Grid item xs={6} sx={{ flex: "0 0 50%", maxWidth: "50%", display: "flex" }}>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 3, flex: 1, overflowY: "auto" }}>
+                <div className="col-12 col-md-6 d-flex">
+                    <Paper
+                        elevation={2}
+                        className="flex-grow-1 d-flex flex-column"
+                        sx={{
+                            p: { xs: 2, md: 3 },
+                            borderRadius: 3,
+                            height: "100%",
+                            overflow: "hidden",
+                        }}
+                    >
                         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                             <MedicalInformationIcon color="primary" sx={{ fontSize: 32, mr: 1 }} />
                             <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.main" }}>
@@ -113,132 +127,128 @@ const FormPatient = () => {
                         </Box>
                         <Divider sx={{ mb: 2 }} />
 
-                        <Box component="form" onSubmit={handleSubmit} noValidate>
-                            <Grid container spacing={2}>
+                        {/* Scrollable form */}
+                        <Box
+                            component="form"
+                            onSubmit={handleSubmit}
+                            noValidate
+                            sx={{
+                                flexGrow: 1,
+                                overflowY: "auto",
+                                pr: 1,
+                                "&::-webkit-scrollbar": { width: "8px" },
+                                "&::-webkit-scrollbar-thumb": {
+                                    background: "linear-gradient(135deg, #8fddeeff, #d87dbaff)",
+                                    borderRadius: "10px",
+                                },
+                                "&::-webkit-scrollbar-thumb:hover": {
+                                    background: "linear-gradient(135deg, #64b5f6, #2196f3)",
+                                },
+                            }}
+                        >
+                            <div className="row g-2">
+                                {/* Tuổi + Giới tính */}
+                                <div className="col-6">
+                                    <TextField
+                                        size="small"
+                                        fullWidth
+                                        label="Tuổi"
+                                        type="number"
+                                        name="age"
+                                        value={formData.age}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="col-6">
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Giới tính</InputLabel>
+                                        <Select name="gender" value={formData.gender} onChange={handleChange}>
+                                            <MenuItem value="female">Nữ</MenuItem>
+                                            <MenuItem value="male">Nam</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </div>
 
-                                {/* Thông tin cá nhân */}
-                                <Grid item xs={12}>
-                                    <Typography variant="subtitle2" sx={{ mb: 1, color: "text.secondary" }}>
-                                        Thông tin cá nhân
-                                    </Typography>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={6}>
-                                            <TextField
-                                                size="small"
-                                                fullWidth
-                                                label="Tuổi"
-                                                type="number"
-                                                name="age"
-                                                value={formData.age}
-                                                onChange={handleChange}
-                                                required
-                                            />
-                                        </Grid>
-                                        <Grid item xs={6}>
-                                            <FormControl fullWidth size="small">
-                                                <InputLabel>Giới tính</InputLabel>
-                                                <Select name="gender" value={formData.gender} onChange={handleChange}>
-                                                    <MenuItem value="female">Nữ</MenuItem>
-                                                    <MenuItem value="male">Nam</MenuItem>
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
-
-                                {/* Chỉ số sức khỏe */}
-                                <Grid item xs={12}>
-                                    <Typography variant="subtitle2" sx={{ mb: 1, mt: 1, color: "text.secondary" }}>
-                                        Chỉ số sức khỏe
-                                    </Typography>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={6}>
-                                            <TextField
-                                                size="small"
-                                                fullWidth
-                                                label="BMI"
-                                                type="number"
-                                                step="0.1"
-                                                name="bmi"
-                                                value={formData.bmi}
-                                                onChange={handleChange}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={6}>
-                                            <TextField
-                                                size="small"
-                                                fullWidth
-                                                label="HbA1c (%)"
-                                                type="number"
-                                                step="0.1"
-                                                name="hbA1c_level"
-                                                value={formData.hbA1c_level}
-                                                onChange={handleChange}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                size="small"
-                                                fullWidth
-                                                label="Đường huyết (mg/dL)"
-                                                type="number"
-                                                name="blood_glucose_level"
-                                                value={formData.blood_glucose_level}
-                                                onChange={handleChange}
-                                            />
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
+                                {/* BMI + HbA1c */}
+                                <div className="col-6">
+                                    <TextField
+                                        size="small"
+                                        fullWidth
+                                        label="BMI"
+                                        type="number"
+                                        step="0.1"
+                                        name="bmi"
+                                        value={formData.bmi}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col-6">
+                                    <TextField
+                                        size="small"
+                                        fullWidth
+                                        label="HbA1c (%)"
+                                        type="number"
+                                        step="0.1"
+                                        name="hbA1c_level"
+                                        value={formData.hbA1c_level}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col-12">
+                                    <TextField
+                                        size="small"
+                                        fullWidth
+                                        label="Đường huyết (mg/dL)"
+                                        type="number"
+                                        name="blood_glucose_level"
+                                        value={formData.blood_glucose_level}
+                                        onChange={handleChange}
+                                    />
+                                </div>
 
                                 {/* Tiền sử bệnh */}
-                                <Grid item xs={12}>
-                                    <Typography variant="subtitle2" sx={{ mb: 1, mt: 1, color: "text.secondary" }}>
-                                        Tiền sử bệnh
-                                    </Typography>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={6}>
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        size="small"
-                                                        checked={formData.hypertension === 1}
-                                                        onChange={handleChange}
-                                                        name="hypertension"
-                                                    />
-                                                }
-                                                label={<Typography variant="body2">Huyết áp cao</Typography>}
+                                <div className="col-6">
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                size="small"
+                                                checked={formData.hypertension === 1}
+                                                onChange={handleChange}
+                                                name="hypertension"
                                             />
-                                        </Grid>
-                                        <Grid item xs={6}>
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        size="small"
-                                                        checked={formData.heart_disease === 1}
-                                                        onChange={handleChange}
-                                                        name="heart_disease"
-                                                    />
-                                                }
-                                                label={<Typography variant="body2">Bệnh tim</Typography>}
+                                        }
+                                        label={<Typography variant="body2">Huyết áp cao</Typography>}
+                                    />
+                                </div>
+                                <div className="col-6">
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                size="small"
+                                                checked={formData.heart_disease === 1}
+                                                onChange={handleChange}
+                                                name="heart_disease"
                                             />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <FormControl fullWidth size="small">
-                                                <InputLabel>Lịch sử hút thuốc</InputLabel>
-                                                <Select
-                                                    name="smoking_history"
-                                                    value={formData.smoking_history}
-                                                    onChange={handleChange}
-                                                >
-                                                    <MenuItem value="never">Không bao giờ</MenuItem>
-                                                    <MenuItem value="ever">Từng hút</MenuItem>
-                                                    <MenuItem value="current">Hiện tại</MenuItem>
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
-                            </Grid>
+                                        }
+                                        label={<Typography variant="body2">Bệnh tim</Typography>}
+                                    />
+                                </div>
+                                <div className="col-12">
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Lịch sử hút thuốc</InputLabel>
+                                        <Select
+                                            name="smoking_history"
+                                            value={formData.smoking_history}
+                                            onChange={handleChange}
+                                        >
+                                            <MenuItem value="never">Không bao giờ</MenuItem>
+                                            <MenuItem value="ever">Từng hút</MenuItem>
+                                            <MenuItem value="current">Hiện tại</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </div>
+                            </div>
 
                             <Button
                                 type="submit"
@@ -252,18 +262,17 @@ const FormPatient = () => {
                             </Button>
                         </Box>
                     </Paper>
-                </Grid>
+                </div>
 
                 {/* Chat Section */}
-                <Grid item xs={6} sx={{ flex: "0 0 50%", maxWidth: "50%", display: "flex" }}>
+                <div className="col-12 col-md-6 d-flex">
                     <Paper
                         elevation={2}
+                        className="flex-grow-1 d-flex flex-column"
                         sx={{
-                            p: 3,
+                            p: { xs: 2, md: 3 },
                             borderRadius: 3,
-                            flex: 1,
-                            display: "flex",
-                            flexDirection: "column",
+                            height: "100%",
                         }}
                     >
                         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -278,9 +287,17 @@ const FormPatient = () => {
                             sx={{
                                 flexGrow: 1,
                                 overflowY: "auto",
-                                minHeight: 400,
+                                pr: 1,
                                 display: "flex",
                                 flexDirection: "column",
+                                "&::-webkit-scrollbar": { width: "8px" },
+                                "&::-webkit-scrollbar-thumb": {
+                                    background: "linear-gradient(135deg, #8fddeeff, #d87dbaff)",
+                                    borderRadius: "10px",
+                                },
+                                "&::-webkit-scrollbar-thumb:hover": {
+                                    background: "linear-gradient(135deg, #64b5f6, #2196f3)",
+                                },
                             }}
                         >
                             <ChatBox messages={messages} />
@@ -291,7 +308,7 @@ const FormPatient = () => {
                                 size="small"
                                 fullWidth
                                 placeholder="Nhập câu hỏi về bệnh tiểu đường..."
-                                value={question} a
+                                value={question}
                                 onChange={(e) => setQuestion(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleAsk()}
                             />
@@ -306,8 +323,8 @@ const FormPatient = () => {
                             </Button>
                         </Box>
                     </Paper>
-                </Grid>
-            </Grid>
+                </div>
+            </div>
         </Box>
     );
 };
