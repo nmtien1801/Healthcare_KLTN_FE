@@ -122,7 +122,7 @@ const FormPatient = () => {
                     >
                         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                             <MedicalInformationIcon color="primary" sx={{ fontSize: 36, mr: 1 }} />
-                            <Typography variant="h5" sx={{ fontWeight: "bold", color: "primary.main" }}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.main" }}>
                                 Thông tin bệnh nhân
                             </Typography>
                         </Box>
