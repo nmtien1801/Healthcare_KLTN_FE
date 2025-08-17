@@ -19,47 +19,8 @@ import {
 import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import ChatBox from "./ChatBox";
 
-
-// ✅ Component hiển thị tin nhắn chat
-const ChatBox = ({ messages }) => (
-    <Box
-        sx={{
-            maxHeight: "100%",
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-        }}
-    >
-        {messages.map((msg, index) => (
-            <Box
-                key={index}
-                sx={{
-                    mb: 1.5,
-                    px: 2,
-                    py: 1,
-                    maxWidth: "75%",
-                    alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                    background: msg.sender === "user"
-                        ? "linear-gradient(135deg, #1976d2 30%, #42a5f5 90%)"
-                        : "linear-gradient(135deg, #e0e0e0 30%, #f5f5f5 90%)",
-                    color: msg.sender === "user" ? "white" : "black",
-                    borderRadius: msg.sender === "user"
-                        ? "16px 16px 0 16px"
-                        : "16px 16px 16px 0",
-                    boxShadow: 2,
-                    fontSize: "0.9rem",
-                    whiteSpace: "pre-line",
-                }}
-            >
-                <Typography variant="body2">{msg.text}</Typography>
-            </Box>
-        ))}
-    </Box>
-);
-
-
-// ✅ Form chính
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
 
@@ -131,10 +92,7 @@ const FormPatient = () => {
             setMessages((prev) => [...prev, { sender: "bot", text: res.data.answer }]);
         } catch (err) {
             console.error(err);
-            setMessages((prev) => [
-                ...prev,
-                { sender: "bot", text: "🤖 Xin lỗi, tôi không thể trả lời câu hỏi này." },
-            ]);
+            setMessages((prev) => [...prev, { sender: "bot", text: "🤖 Xin lỗi, tôi không thể trả lời câu hỏi này." }]);
         } finally {
             setLoadingAsk(false);
         }
@@ -333,7 +291,7 @@ const FormPatient = () => {
                                 size="small"
                                 fullWidth
                                 placeholder="Nhập câu hỏi về bệnh tiểu đường..."
-                                value={question}
+                                value={question} a
                                 onChange={(e) => setQuestion(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleAsk()}
                             />
