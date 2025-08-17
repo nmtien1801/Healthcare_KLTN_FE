@@ -20,9 +20,17 @@ import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 
-// Component hiển thị tin nhắn chat
+
+// ✅ Component hiển thị tin nhắn chat
 const ChatBox = ({ messages }) => (
-    <Box sx={{ maxHeight: "100%", overflowY: "auto", pr: 1 }}>
+    <Box
+        sx={{
+            maxHeight: "100%",
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+        }}
+    >
         {messages.map((msg, index) => (
             <Box
                 key={index}
@@ -30,13 +38,18 @@ const ChatBox = ({ messages }) => (
                     mb: 1.5,
                     px: 2,
                     py: 1,
-                    maxWidth: "85%",
-                    bgcolor: msg.sender === "user" ? "primary.main" : "grey.100",
-                    color: msg.sender === "user" ? "white" : "text.primary",
-                    borderRadius: 3,
+                    maxWidth: "75%",
                     alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                    boxShadow: 1,
+                    background: msg.sender === "user"
+                        ? "linear-gradient(135deg, #1976d2 30%, #42a5f5 90%)"
+                        : "linear-gradient(135deg, #e0e0e0 30%, #f5f5f5 90%)",
+                    color: msg.sender === "user" ? "white" : "black",
+                    borderRadius: msg.sender === "user"
+                        ? "16px 16px 0 16px"
+                        : "16px 16px 16px 0",
+                    boxShadow: 2,
                     fontSize: "0.9rem",
+                    whiteSpace: "pre-line",
                 }}
             >
                 <Typography variant="body2">{msg.text}</Typography>
@@ -45,6 +58,8 @@ const ChatBox = ({ messages }) => (
     </Box>
 );
 
+
+// ✅ Form chính
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
 
@@ -81,8 +96,7 @@ const FormPatient = () => {
         const { name, value, checked, type } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]:
-                type === "checkbox" ? (checked ? 1 : 0) : isNaN(value) ? value : Number(value),
+            [name]: type === "checkbox" ? (checked ? 1 : 0) : isNaN(value) ? value : Number(value),
         }));
     };
 
@@ -129,12 +143,10 @@ const FormPatient = () => {
     return (
         <Box sx={{ p: 2, maxWidth: "1400px", mx: "auto", height: "85vh" }}>
             <Grid container spacing={2} sx={{ height: "100%", flexWrap: "nowrap" }}>
+
                 {/* Form Section */}
-                <Grid item xs={6} sx={{ display: "flex" }}>
-                    <Paper
-                        elevation={2}
-                        sx={{ p: 3, borderRadius: 3, flex: 1, overflowY: "auto" }}
-                    >
+                <Grid item xs={6} sx={{ flex: "0 0 50%", maxWidth: "50%", display: "flex" }}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 3, flex: 1, overflowY: "auto" }}>
                         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                             <MedicalInformationIcon color="primary" sx={{ fontSize: 32, mr: 1 }} />
                             <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.main" }}>
@@ -145,6 +157,7 @@ const FormPatient = () => {
 
                         <Box component="form" onSubmit={handleSubmit} noValidate>
                             <Grid container spacing={2}>
+
                                 {/* Thông tin cá nhân */}
                                 <Grid item xs={12}>
                                     <Typography variant="subtitle2" sx={{ mb: 1, color: "text.secondary" }}>
@@ -166,11 +179,7 @@ const FormPatient = () => {
                                         <Grid item xs={6}>
                                             <FormControl fullWidth size="small">
                                                 <InputLabel>Giới tính</InputLabel>
-                                                <Select
-                                                    name="gender"
-                                                    value={formData.gender}
-                                                    onChange={handleChange}
-                                                >
+                                                <Select name="gender" value={formData.gender} onChange={handleChange}>
                                                     <MenuItem value="female">Nữ</MenuItem>
                                                     <MenuItem value="male">Nam</MenuItem>
                                                 </Select>
@@ -181,10 +190,7 @@ const FormPatient = () => {
 
                                 {/* Chỉ số sức khỏe */}
                                 <Grid item xs={12}>
-                                    <Typography
-                                        variant="subtitle2"
-                                        sx={{ mb: 1, mt: 1, color: "text.secondary" }}
-                                    >
+                                    <Typography variant="subtitle2" sx={{ mb: 1, mt: 1, color: "text.secondary" }}>
                                         Chỉ số sức khỏe
                                     </Typography>
                                     <Grid container spacing={2}>
@@ -228,10 +234,7 @@ const FormPatient = () => {
 
                                 {/* Tiền sử bệnh */}
                                 <Grid item xs={12}>
-                                    <Typography
-                                        variant="subtitle2"
-                                        sx={{ mb: 1, mt: 1, color: "text.secondary" }}
-                                    >
+                                    <Typography variant="subtitle2" sx={{ mb: 1, mt: 1, color: "text.secondary" }}>
                                         Tiền sử bệnh
                                     </Typography>
                                     <Grid container spacing={2}>
@@ -278,6 +281,7 @@ const FormPatient = () => {
                                     </Grid>
                                 </Grid>
                             </Grid>
+
                             <Button
                                 type="submit"
                                 fullWidth
@@ -293,10 +297,16 @@ const FormPatient = () => {
                 </Grid>
 
                 {/* Chat Section */}
-                <Grid item xs={6} sx={{ display: "flex" }}>
+                <Grid item xs={6} sx={{ flex: "0 0 50%", maxWidth: "50%", display: "flex" }}>
                     <Paper
                         elevation={2}
-                        sx={{ p: 3, borderRadius: 3, flex: 1, display: "flex", flexDirection: "column" }}
+                        sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            flex: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                        }}
                     >
                         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                             <ChatBubbleOutlineIcon color="primary" sx={{ fontSize: 32, mr: 1 }} />
