@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, TrendingUp, TrendingDown } from 'lucide-react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
 
-const StatsGrid = (foods) => {
-    const targetCalo = 2117; // Mục tiêu calo
+const StatsGrid = (target, foods) => {
+    const targetCalo = target; // Mục tiêu calo
     const macroRatios = {
         protein: 0.2, // 20%
         carbs: 0.5,   // 50%
@@ -93,8 +93,8 @@ const StatsGrid = (foods) => {
 
                         <div className="mb-3">
                             <div className="d-flex align-items-baseline gap-2">
-                                <span className="fs-4 fw-bold text-dark">{stat.value}</span>
-                                <span className="text-muted small">/ {stat.target}</span>
+                                <span className="fs-4 fw-bold text-dark">{stat.value}g</span>
+                                <span className="text-muted small">/ {stat.target}g</span>
                             </div>
                         </div>
 
@@ -118,44 +118,27 @@ const StatsGrid = (foods) => {
 
 
 export default function FoodTrackerApp() {
-    const [foods, setFoods] = useState([
-        {
-            icon: '🍳',
-            name: 'Trứng gà chiên',
-            details: '94g • 90 cal',
-            macros: ['6.5g', '1g', '7.1g'],
-            colors: ['success', 'warning', 'danger'],
-            checked: true,
-            meal: 'sáng'
-        },
-        {
-            icon: '🍅',
-            name: 'Quả cà chua',
-            details: '90g • 16 cal',
-            macros: ['0.7g', '3.5g', '0g'],
-            colors: ['success', 'warning', 'danger'],
-            checked: true,
-            meal: 'trưa'
-        },
-        {
-            icon: '🍞',
-            name: 'Bánh mì Sandwich lát',
-            details: '30g • 144 cal',
-            macros: ['5g', '25.9g', '2.5g'],
-            colors: ['success', 'warning', 'danger'],
-            checked: false,
-            meal: 'ăn vặt'
-        },
-        {
-            icon: '🥬',
-            name: 'Rau xà lách',
-            details: '80g • 12 cal',
-            macros: ['1.4g', '2.9g', '0.2g'],
-            colors: ['success', 'warning', 'danger'],
-            checked: false,
-            meal: 'tối'
+    const food = JSON.parse(localStorage.getItem('food'));
+    const [foods, setFoods] = useState([]);
+
+    useEffect(() => {
+        if (food && food?.chosen?.length > 0) {
+            const mappedFoods = food.chosen.map((food) => ({
+                image: '🍅',
+                name: food.name,
+                details: `${food.weight}g • ${food.calo}cal`,
+                macros: [
+                    `${food.chat_dam}g`,
+                    `${food.duong_bot}g`,
+                    `${food.chat_beo}g`
+                ],
+                colors: ['success', 'warning', 'danger'],
+                checked: true,
+                meal: 'sáng'
+            }));
+            setFoods(mappedFoods);
         }
-    ]);
+    }, []);
 
     const toggleChecked = (index) => {
         const updatedFoods = [...foods];
@@ -191,7 +174,7 @@ export default function FoodTrackerApp() {
             {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
                 <div className="d-flex gap-3 p-3 mb-3 gradient rounded align-items-center" key={idx}>
                     <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, fontSize: 24 }}>
-                        {item.icon}
+                        {item.image}
                     </div>
                     <div className="flex-grow-1">
                         <h6 className="mb-0">{item.name}</h6>
@@ -229,7 +212,7 @@ export default function FoodTrackerApp() {
                         <h4>Tổng quan</h4>
                     </div>
                 </div>
-                {StatsGrid(foods)}
+                {StatsGrid(food?.sum, foods)}
 
                 {renderMeal('sáng')}
                 {renderMeal('trưa')}

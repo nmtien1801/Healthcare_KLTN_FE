@@ -47,6 +47,7 @@ function App() {
       let userInfo = JSON.parse(localStorage.getItem('userInfo'));
       if (firebaseUser) {
         dispatch(setUser({
+          userId: userInfo.userId,
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,

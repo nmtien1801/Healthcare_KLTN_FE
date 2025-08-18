@@ -3,6 +3,7 @@ import * as echarts from "echarts";
 import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
+import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../redux/foodAiSlice'
 
 const following = (userData) => {
   const latestReading = 7.2;
@@ -110,111 +111,23 @@ const following = (userData) => {
   </div>
 }
 
-const char = () => {
-  return <div className="bg-white rounded shadow-sm border p-4 mb-4">
-    <div className="d-flex align-items-center gap-2 mb-3">
-      <div className="p-2 rounded bg-indigo bg-opacity-10 d-inline-flex align-items-center justify-content-center">
-        <LineChart size={20} className="text-indigo" />
-      </div>
-      <h5 className="mb-0 fw-semibold text-dark">Biểu đồ theo dõi</h5>
-    </div>
-    <div id="health-chart" className="w-100" style={{ height: "16rem" }}></div>
-  </div>
-}
-
-const Plan = (aiPlan, user) => {
-  const applyMedicine = async (medicinePlan) => {
-    let data = {
-      email: user.email,
-      medicinePlan: medicinePlan,
-    }
-
-    try {
-      const res = await axios.post(
-        "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
-        {
-          message: {
-            text: data,
-          }
-        },
-      );
-
-      const botResponse = res.data.myField;
-
-
-      console.log("Bot response AI:", botResponse);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  return (
-    <>
-      {/* KẾ HOẠCH THUỐC */}
-      <div className="bg-light border rounded p-3 mt-3">
-        <h5 className="fw-semibold mb-2">📋 Kế hoạch dùng thuốc</h5>
-        <ul className="list-unstyled small mb-3">
-          <li><strong>Sáng:</strong> {aiPlan.thuoc.sang && aiPlan.thuoc.sang.length > 0 ? aiPlan.thuoc.sang.join(", ") : "Không dùng"}</li>
-          <li><strong>Trưa:</strong> {aiPlan.thuoc.trua && aiPlan.thuoc.trua.length > 0 ? aiPlan.thuoc.trua.join(", ") : "Không dùng"}</li>
-          <li><strong>Tối:</strong> {aiPlan.thuoc.toi && aiPlan.thuoc.toi.length > 0 ? aiPlan.thuoc.toi.join(", ") : "Không dùng"}</li>
-        </ul>
-        <div className="d-flex justify-content-end">
-          <button className="btn btn-sm btn-success" onClick={() => applyMedicine(aiPlan.thuoc)}>
-            Áp dụng thuốc
-          </button>
-        </div>
-      </div>
-
-      {/* KẾ HOẠCH DINH DƯỠNG */}
-      <div className="bg-light border rounded p-3 mt-3">
-        <h5 className="fw-semibold mb-2">🥗 Kế hoạch dinh dưỡng</h5>
-        <div className="mb-2"><strong>Calo/ngày:</strong> {aiPlan.cheDoAn.caloNgay}</div>
-        <ul className="list-unstyled mt-2 small">
-          <li><strong>Sáng:</strong> {aiPlan.cheDoAn.buaAn.sang.mon} ({aiPlan.cheDoAn.buaAn.sang.kcal} Kcal)</li>
-          <li><strong>Trưa:</strong> {aiPlan.cheDoAn.buaAn.trua.mon} ({aiPlan.cheDoAn.buaAn.trua.kcal} Kcal)</li>
-          <li><strong>Tối:</strong> {aiPlan.cheDoAn.buaAn.toi.mon} ({aiPlan.cheDoAn.buaAn.toi.kcal} Kcal)</li>
-          <li><strong>Phụ:</strong> {aiPlan.cheDoAn.buaAn.phu.mon} ({aiPlan.cheDoAn.buaAn.phu.kcal} Kcal)</li>
-        </ul>
-        <div className="d-flex justify-content-end">
-          <button className="btn btn-sm btn-success" onClick={() => alert("Đã áp dụng chế độ ăn!")}>
-            Áp dụng chế độ ăn
-          </button>
-        </div>
-      </div>
-
-    </>
-  )
-}
-
-const HealthTabs = () => {
-  const [messageInput, setMessageInput] = useState([]);
-  const [aiPlan, setAiPlan] = useState(null);
-  let user = useSelector((state) => state.auth.userInfo);
-  const [measurementType, setMeasurementType] = useState("before");
-
-  const [userData, setUserData] = useState({
-    name: "Nguyễn Văn A",
-    age: 45,
-    gender: "Nam",
-    condition: "Tiểu đường type 2",
-    doctor: "Bác sĩ Trần Thị B",
-    nextAppointment: "2025-06-30",
-    bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 6.3],
-  });
-
+const char = (userData) => {
+  // biểu đồ
   useEffect(() => {
     const chartDom = document.getElementById("health-chart");
     if (chartDom) {
       const myChart = echarts.init(chartDom);
-      const dates = [
-        "17/06",
-        "18/06",
-        "19/06",
-        "20/06",
-        "21/06",
-        "22/06",
-        "23/06",
-      ];
+      // 👉 Lấy 7 ngày gần nhất (tính từ hôm nay lùi về trước)
+      const today = new Date();
+      today.setDate(today.getDate() - 1); // lùi về hôm qua
+
+      const dates = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() - (6 - i)); // từ 6 ngày trước -> hôm qua
+        return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`;
+      });
 
       const option = {
         title: {
@@ -279,7 +192,171 @@ const HealthTabs = () => {
         myChart.dispose();
       };
     }
+
   }, [userData.bloodSugar]);
+
+  return (
+
+    <div className="bg-white rounded shadow-sm border p-4 mb-4">
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <div className="p-2 rounded bg-indigo bg-opacity-10 d-inline-flex align-items-center justify-content-center">
+          <LineChart size={20} className="text-indigo" />
+        </div>
+        <h5 className="mb-0 fw-semibold text-dark">Biểu đồ theo dõi</h5>
+      </div>
+      <div id="health-chart" className="w-100" style={{ height: "16rem" }}></div>
+    </div>
+  )
+}
+
+const Plan = (aiPlan, user, userData) => {
+  const [food, setFood] = useState([]);
+  const medicines = useSelector((state) => state.foodAi.medicines);
+  const dispatch = useDispatch();
+
+  // lấy thuốc khi chưa xác nhận
+  useEffect(() => {
+    const fetchMedicine = async () => {
+      await dispatch(getMedicine())
+    };
+
+    fetchMedicine();
+  }, []);
+
+  const applyMedicine = async (medicinePlan) => {
+    let data = {
+      email: user.email,
+      medicinePlan: medicinePlan,
+    }
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
+        {
+          message: {
+            text: data,
+          }
+        },
+      );
+
+      const botResponse = res.data.myField;
+
+
+      console.log("Bot response AI:", botResponse);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const updateCalo = async (min, max, trend, stdDev, currentCalo) => {
+    let data = {
+      min: min,
+      max: max,
+      trend: trend,
+      stdDev: stdDev,
+      currentCalo: currentCalo
+    }
+
+    let res = await dispatch(suggestFoodsByAi(data))
+
+    if (res.payload) {
+      localStorage.setItem("food", JSON.stringify(res.payload.result)); // ✅ Lưu cache
+    }
+    return JSON.parse(localStorage.getItem('food'));
+  }
+
+  // kiểm tra calo hiện tại
+  useEffect(() => {
+    const fetchFood = async () => {
+      const cached = localStorage.getItem("food");
+
+      if (cached) {
+        setFood(JSON.parse(cached));
+      } else {
+        // 👉 Lấy 3 ngày gần nhất
+        const last3 = userData.bloodSugar.slice(-3);
+        const trend = last3[2] - last3[0]; // so sánh ngày gần nhất với ngày 3 ngày trước
+
+        // 👉 Tính độ lệch chuẩn để check ổn định
+        const mean = userData.bloodSugar.reduce((a, b) => a + b, 0) / userData.bloodSugar.length;
+        const variance = userData.bloodSugar.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / userData.bloodSugar.length;
+        const stdDev = Math.sqrt(variance);
+
+        let res = await dispatch(GetCaloFood(user.userId))
+        const data = res?.payload?.DT?.menuFood;
+
+        // ⚡ phải chờ kết quả updateCalo
+        const dataFoods = await updateCalo(data.caloMin, data.caloMax, trend, stdDev, data.caloCurrent);
+        setFood(dataFoods);
+      }
+    };
+
+    fetchFood();
+  }, []);
+
+  return (
+    <>
+      {/* KẾ HOẠCH THUỐC */}
+      {medicines &&
+        <div className="bg-success bg-opacity-10 p-3 rounded mt-3">
+          <h5 className="fw-medium text-success mb-2">📋 Kế hoạch dùng thuốc</h5>
+          <ul className="list-unstyled small mb-3">
+            <li><strong>Sáng:</strong> {medicines && medicines.sang?.length > 0 ? medicines.sang.join(", ") : "Không dùng"}</li>
+            <li><strong>Trưa:</strong> {medicines && medicines.trua?.length > 0 ? medicines.trua.join(", ") : "Không dùng"}</li>
+            <li><strong>Tối:</strong> {medicines && medicines.toi?.length > 0 ? medicines.toi.join(", ") : "Không dùng"}</li>
+          </ul>
+          <div className="d-flex justify-content-end">
+            <button className="btn btn-sm btn-success" onClick={() => applyMedicine(aiPlan)}>
+              Áp dụng thuốc
+            </button>
+          </div>
+        </div>}
+
+
+      {/* KẾ HOẠCH DINH DƯỠNG */}
+      <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
+        <h5 className="fw-medium text-warning mb-2">🥗 Kế hoạch dinh dưỡng</h5>
+        <div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>
+        <ul className="list-unstyled mt-2 small">
+          {food?.chosen?.map((item, idx) => (
+            <li key={idx}>
+              <strong>{item.name}:</strong> ({item.calo} calo) - {item.weight}g
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Lời khuyên */}
+      <div className="bg-danger bg-opacity-10 p-3 rounded mt-3">
+        <h5 className="fw-medium text-danger mb-1">👉 Lời Khuyên</h5>
+        <p className="mb-1 advice-text" >{aiPlan.advice || "Chưa có lời khuyên"}</p>
+        <small className="text-muted fst-italic">
+          — {aiPlan.assistant_name || "AI Assistant"}
+        </small>
+      </div>
+
+    </>
+  )
+}
+
+const HealthTabs = () => {
+  const [messageInput, setMessageInput] = useState([]);
+  const dispatch = useDispatch();
+  const [aiPlan, setAiPlan] = useState({
+    advice: 'Đo đường huyết trước ăn để theo dõi hiệu quả của chế độ ăn và thuốc. \nGhi lại chỉ số để bác sĩ có thể điều chỉnh phác đồ điều trị nếu cần. Hãy \ntuân thủ đúng thời gian bác sĩ đã chỉ định, thường là trước bữa ăn một \nkhoảng thời gian nhất định (khoảng 30 phút). Bắt đầu bữa ăn bằng rau \nxanh để tạo cảm giác no, làm chậm quá trình tiêu hóa tinh bột, từ đó \ngiúp đường huyết không tăng quá nhanh'
+  });
+  let user = useSelector((state) => state.auth.userInfo);
+  const [measurementType, setMeasurementType] = useState("before");
+
+  const [userData, setUserData] = useState({
+    name: "Nguyễn Văn A",
+    age: 45,
+    gender: "Nam",
+    condition: "Tiểu đường type 2",
+    doctor: "Bác sĩ Trần Thị B",
+    nextAppointment: "2025-06-30",
+    bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 2],
+  });
 
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
@@ -328,9 +405,8 @@ const HealthTabs = () => {
       );
 
       const botResponse = res.data;
-      console.log('ssssssssssssssssssss ', botResponse);
-
       setAiPlan(botResponse);
+      await dispatch(setMedicine(botResponse.thuoc))
     } catch (err) {
       console.error(err);
     }
@@ -342,10 +418,9 @@ const HealthTabs = () => {
       {following(userData)}
 
       {/* Biểu đồ */}
-      {char()}
+      {char(userData)}
 
       <div className="d-flex flex-column flex-lg-row gap-4">
-        {/* Nhập chỉ số mới */}
         {/* Nhập chỉ số mới */}
         <div className="bg-white rounded shadow-lg p-4 flex-fill">
           <h3 className="fw-semibold mb-3 fs-6">Nhập chỉ số mới</h3>
@@ -386,7 +461,7 @@ const HealthTabs = () => {
             Nhập chỉ số đường huyết theo đơn vị mmol/L
           </div>
 
-          {aiPlan && Plan(aiPlan, user)}
+          {aiPlan && Plan(aiPlan, user, userData)}
         </div>
 
 

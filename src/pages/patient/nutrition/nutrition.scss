@@ -9,3 +9,9 @@
   );
   color: white;
 }
+
+.advice-text {
+  white-space: pre-line; /* giữ xuống dòng nếu có \n */
+  word-wrap: break-word; /* tự động xuống dòng khi quá dài */
+  overflow-wrap: break-word; /* fallback cho trình duyệt khác */
+}
