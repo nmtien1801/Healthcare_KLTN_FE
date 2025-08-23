@@ -15,3 +15,76 @@
   word-wrap: break-word; /* tự động xuống dòng khi quá dài */
   overflow-wrap: break-word; /* fallback cho trình duyệt khác */
 }
+
+/* Cải thiện giao diện FoodTrackerApp với màu sắc hài hòa */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Animation cho nút đóng/mở bữa ăn */
+.meal-toggle-btn {
+  transition: all 0.2s ease;
+}
+
+.meal-toggle-btn:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Animation cho việc mở/đóng nội dung */
+.meal-content {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+/* Animation cho các món ăn */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.meal-item {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Custom scrollbar với màu sắc hài hòa */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6c757d;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a6268;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .meal-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .nutrition-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

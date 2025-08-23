@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, TrendingUp, TrendingDown } from 'lucide-react';
+import { Check, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
 import { setWithExpiry, getWithExpiry } from '../../../components/customizeStorage'
@@ -40,15 +40,13 @@ const StatsGrid = (target, foods) => {
         let targetFat = 0;
 
         foods.forEach(food => {
-            if (food.checked) {
-                const [protein, carbs, fat] = food.macros.map(m => parseFloat(m.replace('g', '')));
-                const cal = parseFloat(food.details.split('•')[1].replace('cal', '').trim());
+            const [protein, carbs, fat] = food.macros.map(m => parseFloat(m.replace('g', '')));
+            const cal = parseFloat(food.details.split('•')[1].replace('cal', '').trim());
 
-                targetProtein += protein;
-                targetCarbs += carbs;
-                targetFat += fat;
-                targetCalo += cal;
-            }
+            targetProtein += protein;
+            targetCarbs += carbs;
+            targetFat += fat;
+            targetCalo += cal;
         });
 
         return {
@@ -148,6 +146,12 @@ const StatsGrid = (target, foods) => {
 export default function FoodTrackerApp() {
     const food = JSON.parse(getWithExpiry("food"))
     const [foods, setFoods] = useState([]);
+    const [expandedMeals, setExpandedMeals] = useState({
+        sáng: true,
+        trưa: true,
+        tối: true,
+        'ăn vặt': true
+    });
 
     // Hàm phân bổ thực phẩm vào bữa ăn hợp lý cho bệnh nhân tiểu đường
     const assignMealsToFoods = (foodItems) => {
@@ -218,6 +222,13 @@ export default function FoodTrackerApp() {
         setFoods(updatedFoods);
     };
 
+    const toggleMealExpansion = (mealLabel) => {
+        setExpandedMeals(prev => ({
+            ...prev,
+            [mealLabel]: !prev[mealLabel]
+        }));
+    };
+
     const caloriesByMeal = (foods) => {
         const result = {
             sáng: 0,
@@ -265,68 +276,251 @@ export default function FoodTrackerApp() {
 
     const renderMeal = (mealLabel) => {
         const mealTime = getMealTime(mealLabel);
+        const mealFoods = foods.filter(f => f.meal === mealLabel);
+        const mealCalories = caloriesByMeal(foods)[mealLabel] || 0;
+        const mealCount = mealFoods.filter(f => f.checked).length;
+
+        // Tính toán dinh dưỡng cho bữa ăn này
+        const mealNutrition = mealFoods.reduce((acc, food) => {
+            if (food.checked) {
+                const [protein, carbs, fat] = food.macros.map(m => parseFloat(m.replace('g', '')));
+                const cal = parseFloat(food.details.split('•')[1].replace('cal', '').trim());
+                acc.protein += protein;
+                acc.carbs += carbs;
+                acc.fat += fat;
+            }
+            return acc;
+        }, { protein: 0, carbs: 0, fat: 0 });
+
+        // làm tròn sau khi reduce
+        mealNutrition.protein = mealNutrition.protein.toFixed(1);
+        mealNutrition.carbs = mealNutrition.carbs.toFixed(1);
+        mealNutrition.fat = mealNutrition.fat.toFixed(1);
+
+        // Đánh giá mức độ phù hợp cho bệnh nhân tiểu đường
+        const getDiabetesRating = () => {
+            if (mealNutrition.carbs > 30) return { level: 'warning', text: '⚠️ Nhiều carbs - cần theo dõi đường huyết', color: 'warning' };
+            if (mealNutrition.protein > 15) return { level: 'success', text: '✅ Tốt - giàu protein ổn định đường huyết', color: 'success' };
+            if (mealNutrition.fat > 10) return { level: 'info', text: '💡 Nhiều chất béo - no lâu nhưng cần kiểm soát', color: 'info' };
+            return { level: 'secondary', text: '📊 Cân bằng dinh dưỡng', color: 'secondary' };
+        };
+
+        const diabetesRating = getDiabetesRating();
+
+        // Màu sắc hài hòa cho từng bữa ăn
+        const mealColors = {
+            sáng: { bg: '#e3f2fd', border: '#2196f3', text: '#1565c0' },
+            trưa: { bg: '#f3e5f5', border: '#9c27b0', text: '#7b1fa2' },
+            tối: { bg: '#e8f5e8', border: '#4caf50', text: '#388e3c' },
+            'ăn vặt': { bg: '#fff3e0', border: '#ff9800', text: '#f57c00' }
+        };
+
+        const currentMealColor = mealColors[mealLabel];
+
         return (
             <div className="mb-4 mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5>Buổi {mealLabel}</h5>
-                        <small className="text-muted">{mealTime.time} - {mealTime.tip}</small>
-                        <div className="mt-1">
-                            <small className="text-info fst-italic">💡 {mealTime.advice}</small>
+                {/* Header của bữa ăn với màu sắc hài hòa */}
+                <div className="rounded-3 shadow-sm border-0 mb-3" style={{
+                    backgroundColor: currentMealColor.bg,
+                    borderLeft: `4px solid ${currentMealColor.border}`
+                }}>
+                    <div className="p-4">
+                        <div className="d-flex justify-content-between align-items-start">
+                            <div className="flex-grow-1">
+                                <div className="d-flex align-items-center gap-3 mb-3">
+                                    <h4 className="mb-0 fw-bold" style={{ color: currentMealColor.text }}>
+                                        Buổi {mealLabel}
+                                    </h4>
+                                    <span className="badge px-3 py-2" style={{
+                                        backgroundColor: currentMealColor.border,
+                                        color: 'white'
+                                    }}>
+                                        {mealTime.time}
+                                    </span>
+                                    {/* Nút đóng/mở bữa ăn */}
+                                    <button
+                                        className="btn btn-sm border-0 p-2 meal-toggle-btn"
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                            color: currentMealColor.text
+                                        }}
+                                        onClick={() => toggleMealExpansion(mealLabel)}
+                                        title={expandedMeals[mealLabel] ? 'Thu gọn' : 'Mở rộng'}
+                                    >
+                                        {expandedMeals[mealLabel] ? (
+                                            <ChevronUp size={16} />
+                                        ) : (
+                                            <ChevronDown size={16} />
+                                        )}
+                                    </button>
+                                </div>
+                                <p className="mb-2" style={{ color: currentMealColor.text }}>{mealTime.tip}</p>
+                                <div className="d-flex align-items-center gap-2">
+                                    <span style={{ color: currentMealColor.text }}>💡</span>
+                                    <small style={{ color: currentMealColor.text }}>{mealTime.advice}</small>
+                                </div>
+                            </div>
+
+                            <div className="text-end">
+                                <div className="fs-2 fw-bold" style={{ color: currentMealColor.text }}>{mealCalories}</div>
+                                <small style={{ color: currentMealColor.text }}>calories</small>
+                                <div className="mt-2">
+                                    <span className="badge" style={{
+                                        backgroundColor: currentMealColor.border,
+                                        color: 'white'
+                                    }}>
+                                        {mealCount} món
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div className="text-end">
-                        <small className="text-primary fw-bold">{caloriesByMeal(foods)[mealLabel] || 0} cal</small>
-                        <div className="mt-1">
-                            <small className="text-success">
-                                {foods.filter(f => f.meal === mealLabel && f.checked).length} món
-                            </small>
-                        </div>
+
+                        {/* Thông tin dinh dưỡng tổng quan - chỉ hiển thị khi mở rộng */}
+                        {expandedMeals[mealLabel] && (
+                            <div className="row g-3 mt-4">
+                                <div className="col-md-3">
+                                    <div className="text-center p-3 rounded-3" style={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        border: `1px solid ${currentMealColor.border}`
+                                    }}>
+                                        <div className="fs-5 fw-bold" style={{ color: currentMealColor.text }}>{mealNutrition.protein}g</div>
+                                        <small style={{ color: currentMealColor.text }}>Protein</small>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="text-center p-3 rounded-3" style={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        border: `1px solid ${currentMealColor.border}`
+                                    }}>
+                                        <div className="fs-5 fw-bold" style={{ color: currentMealColor.text }}>{mealNutrition.carbs}g</div>
+                                        <small style={{ color: currentMealColor.text }}>Carbs</small>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="text-center p-3 rounded-3" style={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        border: `1px solid ${currentMealColor.border}`
+                                    }}>
+                                        <div className="fs-5 fw-bold" style={{ color: currentMealColor.text }}>{mealNutrition.fat}g</div>
+                                        <small style={{ color: currentMealColor.text }}>Fat</small>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="text-center p-3 rounded-3" style={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        border: `1px solid ${currentMealColor.border}`
+                                    }}>
+                                        <small className="fw-bold" style={{ color: currentMealColor.text }}>
+                                            {diabetesRating.text}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
-                    <div className="d-flex gap-3 p-3 mb-3 gradient rounded align-items-center" key={idx}>
-                        <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, fontSize: 24 }}>
-                            {item.image}
-                        </div>
-                        <div className="flex-grow-1">
-                            <h6 className="mb-0">{item.name}</h6>
-                            <small className="text-white">{item.details}</small>
-                            <div className="d-flex gap-3 mt-1 text-white">
-                                {item.macros.map((macro, i) => (
-                                    <span key={i} className="d-flex align-items-center gap-1">
-                                        <span
-                                            className={`d-inline-block rounded-circle bg-${item.colors[i]}`}
-                                            style={{ width: 8, height: 8 }}
-                                        ></span>
-                                        {macro}
-                                    </span>
-                                ))}
+                {/* Danh sách thực phẩm với thiết kế hài hòa - chỉ hiển thị khi mở rộng */}
+                {expandedMeals[mealLabel] && (
+                    <>
+                        {mealFoods.length > 0 ? (
+                            mealFoods.map((item, idx) => (
+                                <div key={idx} className="bg-white rounded-3 shadow-sm border-0 p-4 mb-3 hover-lift"
+                                    style={{
+                                        transition: 'all 0.3s ease',
+                                        borderLeft: `4px solid ${currentMealColor.border}`
+                                    }}>
+                                    <div className="d-flex gap-4 align-items-center">
+                                        <div className="flex-shrink-0">
+                                            <div className="rounded-circle d-flex align-items-center justify-content-center"
+                                                style={{
+                                                    width: 60,
+                                                    height: 60,
+                                                    fontSize: 28,
+                                                    backgroundColor: currentMealColor.bg,
+                                                    color: currentMealColor.text,
+                                                    border: `2px solid ${currentMealColor.border}`
+                                                }}>
+                                                {item.image}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-grow-1">
+                                            <h5 className="mb-2 fw-bold text-dark">{item.name}</h5>
+                                            <div className="d-flex align-items-center gap-3 mb-3">
+                                                <span className="badge bg-light text-dark px-3 py-2">
+                                                    {item.details}
+                                                </span>
+                                            </div>
+
+                                            {/* Macros với thiết kế hài hòa */}
+                                            <div className="d-flex gap-4">
+                                                {item.macros.map((macro, i) => (
+                                                    <div key={i} className="d-flex align-items-center gap-2">
+                                                        <div className="d-flex align-items-center gap-2">
+                                                            <div className="rounded-circle" style={{
+                                                                width: 12,
+                                                                height: 12,
+                                                                backgroundColor: getMacroColor(i)
+                                                            }}></div>
+                                                            <span className="fw-semibold text-dark">{macro}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-shrink-0">
+                                            <div
+                                                className={`rounded-circle d-flex align-items-center justify-content-center cursor-pointer ${item.checked ? 'bg-success' : 'bg-light'}`}
+                                                style={{
+                                                    width: 32,
+                                                    height: 32,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onClick={() => toggleChecked(foods.indexOf(item))}
+                                            >
+                                                {item.checked ? (
+                                                    <Check size={18} color="white" />
+                                                ) : (
+                                                    <div className="rounded-circle bg-white" style={{ width: 12, height: 12 }}></div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center p-5 rounded-3" style={{
+                                backgroundColor: currentMealColor.bg,
+                                border: `1px solid ${currentMealColor.border}`
+                            }}>
+                                <div className="mb-2" style={{ color: currentMealColor.text }}>🍽️</div>
+                                <small style={{ color: currentMealColor.text }}>Chưa có thực phẩm nào cho bữa {mealLabel}</small>
                             </div>
-                        </div>
-                        <div
-                            className={`d-flex align-items-center justify-content-center rounded-circle ${item.checked ? 'bg-success' : 'bg-dark'}`}
-                            style={{ width: 24, height: 24, cursor: 'pointer' }}
-                            onClick={() => toggleChecked(foods.indexOf(item))}
-                        >
-                            {item.checked ? <Check size={16} color="white" /> : <span className="bg-light rounded-circle" style={{ width: 8, height: 8 }}></span>}
-                        </div>
-                    </div>
-                ))}
+                        )}
+                    </>
+                )}
             </div>
         );
     };
 
+    // Hàm helper để lấy màu cho macros
+    const getMacroColor = (index) => {
+        const colors = ['#28a745', '#ffc107', '#dc3545'];
+        return colors[index] || '#6c757d';
+    };
+
     return (
         <div className="min-vh-100 bg-white text-dark p-3">
-            {/* Overview */}
-            <div className="my-2">
-                <div className="d-flex justify-content-between align-items-center ">
-                    <div className='mb-4'>
-                        <h4>Tổng quan</h4>
-                    </div>
+            {/* Overview với thiết kế hài hòa */}
+            <div className="my-4">
+                <div className="text-center mb-5">
+                    <h2 className="fw-bold mb-3" style={{ color: '#2c3e50' }}>🍽️ Theo dõi Dinh dưỡng Hàng ngày</h2>
+                    <p className="text-muted fs-5">Quản lý chế độ ăn uống khoa học cho bệnh nhân tiểu đường</p>
                 </div>
+
                 {StatsGrid(food?.sum, foods)}
 
                 {renderMeal('sáng')}
