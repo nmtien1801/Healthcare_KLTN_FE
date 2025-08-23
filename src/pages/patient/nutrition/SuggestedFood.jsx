@@ -48,7 +48,7 @@ export default function SuggestedFood() {
         }))
 
         if (res.payload) {
-            setWithExpiry("food", JSON.stringify(res.payload.result), 60000); // 1 phút
+            setWithExpiry("food", JSON.stringify(res.payload.result));
         }
         return JSON.parse(getWithExpiry("food"));
     }

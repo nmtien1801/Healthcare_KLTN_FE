@@ -265,7 +265,7 @@ const Plan = (aiPlan, user, userData) => {
     let res = await dispatch(suggestFoodsByAi(data))
 
     if (res.payload) {
-      setWithExpiry("food", JSON.stringify(res.payload.result), 60000); // 1 phút
+      setWithExpiry("food", JSON.stringify(res.payload.result));
     }
     return JSON.parse(getWithExpiry("food"));
   }
@@ -321,18 +321,22 @@ const Plan = (aiPlan, user, userData) => {
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
         <h5 className="fw-medium text-warning mb-2">🥗 Kế hoạch dinh dưỡng</h5>
-        {food ?
-          (<button className="mt-2 btn btn-sm btn-warning" onClick={() => navigate('/suggestedFood')}>
+        {food && food.chosen && food.chosen.length > 0 ? (
+          <>
+            <div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>
+            <ul className="list-unstyled mt-2 small">
+              {food.chosen.map((item, idx) => (
+                <li key={idx}>
+                  <strong>{item.name}:</strong> ({item.calo} calo) - {item.weight}g
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <button className="mt-2 btn btn-sm btn-warning" onClick={() => navigate('/suggestedFood')}>
             Khám phá thực đơn
-          </button>) :
-          (<div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>)}
-        <ul className="list-unstyled mt-2 small">
-          {food?.chosen?.map((item, idx) => (
-            <li key={idx}>
-              <strong>{item.name}:</strong> ({item.calo} calo) - {item.weight}g
-            </li>
-          ))}
-        </ul>
+          </button>
+        )}
       </div>
 
       {/* Lời khuyên */}

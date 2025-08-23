@@ -1,10 +1,12 @@
+const EXPIRE_FOOD = import.meta.env.EXPIRE_FOOD
+
 // Lưu vào localStorage với thời gian hết hạn (ms)
-export const setWithExpiry = (key, value, ttl) => {
+export const setWithExpiry = (key, value) => {
   const now = new Date();
 
   const item = {
     value: value,
-    expiry: now.getTime() + ttl, // thời gian hết hạn (ms)
+    expiry: now.getTime() + EXPIRE_FOOD, // thời gian hết hạn (ms)
   };
   
   localStorage.setItem(key, JSON.stringify(item));
