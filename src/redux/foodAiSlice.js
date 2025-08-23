@@ -1,5 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { suggestFoods, GetCaloFoodService } from "../apis/foodAiService";
+import {
+  suggestFoods,
+  GetCaloFoodService,
+  updateMenuFoodService,
+  getMenuFoodService
+} from "../apis/foodAiService";
 
 const initialState = {
   caloFood: 0,
@@ -18,6 +23,22 @@ export const GetCaloFood = createAsyncThunk(
   "auth/GetCaloFood",
   async (userId, thunkAPI) => {
     const response = await GetCaloFoodService(userId);
+    return response;
+  }
+);
+
+export const updateMenuFood = createAsyncThunk(
+  "auth/updateMenuFood",
+  async ({menuFoodId, userId}, thunkAPI) => {
+    const response = await updateMenuFoodService(menuFoodId, userId);
+    return response;
+  }
+);
+
+export const getMenuFood = createAsyncThunk(
+  "auth/getMenuFood",
+  async (thunkAPI) => {
+    const response = await getMenuFoodService();
     return response;
   }
 );
@@ -48,6 +69,18 @@ const authSlice = createSlice({
       .addCase(GetCaloFood.pending, (state) => {})
       .addCase(GetCaloFood.fulfilled, (state, action) => {})
       .addCase(GetCaloFood.rejected, (state, action) => {});
+
+    // updateMenuFood
+    builder
+      .addCase(updateMenuFood.pending, (state) => {})
+      .addCase(updateMenuFood.fulfilled, (state, action) => {})
+      .addCase(updateMenuFood.rejected, (state, action) => {});
+
+    // getMenuFood
+    builder
+      .addCase(getMenuFood.pending, (state) => {})
+      .addCase(getMenuFood.fulfilled, (state, action) => {})
+      .addCase(getMenuFood.rejected, (state, action) => {});
   },
 });
 

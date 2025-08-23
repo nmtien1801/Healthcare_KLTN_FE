@@ -1,46 +1,80 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./nutrition.scss";
+import { useSelector, useDispatch } from "react-redux";
+import { suggestFoodsByAi, updateMenuFood, getMenuFood, GetCaloFood } from '../../../redux/foodAiSlice'
+import { setWithExpiry, getWithExpiry } from '../../../components/customizeStorage'
 
 export default function SuggestedFood() {
+    const dispatch = useDispatch();
+    let user = useSelector((state) => state.auth.userInfo);
     const [confirmedIndex, setConfirmedIndex] = useState(null);
+    const [kcalGroups, setKcalGroups] = useState([]);
 
-    const kcalGroups = [
-        {
-            range: "1200–1400 kcal",
-            category: "Giảm cân nhanh",
-            target: "Người cần giảm cân nhanh, béo phì mức nặng, ít vận động",
-            img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
-        },
-        {
-            range: "1400–1600 kcal",
-            category: "Thừa cân",
-            target: "Người thừa cân, vận động nhẹ",
-            img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c",
-        },
-        {
-            range: "1600–1800 kcal",
-            category: "Cân nặng TB",
-            target: "Người cân nặng trung bình, vận động nhẹ–trung bình",
-            img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd",
-        },
-        {
-            range: "1800–2000 kcal",
-            category: "Nam hoạt động nhiều",
-            target: "Nam giới hoạt động nhiều hoặc người gầy cần giữ cân",
-            img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
-        },
-        {
-            range: ">2000 kcal",
-            category: "Vận động nặng",
-            target: "Trường hợp vận động thể lực nặng, lao động tay chân",
-            img: "https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83",
-        },
-    ];
+    // kiểm tra calo hiện tại
+    useEffect(() => {
+        const fetchMenuFood = async () => {
+            let data = await dispatch(getMenuFood())
+            let menuFood = data.payload.DT
+
+            setKcalGroups(
+                menuFood.map(m => ({
+                    range: `${m.caloMin} – ${m.caloMax} kcal`,
+                    category: m.title,
+                    target: m.description,
+                    img: m.image,
+                    id: m._id,
+                }))
+            );
+
+            // 👉 nếu user._id có trong mảng userIds thì set confirmedIndex
+            menuFood.forEach((m, idx) => {
+                if (m.userId?.includes(user.userId)) {
+                    setConfirmedIndex(idx);
+                }
+            });
+        }
+
+        fetchMenuFood();
+    }, [user.userId]);
+
+    // cập nhật lại calo hàng ngày
+    const updateCalo = async (min, max, trend, stdDev, currentCalo) => {
+        let res = await dispatch(suggestFoodsByAi({
+            min: min,
+            max: max,
+            trend: trend,
+            stdDev: stdDev,
+            currentCalo: currentCalo
+        }))
+
+        if (res.payload) {
+            setWithExpiry("food", JSON.stringify(res.payload.result), 60000); // 1 phút
+        }
+        return JSON.parse(getWithExpiry("food"));
+    }
+
+    const fetchFood = async () => {
+        // xem menuFood đã áp dụng
+        let res = await dispatch(GetCaloFood(user.userId))
+        const data = res?.payload?.DT?.menuFood;
+
+        // ⚡ phải chờ kết quả updateCalo
+        const dataFoods = await updateCalo(data.caloMin, data.caloMax, 0.3, 0.2, data.caloCurrent);
+    };
+
+    const handleConfirm = async (item, index) => {
+        setConfirmedIndex(index)    // chuyển trạng thái xác nhận
+
+        let res = await dispatch(updateMenuFood({ menuFoodId: item.id, userId: user.userId }))
+        if (res.payload.EC === 0) {
+            fetchFood();
+        }
+    }
 
     return (
         <div className="bg-light">
             {/* Hero Section */}
-           <div className="d-flex justify-content-between align-items-center mb-3 position-relative" style={{ height: "350px", overflow: "hidden" }}>
+            <div className="d-flex justify-content-between align-items-center mb-3 position-relative" style={{ height: "350px", overflow: "hidden" }}>
                 {/* Background Image */}
                 <img
                     src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1"
@@ -123,9 +157,8 @@ export default function SuggestedFood() {
 
                                     {/* Confirm Button */}
                                     <button
-                                        className={`btn w-100 ${confirmedIndex === index ? "btn-success" : "btn-outline-primary"
-                                            }`}
-                                        onClick={() => setConfirmedIndex(index)}
+                                        className={`btn w-100 ${confirmedIndex === index ? "btn-success" : "btn-outline-primary"}`}
+                                        onClick={() => handleConfirm(item, index)}
                                     >
                                         {confirmedIndex === index ? "✅ Đã xác nhận" : "Xác nhận"}
                                     </button>

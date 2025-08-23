@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, TrendingUp, TrendingDown } from 'lucide-react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
+import { setWithExpiry, getWithExpiry } from '../../../components/customizeStorage'
 
 const StatsGrid = (target, foods) => {
     const targetCalo = target; // Mục tiêu calo
@@ -118,7 +119,7 @@ const StatsGrid = (target, foods) => {
 
 
 export default function FoodTrackerApp() {
-    const food = JSON.parse(localStorage.getItem('food'));
+    const food = JSON.parse(getWithExpiry("food"))
     const [foods, setFoods] = useState([]);
 
     useEffect(() => {

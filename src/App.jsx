@@ -59,6 +59,7 @@ function App() {
           gender: userInfo.gender,
         }));
         if (firebaseUser.accessToken !== localStorage.getItem('access_Token')) {
+          alert('token hết hạn');
           localStorage.setItem("access_Token", firebaseUser.accessToken);
           // window.location.reload();
         }

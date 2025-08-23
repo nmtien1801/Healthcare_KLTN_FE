@@ -11,7 +11,20 @@ const suggestFoods = (min, max, trend, stdDev, currentCalo) => {
 };
 
 const GetCaloFoodService = (userId) => {
-  return customizeAxios.post("/GetCaloFood",{userId});
+  return customizeAxios.post("/GetCaloFood", { userId });
 };
 
-export { suggestFoods, GetCaloFoodService };
+const updateMenuFoodService = (menuFoodId, userId) => {
+  return customizeAxios.post("/updateMenuFood", { menuFoodId, userId });
+};
+
+const getMenuFoodService = () => {
+  return customizeAxios.get("/getMenuFood");
+};
+
+export {
+  suggestFoods,
+  GetCaloFoodService,
+  updateMenuFoodService,
+  getMenuFoodService,
+};

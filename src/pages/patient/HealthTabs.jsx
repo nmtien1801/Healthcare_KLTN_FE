@@ -4,6 +4,8 @@ import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, A
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
 import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../redux/foodAiSlice'
+import { useNavigate } from "react-router-dom";
+import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 
 const following = (userData) => {
   const latestReading = 7.2;
@@ -213,6 +215,7 @@ const Plan = (aiPlan, user, userData) => {
   const [food, setFood] = useState([]);
   const medicines = useSelector((state) => state.foodAi.medicines);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // lấy thuốc khi chưa xác nhận
   useEffect(() => {
@@ -223,6 +226,7 @@ const Plan = (aiPlan, user, userData) => {
     fetchMedicine();
   }, []);
 
+  // bấm xác nhận dùng thuốc
   const applyMedicine = async (medicinePlan) => {
     let data = {
       email: user.email,
@@ -248,6 +252,7 @@ const Plan = (aiPlan, user, userData) => {
     }
   }
 
+  // cập nhật lại calo hàng ngày
   const updateCalo = async (min, max, trend, stdDev, currentCalo) => {
     let data = {
       min: min,
@@ -260,18 +265,17 @@ const Plan = (aiPlan, user, userData) => {
     let res = await dispatch(suggestFoodsByAi(data))
 
     if (res.payload) {
-      localStorage.setItem("food", JSON.stringify(res.payload.result)); // ✅ Lưu cache
+      setWithExpiry("food", JSON.stringify(res.payload.result), 60000); // 1 phút
     }
-    return JSON.parse(localStorage.getItem('food'));
+    return JSON.parse(getWithExpiry("food"));
   }
 
   // kiểm tra calo hiện tại
   useEffect(() => {
     const fetchFood = async () => {
-      const cached = localStorage.getItem("food");
-
+      const cached = JSON.parse(getWithExpiry("food"));
       if (cached) {
-        setFood(JSON.parse(cached));
+        setFood(cached);
       } else {
         // 👉 Lấy 3 ngày gần nhất
         const last3 = userData.bloodSugar.slice(-3);
@@ -282,6 +286,7 @@ const Plan = (aiPlan, user, userData) => {
         const variance = userData.bloodSugar.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / userData.bloodSugar.length;
         const stdDev = Math.sqrt(variance);
 
+        // xem menuFood đã áp dụng
         let res = await dispatch(GetCaloFood(user.userId))
         const data = res?.payload?.DT?.menuFood;
 
@@ -316,7 +321,11 @@ const Plan = (aiPlan, user, userData) => {
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
         <h5 className="fw-medium text-warning mb-2">🥗 Kế hoạch dinh dưỡng</h5>
-        <div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>
+        {food ?
+          (<button className="mt-2 btn btn-sm btn-warning" onClick={() => navigate('/suggestedFood')}>
+            Khám phá thực đơn
+          </button>) :
+          (<div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>)}
         <ul className="list-unstyled mt-2 small">
           {food?.chosen?.map((item, idx) => (
             <li key={idx}>
@@ -327,13 +336,13 @@ const Plan = (aiPlan, user, userData) => {
       </div>
 
       {/* Lời khuyên */}
-      <div className="bg-danger bg-opacity-10 p-3 rounded mt-3">
+      <div className="bg-danger bg-opacity-10 p-3 rounded mt-3" >
         <h5 className="fw-medium text-danger mb-1">👉 Lời Khuyên</h5>
         <p className="mb-1 advice-text" >{aiPlan.advice || "Chưa có lời khuyên"}</p>
         <small className="text-muted fst-italic">
           — {aiPlan.assistant_name || "AI Assistant"}
         </small>
-      </div>
+      </div >
 
     </>
   )

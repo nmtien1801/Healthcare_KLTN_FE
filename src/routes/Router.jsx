@@ -114,7 +114,7 @@ const Router = (props) => {
                 </Nav.Link>
 
                 {showNutrition && (
-                  <Nav className="flex-column ms-4 mt-1 navbar-item">
+                  <Nav className="flex-column ms-4 mt-1">
                     <Nav.Link
                       as={NavLink}
                       to="/nutrition"
