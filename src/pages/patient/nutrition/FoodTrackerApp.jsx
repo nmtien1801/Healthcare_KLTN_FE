@@ -117,10 +117,49 @@ const StatsGrid = (target, foods) => {
     );
 };
 
-
 export default function FoodTrackerApp() {
     const food = JSON.parse(getWithExpiry("food"))
     const [foods, setFoods] = useState([]);
+
+    // Hàm phân bổ thực phẩm vào bữa ăn hợp lý cho bệnh nhân tiểu đường
+    const assignMealsToFoods = (foodItems) => {
+        const meals = ['sáng', 'trưa', 'tối', 'ăn vặt'];
+        const mealPreferences = {
+            sáng: { protein: 0.3, carbs: 0.25, fat: 0.2 },
+            trưa: { protein: 0.25, carbs: 0.3, fat: 0.25 },
+            tối: { protein: 0.2, carbs: 0.2, fat: 0.3 },
+            'ăn vặt': { protein: 0.25, carbs: 0.25, fat: 0.25 }
+        };
+
+        return foodItems.map((food, index) => {
+            const protein = parseFloat(food.chat_dam);
+            const carbs = parseFloat(food.duong_bot);
+            const fat = parseFloat(food.chat_beo);
+            const total = protein + carbs + fat;
+
+            let bestMeal = meals[index % meals.length]; // fallback: chia đều round-robin
+
+            if (total > 0) {
+                const proteinRatio = protein / total;
+                const carbsRatio = carbs / total;
+                const fatRatio = fat / total;
+
+                let bestScore = Infinity;
+                meals.forEach(meal => {
+                    const pref = mealPreferences[meal];
+                    const score = Math.abs(proteinRatio - pref.protein) +
+                        Math.abs(carbsRatio - pref.carbs) +
+                        Math.abs(fatRatio - pref.fat);
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestMeal = meal;
+                    }
+                });
+            }
+
+            return { ...food, meal: bestMeal };
+        });
+    };
 
     useEffect(() => {
         if (food && food?.chosen?.length > 0) {
@@ -137,7 +176,11 @@ export default function FoodTrackerApp() {
                 checked: true,
                 meal: 'sáng'
             }));
-            setFoods(mappedFoods);
+
+            // Phân bổ thực phẩm vào bữa ăn hợp lý
+            const foodsWithMeals = assignMealsToFoods(mappedFoods);
+
+            setFoods(foodsWithMeals);
         }
     }, []);
 
@@ -165,44 +208,87 @@ export default function FoodTrackerApp() {
         return result;
     };
 
-    const renderMeal = (mealLabel) => (
-        <div className="mb-4 mt-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5>Buổi {mealLabel}</h5>
-                <small>{caloriesByMeal(foods)[mealLabel] || 0} cal</small>
-            </div>
+    // Hàm tạo thời gian bữa ăn phù hợp cho bệnh nhân tiểu đường
+    const getMealTime = (mealLabel) => {
+        const mealTimes = {
+            sáng: {
+                time: '7:00 - 8:00',
+                tip: 'Ăn sáng trong vòng 1 giờ sau khi thức dậy',
+                advice: 'Bữa sáng giàu protein giúp ổn định đường huyết và no lâu'
+            },
+            trưa: {
+                time: '12:00 - 13:00',
+                tip: 'Ăn trưa cách bữa sáng 4-5 giờ',
+                advice: 'Bữa trưa cân bằng dinh dưỡng, ưu tiên rau xanh và protein'
+            },
+            tối: {
+                time: '18:00 - 19:00',
+                tip: 'Ăn tối cách giờ ngủ ít nhất 3 giờ',
+                advice: 'Bữa tối ít carbs, nhiều rau xanh để kiểm soát đường huyết'
+            },
+            'ăn vặt': {
+                time: '15:00 - 16:00',
+                tip: 'Ăn vặt giữa bữa trưa và tối',
+                advice: 'Bữa phụ nhẹ nhàng, tránh thực phẩm nhiều đường'
+            }
+        };
+        return mealTimes[mealLabel] || { time: '', tip: '', advice: '' };
+    };
 
-            {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
-                <div className="d-flex gap-3 p-3 mb-3 gradient rounded align-items-center" key={idx}>
-                    <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, fontSize: 24 }}>
-                        {item.image}
-                    </div>
-                    <div className="flex-grow-1">
-                        <h6 className="mb-0">{item.name}</h6>
-                        <small className="text-white">{item.details}</small>
-                        <div className="d-flex gap-3 mt-1 text-white">
-                            {item.macros.map((macro, i) => (
-                                <span key={i} className="d-flex align-items-center gap-1">
-                                    <span
-                                        className={`d-inline-block rounded-circle bg-${item.colors[i]}`}
-                                        style={{ width: 8, height: 8 }}
-                                    ></span>
-                                    {macro}
-                                </span>
-                            ))}
+    const renderMeal = (mealLabel) => {
+        const mealTime = getMealTime(mealLabel);
+        return (
+            <div className="mb-4 mt-4">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5>Buổi {mealLabel}</h5>
+                        <small className="text-muted">{mealTime.time} - {mealTime.tip}</small>
+                        <div className="mt-1">
+                            <small className="text-info fst-italic">💡 {mealTime.advice}</small>
                         </div>
                     </div>
-                    <div
-                        className={`d-flex align-items-center justify-content-center rounded-circle ${item.checked ? 'bg-success' : 'bg-dark'}`}
-                        style={{ width: 24, height: 24, cursor: 'pointer' }}
-                        onClick={() => toggleChecked(foods.indexOf(item))}
-                    >
-                        {item.checked ? <Check size={16} color="white" /> : <span className="bg-light rounded-circle" style={{ width: 8, height: 8 }}></span>}
+                    <div className="text-end">
+                        <small className="text-primary fw-bold">{caloriesByMeal(foods)[mealLabel] || 0} cal</small>
+                        <div className="mt-1">
+                            <small className="text-success">
+                                {foods.filter(f => f.meal === mealLabel && f.checked).length} món
+                            </small>
+                        </div>
                     </div>
                 </div>
-            ))}
-        </div>
-    );
+
+                {foods.filter(f => f.meal === mealLabel).map((item, idx) => (
+                    <div className="d-flex gap-3 p-3 mb-3 gradient rounded align-items-center" key={idx}>
+                        <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, fontSize: 24 }}>
+                            {item.image}
+                        </div>
+                        <div className="flex-grow-1">
+                            <h6 className="mb-0">{item.name}</h6>
+                            <small className="text-white">{item.details}</small>
+                            <div className="d-flex gap-3 mt-1 text-white">
+                                {item.macros.map((macro, i) => (
+                                    <span key={i} className="d-flex align-items-center gap-1">
+                                        <span
+                                            className={`d-inline-block rounded-circle bg-${item.colors[i]}`}
+                                            style={{ width: 8, height: 8 }}
+                                        ></span>
+                                        {macro}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div
+                            className={`d-flex align-items-center justify-content-center rounded-circle ${item.checked ? 'bg-success' : 'bg-dark'}`}
+                            style={{ width: 24, height: 24, cursor: 'pointer' }}
+                            onClick={() => toggleChecked(foods.indexOf(item))}
+                        >
+                            {item.checked ? <Check size={16} color="white" /> : <span className="bg-light rounded-circle" style={{ width: 8, height: 8 }}></span>}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     return (
         <div className="min-vh-100 bg-white text-dark p-3">
