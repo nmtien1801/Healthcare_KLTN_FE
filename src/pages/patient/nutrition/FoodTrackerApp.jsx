@@ -6,11 +6,6 @@ import { setWithExpiry, getWithExpiry } from '../../../components/customizeStora
 
 const StatsGrid = (target, foods) => {
     const targetCalo = target; // Mục tiêu calo
-    const macroRatios = {
-        protein: 0.2, // 20%
-        carbs: 0.5,   // 50%
-        fat: 0.3      // 30%
-    };
 
     const calculateTotals = () => {
         let totalCalo = 0;
@@ -31,16 +26,40 @@ const StatsGrid = (target, foods) => {
         });
 
         return {
-            totalCalo,
-            totalProtein,
-            totalCarbs,
-            totalFat,
+            totalCalo: totalCalo.toFixed(1),
+            totalProtein: totalProtein.toFixed(1),
+            totalCarbs: totalCarbs.toFixed(1),
+            totalFat: totalFat.toFixed(1),
         };
     };
 
-    const targetProtein = Math.round((targetCalo * macroRatios.protein) / 4);
-    const targetCarbs = Math.round((targetCalo * macroRatios.carbs) / 4);
-    const targetFat = Math.round((targetCalo * macroRatios.fat) / 9);
+    const calculateTarget = () => {
+        let targetCalo = 0;
+        let targetProtein = 0;
+        let targetCarbs = 0;
+        let targetFat = 0;
+
+        foods.forEach(food => {
+            if (food.checked) {
+                const [protein, carbs, fat] = food.macros.map(m => parseFloat(m.replace('g', '')));
+                const cal = parseFloat(food.details.split('•')[1].replace('cal', '').trim());
+
+                targetProtein += protein;
+                targetCarbs += carbs;
+                targetFat += fat;
+                targetCalo += cal;
+            }
+        });
+
+        return {
+            targetCalo: targetCalo.toFixed(1),
+            targetProtein: targetProtein.toFixed(1),
+            targetCarbs: targetCarbs.toFixed(1),
+            targetFat: targetFat.toFixed(1),
+        };
+    };
+
+    const { targetProtein, targetCarbs, targetFat } = calculateTarget();
     const { totalCalo, totalProtein, totalCarbs, totalFat } = calculateTotals();
 
     const stats = [
@@ -51,6 +70,7 @@ const StatsGrid = (target, foods) => {
             percentage: Math.round((totalCalo / targetCalo) * 100),
             trend: "up",
             color: "primary",
+            unit: "kcal", // ✅
         },
         {
             title: "Chất đạm",
@@ -59,6 +79,7 @@ const StatsGrid = (target, foods) => {
             percentage: Math.round((totalProtein / targetProtein) * 100),
             trend: "up",
             color: "success",
+            unit: "g",
         },
         {
             title: "Đường bột",
@@ -67,6 +88,7 @@ const StatsGrid = (target, foods) => {
             percentage: Math.round((totalCarbs / targetCarbs) * 100),
             trend: "down",
             color: "warning",
+            unit: "g",
         },
         {
             title: "Chất béo",
@@ -75,6 +97,7 @@ const StatsGrid = (target, foods) => {
             percentage: Math.round((totalFat / targetFat) * 100),
             trend: "up",
             color: "danger",
+            unit: "g",
         },
     ];
 
@@ -94,8 +117,12 @@ const StatsGrid = (target, foods) => {
 
                         <div className="mb-3">
                             <div className="d-flex align-items-baseline gap-2">
-                                <span className="fs-4 fw-bold text-dark">{stat.value}g</span>
-                                <span className="text-muted small">/ {stat.target}g</span>
+                                {/* ✅ Calories hiển thị kcal, còn macros hiển thị g */}
+                                <span className="fs-4 fw-bold text-dark">
+                                    {stat.value}
+                                    <span className="fs-6 ms-1 text-muted">{stat.unit}</span>
+                                </span>
+                                <span className="text-muted small">/ {stat.target}{stat.unit}</span>
                             </div>
                         </div>
 
@@ -103,7 +130,7 @@ const StatsGrid = (target, foods) => {
                             <div
                                 className={`progress-bar bg-${stat.color}`}
                                 role="progressbar"
-                                style={{ width: `${stat.percentage}%` }}
+                                style={{ width: `${Math.min(stat.percentage, 100)}%` }}
                                 aria-valuenow={stat.percentage}
                                 aria-valuemin="0"
                                 aria-valuemax="100"
@@ -116,6 +143,7 @@ const StatsGrid = (target, foods) => {
         </div>
     );
 };
+
 
 export default function FoodTrackerApp() {
     const food = JSON.parse(getWithExpiry("food"))
