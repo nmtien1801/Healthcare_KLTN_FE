@@ -3,6 +3,8 @@ import * as echarts from "echarts";
 import { Check, MessageCircleMore, X, Bot, Send } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
+import FormPatient from "./assistant/FormPatient";
+
 
 const Home = () => {
   const navigate = useNavigate();
@@ -158,50 +160,41 @@ const Home = () => {
 
           {/* Hỗ trợ Chatbot */}
           <div className="col-12">
-            <div className="rounded-4 p-3 shadow-sm text-white" style={{ background: "linear-gradient(to right, #6366F1, #8B5CF6)" }}>
+            <div
+              className="rounded-4 p-3 shadow-sm text-white"
+              style={{ background: "linear-gradient(to right, #6366F1, #8B5CF6)" }}
+            >
               <div className="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 className="fw-semibold mb-1">Trợ lý sức khỏe AI</h6>
                   <small>Hỏi đáp mọi lúc mọi nơi</small>
                 </div>
-                <button onClick={() => setShowChatbot(true)} className="btn btn-light text-primary btn-sm rounded-pill fw-medium">
+                <button
+                  onClick={() => setShowChatbot(true)}
+                  className="btn btn-light text-primary btn-sm rounded-pill fw-medium"
+                >
                   <MessageCircleMore size={16} className="me-1" /> Chat ngay
                 </button>
               </div>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* Chatbot Popup */}
+      {/* Giao diện tư vấn (Chatbot) hiển thị phía dưới khi nhấn nút */}
       {showChatbot && (
-        <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
-          <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
-            <div><Bot size={18} className="me-1" /> Trợ lý AI</div>
-            <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle"><X size={16} /></button>
-          </div>
-          <div className="p-2" style={{ height: 340, overflowY: "auto" }}>
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className={`mb-2 ${msg.sender === "user" ? "text-end" : "text-start"}`}>
-                <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "user" ? "bg-primary text-white" : "bg-light text-dark"}`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="p-2 border-top d-flex">
-            <input
-              type="text"
-              className="form-control form-control-sm rounded-pill me-2"
-              placeholder="Nhập câu hỏi..."
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            />
-            <button onClick={sendMessage} className="btn btn-sm btn-primary rounded-pill"><Send size={16} /></button>
-          </div>
+        <div className="mt-4 bg-white rounded-4 shadow-sm p-3">
+          <button
+            onClick={() => setShowChatbot(false)}
+            className="btn btn-sm btn-outline-danger rounded-pill mb-3"
+          >
+            <X size={16} className="me-1" /> Đóng
+          </button>
+          <FormPatient />
         </div>
       )}
+
     </div>
   );
 };
