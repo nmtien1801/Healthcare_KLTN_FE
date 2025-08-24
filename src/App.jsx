@@ -50,7 +50,7 @@ function App() {
           userId: userInfo.userId,
           uid: firebaseUser.uid,
           email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
+          username: userInfo.username,
           photoURL: firebaseUser.photoURL,
           role: userInfo.role,
           address: userInfo.address,

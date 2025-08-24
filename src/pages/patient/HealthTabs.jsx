@@ -6,8 +6,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
+import { fetchBloodSugar } from '../../redux/patientSlice'
 
-const following = (userData) => {
+const following = (user) => {
   const latestReading = 7.2;
 
   const readingStatus = {
@@ -48,11 +49,26 @@ const following = (userData) => {
             <h5 className="fw-semibold mb-0">Thông tin cá nhân</h5>
           </div>
           <ul className="list-unstyled small mb-0">
-            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Họ tên:</span><span>{userData.name}</span></li>
-            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Tuổi:</span><span>{userData.age}</span></li>
-            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Giới tính:</span><span>{userData.gender}</span></li>
-            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Tình trạng:</span><span className="text-danger">{userData.condition}</span></li>
-            <li className="d-flex justify-content-between"><span className="text-muted">Bác sĩ:</span><span>{userData.doctor}</span></li>
+            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Họ tên:</span><span>{user.username}</span></li>
+            <li className="d-flex justify-content-between mb-2">
+              <span className="text-muted">Tuổi:</span>
+              <span>
+                {(() => {
+                  if (!user.dob) return "";
+                  const dob = new Date(user.dob);
+                  const today = new Date();
+                  let age = today.getFullYear() - dob.getFullYear();
+                  const m = today.getMonth() - dob.getMonth();
+                  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                    age--;
+                  }
+                  return age;
+                })()}
+              </span>
+            </li>
+            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Giới tính:</span><span>{user.gender}</span></li>
+            <li className="d-flex justify-content-between mb-2"><span className="text-muted">Tình trạng:</span><span className="text-danger">Tiểu đường type 2</span></li>
+            <li className="d-flex justify-content-between"><span className="text-muted">Bác sĩ:</span><span>Bác sĩ Trần Thị B</span></li>
           </ul>
         </div>
       </div>
@@ -67,10 +83,10 @@ const following = (userData) => {
             <h5 className="fw-semibold mb-0">Lịch hẹn tiếp theo</h5>
           </div>
           <div className="fs-4 fw-bold text-dark mb-1">
-            {new Date(userData.nextAppointment).toLocaleDateString('vi-VN')}
+            {new Date(user.nextAppointment).toLocaleDateString('vi-VN')}
           </div>
           <div className="text-muted mb-3">
-            {new Date(userData.nextAppointment).toLocaleDateString('vi-VN', {
+            {new Date(user.nextAppointment).toLocaleDateString('vi-VN', {
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             })}
           </div>
@@ -113,64 +129,102 @@ const following = (userData) => {
   </div>
 }
 
-const char = (userData) => {
+const bloodSugarDaily = (bloodSugar) => {
+  // 👉 Nhóm dữ liệu theo ngày và tính trung bình
+  const dailyData = {};
+
+  bloodSugar.forEach(item => {
+    const date = new Date(item.time);
+    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    if (!dailyData[dateKey]) {
+      dailyData[dateKey] = { fasting: [], postMeal: [] };
+    }
+
+    if (item.type === 'fasting') {
+      dailyData[dateKey].fasting.push(item.value);
+    } else if (item.type === 'postMeal') {
+      dailyData[dateKey].postMeal.push(item.value);
+    }
+  });
+
+  // 👉 Tính trung bình cho mỗi ngày
+  const sortedDates = Object.keys(dailyData).sort();
+  const dates = sortedDates.map(date => {
+    const d = new Date(date);
+    return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+  });
+
+  const fastingData = sortedDates.map(date => {
+    const values = dailyData[date].fasting;
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  });
+
+  const postMealData = sortedDates.map(date => {
+    const values = dailyData[date].postMeal;
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  });
+
+  return { dates, fastingData, postMealData }
+}
+
+const char = (bloodSugar) => {
   // biểu đồ
   useEffect(() => {
     const chartDom = document.getElementById("health-chart");
-    if (chartDom) {
+    if (chartDom && bloodSugar.length > 0) {
       const myChart = echarts.init(chartDom);
-      // 👉 Lấy 7 ngày gần nhất (tính từ hôm nay lùi về trước)
-      const today = new Date();
-      today.setDate(today.getDate() - 1); // lùi về hôm qua
 
-      const dates = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(today);
-        d.setDate(today.getDate() - (6 - i)); // từ 6 ngày trước -> hôm qua
-        return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}`;
-      });
+      // trung bình bloodSugar mỗi ngày
+      let dailyBloodSugar = bloodSugarDaily(bloodSugar)
 
       const option = {
         title: {
-          text: "Chỉ số đường huyết (mmol/L)",
+          text: "Chỉ số đường huyết (mmol/L) - Trung bình theo ngày",
           left: "center",
-          textStyle: {
-            fontSize: 14,
-          },
+          textStyle: { fontSize: 14 },
         },
         tooltip: {
           trigger: "axis",
+          formatter: function (params) {
+            let result = params[0].axisValue + '<br/>';
+            params.forEach(param => {
+              if (param.value !== null) {
+                result += param.marker + ' ' + param.seriesName + ': ' + Number(param.value.toFixed(1)) + ' mmol/L<br/>';
+              }
+            });
+            return result;
+          }
+        },
+        legend: {
+          top: "10%",
+          data: ["Lúc đói", "Sau ăn"],
         },
         xAxis: {
           type: "category",
-          data: dates,
+          data: dailyBloodSugar.dates,
         },
         yAxis: {
           type: "value",
           min: 4,
-          max: 8,
-          axisLabel: {
-            formatter: "{value} mmol/L",
-          },
+          max: 10,
+          axisLabel: { formatter: "{value} mmol/L" },
         },
         series: [
           {
-            data: userData.bloodSugar,
+            name: "Lúc đói",
+            data: dailyBloodSugar.fastingData,
             type: "line",
             smooth: true,
-            lineStyle: {
-              color: "#4f46e5",
-            },
-            itemStyle: {
-              color: "#4f46e5",
-            },
+            lineStyle: { color: "#3b82f6" }, // xanh
+            itemStyle: { color: "#3b82f6" },
+            connectNulls: false, // Không nối các điểm null
             markLine: {
               data: [
                 {
                   yAxis: 5.6,
                   lineStyle: { color: "#10b981" },
-                  label: { formatter: "Mức bình thường" },
+                  label: { formatter: "Ngưỡng bình thường (đói)" },
                 },
                 {
                   yAxis: 7.0,
@@ -180,12 +234,31 @@ const char = (userData) => {
               ],
             },
           },
+          {
+            name: "Sau ăn",
+            data: dailyBloodSugar.postMealData,
+            type: "line",
+            smooth: true,
+            lineStyle: { color: "#f59e0b" }, // vàng cam
+            itemStyle: { color: "#f59e0b" },
+            connectNulls: false, // Không nối các điểm null
+            markLine: {
+              data: [
+                {
+                  yAxis: 7.8,
+                  lineStyle: { color: "#10b981" },
+                  label: { formatter: "Ngưỡng bình thường (sau ăn)" },
+                },
+                {
+                  yAxis: 11.1,
+                  lineStyle: { color: "#ef4444" },
+                  label: { formatter: "Ngưỡng cao" },
+                },
+              ],
+            },
+          },
         ],
-        grid: {
-          left: "10%",
-          right: "10%",
-          bottom: "15%",
-        },
+        grid: { left: "10%", right: "10%", bottom: "15%" },
       };
 
       myChart.setOption(option);
@@ -194,8 +267,7 @@ const char = (userData) => {
         myChart.dispose();
       };
     }
-
-  }, [userData.bloodSugar]);
+  }, [bloodSugar]);
 
   return (
 
@@ -211,7 +283,7 @@ const char = (userData) => {
   )
 }
 
-const Plan = (aiPlan, user, userData) => {
+const Plan = (aiPlan, user, bloodSugar) => {
   const [food, setFood] = useState([]);
   const medicines = useSelector((state) => state.foodAi.medicines);
   const dispatch = useDispatch();
@@ -278,12 +350,12 @@ const Plan = (aiPlan, user, userData) => {
         setFood(cached);
       } else {
         // 👉 Lấy 3 ngày gần nhất
-        const last3 = userData.bloodSugar.slice(-3);
+        const last3 = bloodSugar.slice(-3);
         const trend = last3[2] - last3[0]; // so sánh ngày gần nhất với ngày 3 ngày trước
 
         // 👉 Tính độ lệch chuẩn để check ổn định
-        const mean = userData.bloodSugar.reduce((a, b) => a + b, 0) / userData.bloodSugar.length;
-        const variance = userData.bloodSugar.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / userData.bloodSugar.length;
+        const mean = bloodSugar.reduce((a, b) => a + b, 0) / bloodSugar.length;
+        const variance = bloodSugar.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / bloodSugar.length;
         const stdDev = Math.sqrt(variance);
 
         // xem menuFood đã áp dụng
@@ -360,16 +432,39 @@ const HealthTabs = () => {
   });
   let user = useSelector((state) => state.auth.userInfo);
   const [measurementType, setMeasurementType] = useState("before");
+  let [bloodSugar, setBloodSugar] = useState([])
 
-  const [userData, setUserData] = useState({
-    name: "Nguyễn Văn A",
-    age: 45,
-    gender: "Nam",
-    condition: "Tiểu đường type 2",
-    doctor: "Bác sĩ Trần Thị B",
-    nextAppointment: "2025-06-30",
-    bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 2],
-  });
+  // get bloodSugar
+  useEffect(() => {
+    if (!user?.userId) return;
+
+    let fetchBloodSugarData = async () => {
+      try {
+        // Lấy cả dữ liệu lúc đói và sau ăn
+        const [postMealRes, fastingRes] = await Promise.all([
+          dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 7 })),
+          dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 7 }))
+        ]);
+
+        // Gộp dữ liệu từ cả hai API calls
+        const allData = [];
+
+        if (postMealRes?.payload?.DT?.bloodSugarData) {
+          allData.push(...postMealRes.payload.DT.bloodSugarData);
+        }
+
+        if (fastingRes?.payload?.DT?.bloodSugarData) {
+          allData.push(...fastingRes.payload.DT.bloodSugarData);
+        }
+
+        setBloodSugar(allData);
+      } catch (error) {
+        console.error('Error fetching blood sugar data:', error);
+      }
+    }
+
+    fetchBloodSugarData()
+  }, [dispatch, user?.userId])
 
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
@@ -428,10 +523,10 @@ const HealthTabs = () => {
   return (
     <div className="d-flex flex-column gap-4">
       {/* tiêu đề */}
-      {following(userData)}
+      {following(user)}
 
       {/* Biểu đồ */}
-      {char(userData)}
+      {char(bloodSugar)}
 
       <div className="d-flex flex-column flex-lg-row gap-4">
         {/* Nhập chỉ số mới */}
@@ -474,7 +569,7 @@ const HealthTabs = () => {
             Nhập chỉ số đường huyết theo đơn vị mmol/L
           </div>
 
-          {aiPlan && Plan(aiPlan, user, userData)}
+          {aiPlan && Plan(aiPlan, user, bloodSugar)}
         </div>
 
 
