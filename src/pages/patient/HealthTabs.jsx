@@ -285,6 +285,7 @@ const char = (bloodSugar) => {
 
 const Plan = (aiPlan, user, bloodSugar) => {
   const [food, setFood] = useState([]);
+  const [showAllFood, setShowAllFood] = useState(false);
   const medicines = useSelector((state) => state.foodAi.medicines);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -397,12 +398,23 @@ const Plan = (aiPlan, user, bloodSugar) => {
           <>
             <div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>
             <ul className="list-unstyled mt-2 small">
-              {food.chosen.map((item, idx) => (
-                <li key={idx}>
+              {food.chosen.slice(0, showAllFood ? undefined : 5).map((item, idx) => (
+                <li key={idx} className="mb-1">
                   <strong>{item.name}:</strong> ({item.calo} calo) - {item.weight}g
                 </li>
               ))}
             </ul>
+            
+            {food.chosen.length > 5 && (
+              <div className="mt-2 d-flex justify-content-end">
+                <button 
+                  className="btn btn-sm btn-warning border-0"
+                  onClick={() => setShowAllFood(!showAllFood)}
+                >
+                  {showAllFood ? 'Thu gọn' : `Xem thêm (${food.chosen.length - 5} món)`}
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <button className="mt-2 btn btn-sm btn-warning" onClick={() => navigate('/suggestedFood')}>
