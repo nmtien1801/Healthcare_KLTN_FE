@@ -9,12 +9,13 @@ import {
 const initialState = {
   caloFood: 0,
   medicines: {},
+  menuFood: {}
 };
 
 export const suggestFoodsByAi = createAsyncThunk(
   "auth/suggestFoodsByAi",
-  async ({ min, max, trend, stdDev, currentCalo }, thunkAPI) => {
-    const response = await suggestFoods(min, max, trend, stdDev, currentCalo);
+  async ({ min, max, mean, currentCalo, menuFoodId }, thunkAPI) => {
+    const response = await suggestFoods(min, max, mean, currentCalo, menuFoodId);
     return response;
   }
 );
@@ -29,7 +30,7 @@ export const GetCaloFood = createAsyncThunk(
 
 export const updateMenuFood = createAsyncThunk(
   "auth/updateMenuFood",
-  async ({menuFoodId, userId}, thunkAPI) => {
+  async ({ menuFoodId, userId }, thunkAPI) => {
     const response = await updateMenuFoodService(menuFoodId, userId);
     return response;
   }
@@ -60,27 +61,29 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     // suggestFoodsByAi
     builder
-      .addCase(suggestFoodsByAi.pending, (state) => {})
-      .addCase(suggestFoodsByAi.fulfilled, (state, action) => {})
-      .addCase(suggestFoodsByAi.rejected, (state, action) => {});
+      .addCase(suggestFoodsByAi.pending, (state) => { })
+      .addCase(suggestFoodsByAi.fulfilled, (state, action) => { })
+      .addCase(suggestFoodsByAi.rejected, (state, action) => { });
 
     // GetCaloFood
     builder
-      .addCase(GetCaloFood.pending, (state) => {})
-      .addCase(GetCaloFood.fulfilled, (state, action) => {})
-      .addCase(GetCaloFood.rejected, (state, action) => {});
+      .addCase(GetCaloFood.pending, (state) => { })
+      .addCase(GetCaloFood.fulfilled, (state, action) => { })
+      .addCase(GetCaloFood.rejected, (state, action) => { });
 
     // updateMenuFood
     builder
-      .addCase(updateMenuFood.pending, (state) => {})
-      .addCase(updateMenuFood.fulfilled, (state, action) => {})
-      .addCase(updateMenuFood.rejected, (state, action) => {});
+      .addCase(updateMenuFood.pending, (state) => { })
+      .addCase(updateMenuFood.fulfilled, (state, action) => {
+        state.menuFood = action.payload.DT.menuFood
+      })
+      .addCase(updateMenuFood.rejected, (state, action) => { });
 
     // getMenuFood
     builder
-      .addCase(getMenuFood.pending, (state) => {})
-      .addCase(getMenuFood.fulfilled, (state, action) => {})
-      .addCase(getMenuFood.rejected, (state, action) => {});
+      .addCase(getMenuFood.pending, (state) => { })
+      .addCase(getMenuFood.fulfilled, (state, action) => { })
+      .addCase(getMenuFood.rejected, (state, action) => { });
   },
 });
 

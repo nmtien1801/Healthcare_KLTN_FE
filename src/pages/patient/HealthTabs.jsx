@@ -283,6 +283,21 @@ const char = (bloodSugar) => {
   )
 }
 
+const getYesterdayAvg = (dailyBloodSugar) => {
+  const len = dailyBloodSugar.dates.length;
+  if (len < 1) return null;
+
+  const fasting = dailyBloodSugar.fastingData[len - 1];
+  const postMeal = dailyBloodSugar.postMealData[len - 1];
+
+  // Tính trung bình chung của hôm trước
+  const avg = [fasting, postMeal].filter(v => v !== null)
+    .reduce((a, b) => a + b, 0) /
+    ([fasting, postMeal].filter(v => v !== null).length || 1);
+
+  return { fasting, postMeal, avg };
+};
+
 const Plan = (aiPlan, user, bloodSugar) => {
   const [food, setFood] = useState([]);
   const [showAllFood, setShowAllFood] = useState(false);
@@ -325,52 +340,35 @@ const Plan = (aiPlan, user, bloodSugar) => {
     }
   }
 
-  // cập nhật lại calo hàng ngày
-  const updateCalo = async (min, max, trend, stdDev, currentCalo) => {
-    let data = {
-      min: min,
-      max: max,
-      trend: trend,
-      stdDev: stdDev,
-      currentCalo: currentCalo
-    }
-
-    let res = await dispatch(suggestFoodsByAi(data))
-
-    if (res.payload) {
-      setWithExpiry("food", JSON.stringify(res.payload.result));
-    }
-    return JSON.parse(getWithExpiry("food"));
-  }
-
   // kiểm tra calo hiện tại
   useEffect(() => {
     const fetchFood = async () => {
+      // Check cache trước
       const cached = JSON.parse(getWithExpiry("food"));
       if (cached) {
         setFood(cached);
-      } else {
-        // 👉 Lấy 3 ngày gần nhất
-        const last3 = bloodSugar.slice(-3);
-        const trend = last3[2] - last3[0]; // so sánh ngày gần nhất với ngày 3 ngày trước
+        return;
+      }
+      let dailyBloodSugar = bloodSugarDaily(bloodSugar)
+      let yesterday = getYesterdayAvg(dailyBloodSugar);
 
-        // 👉 Tính độ lệch chuẩn để check ổn định
-        const mean = bloodSugar.reduce((a, b) => a + b, 0) / bloodSugar.length;
-        const variance = bloodSugar.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / bloodSugar.length;
-        const stdDev = Math.sqrt(variance);
+      // Lấy calo từ server
+      const res = await dispatch(GetCaloFood(user.userId));
+      const data = res?.payload?.DT?.menuFood;
 
-        // xem menuFood đã áp dụng
-        let res = await dispatch(GetCaloFood(user.userId))
-        const data = res?.payload?.DT?.menuFood;
+      if (data && yesterday) {
+        const response = await dispatch(suggestFoodsByAi({ min: data.caloMin, max: data.caloMax, mean: yesterday.avg, currentCalo: data.caloCurrent, menuFoodId: data._id }));
 
-        // ⚡ phải chờ kết quả updateCalo
-        const dataFoods = await updateCalo(data.caloMin, data.caloMax, trend, stdDev, data.caloCurrent);
-        setFood(dataFoods);
+        if (response?.payload?.result) {
+          setWithExpiry("food", JSON.stringify(response.payload.result));
+        }
+        setFood(response.payload.result);
       }
     };
 
     fetchFood();
-  }, []);
+  }, [bloodSugar, user.userId]);
+
 
   return (
     <>
@@ -404,10 +402,10 @@ const Plan = (aiPlan, user, bloodSugar) => {
                 </li>
               ))}
             </ul>
-            
+
             {food.chosen.length > 5 && (
               <div className="mt-2 d-flex justify-content-end">
-                <button 
+                <button
                   className="btn btn-sm btn-warning border-0"
                   onClick={() => setShowAllFood(!showAllFood)}
                 >

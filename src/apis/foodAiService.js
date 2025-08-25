@@ -1,12 +1,12 @@
 import customizeAxios from "../components/customizeAxios";
 
-const suggestFoods = (min, max, trend, stdDev, currentCalo) => {
+const suggestFoods = (min, max, mean, currentCalo, menuFoodId) => {
   return customizeAxios.post("/trendFood", {
     min,
     max,
-    trend,
-    stdDev,
+    mean,
     currentCalo,
+    menuFoodId
   });
 };
 

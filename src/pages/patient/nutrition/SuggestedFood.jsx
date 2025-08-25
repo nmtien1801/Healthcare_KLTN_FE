@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./nutrition.scss";
 import { useSelector, useDispatch } from "react-redux";
-import { suggestFoodsByAi, updateMenuFood, getMenuFood, GetCaloFood } from '../../../redux/foodAiSlice'
+import { suggestFoodsByAi, updateMenuFood, getMenuFood } from '../../../redux/foodAiSlice'
 import { setWithExpiry, getWithExpiry } from '../../../components/customizeStorage'
 
 export default function SuggestedFood() {
@@ -37,37 +37,24 @@ export default function SuggestedFood() {
         fetchMenuFood();
     }, [user.userId]);
 
-    // cập nhật lại calo hàng ngày
-    const updateCalo = async (min, max, trend, stdDev, currentCalo) => {
-        let res = await dispatch(suggestFoodsByAi({
-            min: min,
-            max: max,
-            trend: trend,
-            stdDev: stdDev,
-            currentCalo: currentCalo
-        }))
-
-        if (res.payload) {
-            setWithExpiry("food", JSON.stringify(res.payload.result));
-        }
-        return JSON.parse(getWithExpiry("food"));
-    }
-
-    const fetchFood = async () => {
-        // xem menuFood đã áp dụng
-        let res = await dispatch(GetCaloFood(user.userId))
-        const data = res?.payload?.DT?.menuFood;
-
-        // ⚡ phải chờ kết quả updateCalo
-        const dataFoods = await updateCalo(data.caloMin, data.caloMax, 0.3, 0.2, data.caloCurrent);
-    };
-
     const handleConfirm = async (item, index) => {
         setConfirmedIndex(index)    // chuyển trạng thái xác nhận
 
         let res = await dispatch(updateMenuFood({ menuFoodId: item.id, userId: user.userId }))
         if (res.payload.EC === 0) {
-            fetchFood();
+            let data = res.payload.DT.menuFood
+            
+            let response = await dispatch(suggestFoodsByAi({
+                min: data.caloMin,
+                max: data.caloMax,
+                mean: 6,
+                currentCalo: data.caloCurrent,
+                menuFoodId: data._id
+            }))
+            console.log('ssssssssssssssssssssss ',response);
+            if (response.payload) {
+                setWithExpiry("food", JSON.stringify(response.payload.result));
+            }
         }
     }
 
