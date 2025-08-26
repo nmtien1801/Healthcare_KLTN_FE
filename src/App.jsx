@@ -32,6 +32,7 @@ import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
 import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
 import { getAuth } from 'firebase/auth';
 import AttendanceTab from "./pages/doctor/AttendanceTab";
+import FormPatient from "./pages/patient/assistant/FormPatient";
 
 function App() {
   const dispatch = useDispatch();
@@ -138,6 +139,7 @@ function App() {
                       <Route path="/suggestedFood" element={<SuggestedFood />} />
                       <Route path="/bookingTabs" element={<BookingTabs />} />
                       <Route path="/personalTabs" element={<PersonalTabs />} />
+                      <Route path="/assitant" element={<FormPatient />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /home */}
                       <Route path="*" element={<Navigate to="/home" replace />} />
                     </>

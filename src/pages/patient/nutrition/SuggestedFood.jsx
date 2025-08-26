@@ -51,7 +51,7 @@ export default function SuggestedFood() {
                 currentCalo: data.caloCurrent,
                 menuFoodId: data._id
             }))
-            console.log('ssssssssssssssssssssss ',response);
+
             if (response.payload) {
                 setWithExpiry("food", JSON.stringify(response.payload.result));
             }
