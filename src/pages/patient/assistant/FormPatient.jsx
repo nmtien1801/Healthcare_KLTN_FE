@@ -42,10 +42,13 @@ const FormPatient = () => {
     });
 
     const [medicines, setMedicines] = useState({
-        sang: ["Metformin 500mg", "Vitamin D"],
-        trua: ["Aspirin 81mg"],
+        sang: [],
+        trua: [],
         toi: [],
     });
+
+    // Đơn thuốc: not_created | created | applied
+    const [prescriptionStatus, setPrescriptionStatus] = useState("not_created");
 
     const [loading, setLoading] = useState(false);
     const [loadingAsk, setLoadingAsk] = useState(false);
@@ -110,6 +113,38 @@ const FormPatient = () => {
         }
     };
 
+    // Khởi tạo trạng thái đơn thuốc theo dữ liệu hiện có
+    React.useEffect(() => {
+        const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
+        if (hasAny(medicines.sang) || hasAny(medicines.trua) || hasAny(medicines.toi)) {
+            setPrescriptionStatus("created");
+        } else {
+            setPrescriptionStatus("not_created");
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const createPrescription = () => {
+        const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
+        // Nếu chưa có dữ liệu thuốc, tạo mẫu mặc định để người dùng thấy ngay
+        if (!hasAny(medicines.sang) && !hasAny(medicines.trua) && !hasAny(medicines.toi)) {
+            setMedicines({ sang: ["Metformin 500mg"], trua: ["Aspirin 81mg"], toi: [] });
+        }
+        setPrescriptionStatus("created");
+        setMessages((prev) => [...prev, { sender: "bot", text: "📝 Đã tạo đơn thuốc từ kế hoạch hiện tại." }]);
+    };
+
+    const applyPrescriptionOneWeek = () => {
+        if (prescriptionStatus !== "created") return;
+        setPrescriptionStatus("applied");
+        setMessages((prev) => [...prev, { sender: "bot", text: "✅ Đã áp dụng đơn thuốc trong 1 tuần. Hãy theo dõi chỉ số thường xuyên." }]);
+    };
+
+    const resetPrescription = () => {
+        setPrescriptionStatus("not_created");
+        setMessages((prev) => [...prev, { sender: "bot", text: "🔄 Đã đặt lại trạng thái đơn thuốc. Vui lòng khởi tạo lại." }]);
+    };
+
     return (
         <Box className="container" sx={{ maxWidth: "1400px", height: "85vh" }}>
             <div className="row g-3 h-100">
@@ -123,6 +158,7 @@ const FormPatient = () => {
                             borderRadius: 3,
                             height: "100%",
                             overflow: "hidden",
+                            minHeight: 0,
                         }}
                     >
                         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -318,15 +354,20 @@ const FormPatient = () => {
                                     p: 2,
                                     mt: 3,
                                     borderRadius: 3,
-                                    bgcolor: "rgba(46, 125, 50, 0.05)",
+                                    bgcolor: prescriptionStatus === "not_created" ? "rgba(245, 158, 11, 0.08)" : "rgba(46, 125, 50, 0.05)",
                                 }}
                             >
                                 <Typography
                                     variant="h6"
-                                    sx={{ fontWeight: "bold", color: "success.main" }}
+                                    sx={{ fontWeight: "bold", color: prescriptionStatus === "not_created" ? "warning.main" : "success.main" }}
                                 >
                                     📋 Kế hoạch dùng thuốc
                                 </Typography>
+                                {prescriptionStatus === "not_created" && (
+                                    <Typography variant="body2" sx={{ mb: 1.5, color: "text.secondary" }}>
+                                        Chưa có đơn thuốc. Vui lòng khởi tạo để có thể áp dụng theo dõi.
+                                    </Typography>
+                                )}
                                 <ul
                                     style={{
                                         paddingLeft: "1rem",
@@ -353,16 +394,40 @@ const FormPatient = () => {
                                             : "Không dùng"}
                                     </li>
                                 </ul>
-                                <Box textAlign="right">
-                                    <Button
-                                        variant="contained"
-                                        color="success"
-                                        size="small"
-                                        onClick={() => applyMedicine(aiPlan)}
-                                        sx={{ textTransform: "none", borderRadius: 2 }}
-                                    >
-                                        Áp dụng thuốc
-                                    </Button>
+                                <Box display="flex" justifyContent="flex-end" gap={1.5}>
+                                    {prescriptionStatus === "not_created" && (
+                                        <Button
+                                            variant="contained"
+                                            color="warning"
+                                            size="small"
+                                            onClick={createPrescription}
+                                            sx={{ textTransform: "none", borderRadius: 2 }}
+                                        >
+                                            Tạo đơn thuốc
+                                        </Button>
+                                    )}
+                                    {prescriptionStatus === "created" && (
+                                        <Button
+                                            variant="contained"
+                                            color="success"
+                                            size="small"
+                                            onClick={applyPrescriptionOneWeek}
+                                            sx={{ textTransform: "none", borderRadius: 2 }}
+                                        >
+                                            Áp dụng 1 tuần
+                                        </Button>
+                                    )}
+                                    {prescriptionStatus === "applied" && (
+                                        <Button
+                                            variant="contained"
+                                            color="inherit"
+                                            size="small"
+                                            disabled
+                                            sx={{ textTransform: "none", borderRadius: 2 }}
+                                        >
+                                            Đã áp dụng
+                                        </Button>
+                                    )}
                                 </Box>
                             </Paper>
 
@@ -403,6 +468,7 @@ const FormPatient = () => {
                             p: { xs: 2, md: 3 },
                             borderRadius: 3,
                             height: "100%",
+                            minHeight: 0,
                         }}
                     >
                         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -426,7 +492,9 @@ const FormPatient = () => {
 
                         <Box
                             sx={{
-                                flexGrow: 1,
+                                flex: '1 1 0%',
+                                height: 0,
+                                minHeight: 0,
                                 overflowY: "auto",
                                 pr: 1,
                                 display: "flex",
