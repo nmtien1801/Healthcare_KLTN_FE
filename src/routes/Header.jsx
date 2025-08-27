@@ -54,6 +54,10 @@ const Header = () => {
     navigate("/forgot-password");
   };
 
+  const handleInfo = () => {
+    navigate("/personalTabs");
+  }
+
   return (
     <div
       className="shadow-sm py-3 px-4 bg-white w-100 position-fixed top-0"
@@ -98,6 +102,9 @@ const Header = () => {
               <Dropdown.Toggle as={CustomToggle} id="dropdown-avatar" />
 
               <Dropdown.Menu>
+                <Dropdown.Item onClick={handleInfo}>
+                  Thông tin cá nhân
+                </Dropdown.Item>
                 <Dropdown.Item onClick={handleChangePassword}>
                   Đổi mật khẩu
                 </Dropdown.Item>

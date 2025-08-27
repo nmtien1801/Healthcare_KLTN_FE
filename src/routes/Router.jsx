@@ -142,10 +142,6 @@ const Router = (props) => {
                   <Bot size={20} />
                   <span>Trợ lý AI</span>
                 </Nav.Link>
-                <Nav.Link as={NavLink} to="/personalTabs" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
-                  <User size={20} />
-                  <span>Cá nhân</span>
-                </Nav.Link>
               </>
             )}
           </Nav>
