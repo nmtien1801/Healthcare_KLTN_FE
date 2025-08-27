@@ -14,3 +14,23 @@ html, body, #root {
   transition: width 0.3s ease-in-out;
   z-index: 10; /* Thêm z-index thấp hơn header nhưng cao hơn lớp phủ */
 }
+
+.gradient-color-parent{
+  background: linear-gradient(135deg, #60a5fa, #7c3aed);
+  color: white;
+}
+
+/* FormPatient theme overrides */
+.formpatient .MuiButton-containedPrimary{
+  background: linear-gradient(135deg, #60a5fa, #7c3aed);
+}
+.formpatient .MuiButton-containedPrimary:hover{
+  background: linear-gradient(135deg, #3b82f6, #6d28d9);
+}
+
+.formpatient .Mui-focused .MuiOutlinedInput-notchedOutline{
+  border-color: #7c3aed !important;
+}
+.formpatient .MuiInputLabel-root.Mui-focused{
+  color: #6d28d9 !important;
+}

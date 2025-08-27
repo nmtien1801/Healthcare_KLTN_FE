@@ -388,6 +388,14 @@ const Plan = (aiPlan, user, bloodSugar) => {
           </div>
         </div>}
 
+      {/* Lời khuyên */}
+      <div className="bg-danger bg-opacity-10 p-3 rounded mt-3" >
+        <h5 className="fw-medium text-danger mb-1">👉 Lời Khuyên</h5>
+        <p className="mb-1 advice-text" >{aiPlan.advice || "Chưa có lời khuyên"}</p>
+        <small className="text-muted fst-italic">
+          — {aiPlan.assistant_name || "AI Assistant"}
+        </small>
+      </div >
 
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
@@ -420,16 +428,6 @@ const Plan = (aiPlan, user, bloodSugar) => {
           </button>
         )}
       </div>
-
-      {/* Lời khuyên */}
-      <div className="bg-danger bg-opacity-10 p-3 rounded mt-3" >
-        <h5 className="fw-medium text-danger mb-1">👉 Lời Khuyên</h5>
-        <p className="mb-1 advice-text" >{aiPlan.advice || "Chưa có lời khuyên"}</p>
-        <small className="text-muted fst-italic">
-          — {aiPlan.assistant_name || "AI Assistant"}
-        </small>
-      </div >
-
     </>
   )
 }
@@ -437,9 +435,7 @@ const Plan = (aiPlan, user, bloodSugar) => {
 const HealthTabs = () => {
   const [messageInput, setMessageInput] = useState([]);
   const dispatch = useDispatch();
-  const [aiPlan, setAiPlan] = useState({
-    advice: 'Đo đường huyết trước ăn để theo dõi hiệu quả của chế độ ăn và thuốc. \nGhi lại chỉ số để bác sĩ có thể điều chỉnh phác đồ điều trị nếu cần. Hãy \ntuân thủ đúng thời gian bác sĩ đã chỉ định, thường là trước bữa ăn một \nkhoảng thời gian nhất định (khoảng 30 phút). Bắt đầu bữa ăn bằng rau \nxanh để tạo cảm giác no, làm chậm quá trình tiêu hóa tinh bột, từ đó \ngiúp đường huyết không tăng quá nhanh'
-  });
+  const [aiPlan, setAiPlan] = useState({});
   let user = useSelector((state) => state.auth.userInfo);
   const [measurementType, setMeasurementType] = useState("before");
   let [bloodSugar, setBloodSugar] = useState([])

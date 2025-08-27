@@ -41,6 +41,12 @@ const FormPatient = () => {
         blood_glucose_level: 125,
     });
 
+    const [medicines, setMedicines] = useState({
+        sang: ["Metformin 500mg", "Vitamin D"],
+        trua: ["Aspirin 81mg"],
+        toi: [],
+    });
+
     const [loading, setLoading] = useState(false);
     const [loadingAsk, setLoadingAsk] = useState(false);
     const [question, setQuestion] = useState("");
@@ -106,7 +112,6 @@ const FormPatient = () => {
 
     return (
         <Box className="container" sx={{ maxWidth: "1400px", height: "85vh" }}>
-
             <div className="row g-3 h-100">
                 {/* Form Section */}
                 <div className="col-12 col-md-6 d-flex">
@@ -120,11 +125,23 @@ const FormPatient = () => {
                             overflow: "hidden",
                         }}
                     >
-                        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                            <MedicalInformationIcon color="primary" sx={{ fontSize: 36, mr: 1 }} />
-                            <Typography variant="h5" sx={{ fontWeight: "bold", color: "primary.main" }}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <MedicalInformationIcon
+                                color="primary"
+                                sx={{ fontSize: 28, mr: 1 }}
+                            />
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    fontWeight: "bold",
+                                    background: "linear-gradient(135deg, #60a5fa, #7c3aed)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent", // Giúp chữ hiển thị gradient
+                                }}
+                            >
                                 Thông tin bệnh nhân
                             </Typography>
+
                         </Box>
                         <Divider sx={{ mb: 3 }} />
 
@@ -139,19 +156,21 @@ const FormPatient = () => {
                                 pr: 1,
                                 "&::-webkit-scrollbar": { width: "8px" },
                                 "&::-webkit-scrollbar-thumb": {
-                                    background: "linear-gradient(135deg, #8fddeeff, #d87dbaff)",
+                                    background:
+                                        "linear-gradient(135deg, #8fddeeff, #d87dbaff)",
                                     borderRadius: "10px",
                                 },
                                 "&::-webkit-scrollbar-thumb:hover": {
-                                    background: "linear-gradient(135deg, #64b5f6, #2196f3)",
+                                    background:
+                                        "linear-gradient(135deg, #64b5f6, #2196f3)",
                                 },
                             }}
                         >
                             <div className="row g-3">
                                 {/* Tuổi + Giới tính */}
-                                <div className="col-6 pt-3" >
+                                <div className="col-6 mt-4">
                                     <TextField
-                                        size="medium"
+                                        size="small"
                                         fullWidth
                                         label="Tuổi"
                                         type="number"
@@ -159,29 +178,35 @@ const FormPatient = () => {
                                         value={formData.age}
                                         onChange={handleChange}
                                         required
-                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
+                                        InputLabelProps={{ style: { fontSize: "0.95rem" } }}
+                                        inputProps={{
+                                            style: { fontSize: "0.95rem", padding: "10px" },
+                                        }}
                                     />
                                 </div>
-                                <div className="col-6 pt-3">
-                                    <FormControl fullWidth>
-                                        <InputLabel sx={{ fontSize: "1rem" }} shrink>Giới tính</InputLabel>
+                                <div className="col-6 mt-4">
+                                    <FormControl size="small" fullWidth>
+                                        <InputLabel sx={{ fontSize: "0.95rem" }} shrink>
+                                            Giới tính
+                                        </InputLabel>
                                         <Select
                                             labelId="gender-label"
                                             label="Giới tính"
                                             name="gender"
                                             value={formData.gender}
                                             onChange={handleChange}
+                                            sx={{ fontSize: "0.95rem" }}
                                         >
                                             <MenuItem value="female">Nữ</MenuItem>
                                             <MenuItem value="male">Nam</MenuItem>
                                         </Select>
-
                                     </FormControl>
                                 </div>
 
                                 {/* BMI + HbA1c */}
-                                <div className="col-6">
+                                <div className="col-4">
                                     <TextField
+                                        size="small"
                                         fullWidth
                                         label="BMI"
                                         type="number"
@@ -189,11 +214,15 @@ const FormPatient = () => {
                                         name="bmi"
                                         value={formData.bmi}
                                         onChange={handleChange}
-                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
+                                        InputLabelProps={{ style: { fontSize: "0.95rem" } }}
+                                        inputProps={{
+                                            style: { fontSize: "0.95rem", padding: "10px" },
+                                        }}
                                     />
                                 </div>
-                                <div className="col-6">
+                                <div className="col-4">
                                     <TextField
+                                        size="small"
                                         fullWidth
                                         label="HbA1c (%)"
                                         type="number"
@@ -201,20 +230,27 @@ const FormPatient = () => {
                                         name="hbA1c_level"
                                         value={formData.hbA1c_level}
                                         onChange={handleChange}
-                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
+                                        InputLabelProps={{ style: { fontSize: "0.95rem" } }}
+                                        inputProps={{
+                                            style: { fontSize: "0.95rem", padding: "10px" },
+                                        }}
                                     />
                                 </div>
 
                                 {/* Đường huyết */}
-                                <div className="col-12">
+                                <div className="col-4">
                                     <TextField
+                                        size="small"
                                         fullWidth
                                         label="Đường huyết (mg/dL)"
                                         type="number"
                                         name="blood_glucose_level"
                                         value={formData.blood_glucose_level}
                                         onChange={handleChange}
-                                        InputLabelProps={{ style: { fontSize: "1rem" } }}
+                                        InputLabelProps={{ style: { fontSize: "0.95rem" } }}
+                                        inputProps={{
+                                            style: { fontSize: "0.95rem", padding: "10px" },
+                                        }}
                                     />
                                 </div>
 
@@ -226,9 +262,14 @@ const FormPatient = () => {
                                                 checked={formData.hypertension === 1}
                                                 onChange={handleChange}
                                                 name="hypertension"
+                                                size="small"
                                             />
                                         }
-                                        label={<Typography variant="body1">Huyết áp cao</Typography>}
+                                        label={
+                                            <Typography variant="body2">
+                                                Huyết áp cao
+                                            </Typography>
+                                        }
                                     />
                                 </div>
                                 <div className="col-6">
@@ -238,14 +279,20 @@ const FormPatient = () => {
                                                 checked={formData.heart_disease === 1}
                                                 onChange={handleChange}
                                                 name="heart_disease"
+                                                size="small"
                                             />
                                         }
-                                        label={<Typography variant="body1">Bệnh tim</Typography>}
+                                        label={<Typography variant="body2">Bệnh tim</Typography>}
                                     />
                                 </div>
+
+                                {/* Lịch sử hút thuốc */}
                                 <div className="col-12">
-                                    <FormControl fullWidth>
-                                        <InputLabel id="smoking-label" sx={{ fontSize: "1rem" }}>
+                                    <FormControl size="small" fullWidth>
+                                        <InputLabel
+                                            id="smoking-label"
+                                            sx={{ fontSize: "0.95rem" }}
+                                        >
                                             Lịch sử hút thuốc
                                         </InputLabel>
                                         <Select
@@ -254,6 +301,7 @@ const FormPatient = () => {
                                             name="smoking_history"
                                             value={formData.smoking_history}
                                             onChange={handleChange}
+                                            sx={{ fontSize: "0.95rem" }}
                                         >
                                             <MenuItem value="never">Không bao giờ</MenuItem>
                                             <MenuItem value="ever">Từng hút</MenuItem>
@@ -261,22 +309,89 @@ const FormPatient = () => {
                                         </Select>
                                     </FormControl>
                                 </div>
-
                             </div>
+
+                            {/* Medicine Plan */}
+                            <Paper
+                                elevation={2}
+                                sx={{
+                                    p: 2,
+                                    mt: 3,
+                                    borderRadius: 3,
+                                    bgcolor: "rgba(46, 125, 50, 0.05)",
+                                }}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: "bold", color: "success.main" }}
+                                >
+                                    📋 Kế hoạch dùng thuốc
+                                </Typography>
+                                <ul
+                                    style={{
+                                        paddingLeft: "1rem",
+                                        marginBottom: "0.3rem",
+                                        fontSize: "0.95rem",
+                                    }}
+                                >
+                                    <li>
+                                        <strong>Sáng:</strong>{" "}
+                                        {medicines?.sang?.length > 0
+                                            ? medicines.sang.join(", ")
+                                            : "Không dùng"}
+                                    </li>
+                                    <li>
+                                        <strong>Trưa:</strong>{" "}
+                                        {medicines?.trua?.length > 0
+                                            ? medicines.trua.join(", ")
+                                            : "Không dùng"}
+                                    </li>
+                                    <li>
+                                        <strong>Tối:</strong>{" "}
+                                        {medicines?.toi?.length > 0
+                                            ? medicines.toi.join(", ")
+                                            : "Không dùng"}
+                                    </li>
+                                </ul>
+                                <Box textAlign="right">
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="small"
+                                        onClick={() => applyMedicine(aiPlan)}
+                                        sx={{ textTransform: "none", borderRadius: 2 }}
+                                    >
+                                        Áp dụng thuốc
+                                    </Button>
+                                </Box>
+                            </Paper>
 
                             <Button
                                 type="submit"
                                 fullWidth
                                 variant="contained"
                                 endIcon={!loading && <SendIcon />}
-                                sx={{ mt: 4, py: 1.5, fontSize: "1rem", textTransform: "none", borderRadius: 2 }}
+                                className="gradient-color-parent"
+                                
+                                sx={{
+                                    mt: 4,
+                                    py: 1.5,
+                                    fontSize: "0.95rem",
+                                    textTransform: "none",
+                                    borderRadius: 2,
+                                }}
                                 disabled={loading}
                             >
-                                {loading ? <CircularProgress size={24} color="inherit" /> : "Dự đoán"}
+                                {loading ? (
+                                    <CircularProgress size={24} color="inherit" />
+                                ) : (
+                                    "Dự đoán nguy cơ"
+                                )}
                             </Button>
                         </Box>
                     </Paper>
                 </div>
+
 
 
                 {/* Chat Section */}
@@ -291,8 +406,19 @@ const FormPatient = () => {
                         }}
                     >
                         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                            <ChatBubbleOutlineIcon color="primary" sx={{ fontSize: 32, mr: 1 }} />
-                            <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.main" }}>
+                            <ChatBubbleOutlineIcon
+                                color="primary"
+                                sx={{ fontSize: 26, mr: 1 }}
+                            />
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    fontWeight: "bold",
+                                    background: "linear-gradient(135deg, #60a5fa, #7c3aed)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent", // Giúp chữ hiển thị gradient
+                                }}
+                            >
                                 Kết quả & Chat bot
                             </Typography>
                         </Box>
@@ -307,11 +433,13 @@ const FormPatient = () => {
                                 flexDirection: "column",
                                 "&::-webkit-scrollbar": { width: "8px" },
                                 "&::-webkit-scrollbar-thumb": {
-                                    background: "linear-gradient(135deg, #8fddeeff, #d87dbaff)",
+                                    background:
+                                        "linear-gradient(135deg, #8fddeeff, #d87dbaff)",
                                     borderRadius: "10px",
                                 },
                                 "&::-webkit-scrollbar-thumb:hover": {
-                                    background: "linear-gradient(135deg, #64b5f6, #2196f3)",
+                                    background:
+                                        "linear-gradient(135deg, #64b5f6, #2196f3)",
                                 },
                             }}
                         >
