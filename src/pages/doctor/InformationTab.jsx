@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Card, Button, Row, Col, Image } from "react-bootstrap";
 import { Edit } from "lucide-react";
 
 // Mock initial doctor data
 const initialDoctorData = {
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+  avatar:
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
   name: "BS. Nguyễn Văn An",
   specialty: "Bác sĩ chuyên khoa Tim mạch",
   hospital: "Bệnh viện Đa khoa Trung ương",
@@ -22,22 +22,29 @@ const initialDoctorData = {
   },
 };
 
-// Simplified ProfileHeader component
 const ProfileHeader = ({ doctor }) => (
-  <Card className="shadow-sm mb-4">
-    <Card.Body className="d-flex flex-column align-items-center text-center">
-      <Image roundedCircle width={80} height={80} src={doctor.avatar} alt="Bác sĩ" className="mb-3" />
-      <div>
-        <h4 className="mb-1">{doctor.name}</h4>
-        <div className="text-muted">{doctor.specialty}</div>
-        <div className="text-muted">{doctor.hospital}</div>
-      </div>
-    </Card.Body>
-  </Card>
+  <div className="bg-white rounded shadow-sm border p-3 text-center mb-3">
+    <img
+      src={doctor.avatar}
+      alt="Bác sĩ"
+      className="rounded-circle mb-2"
+      width={80}
+      height={80}
+      // Added onerror to handle broken image links gracefully
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.src = `https://placehold.co/80x80/cccccc/ffffff?text=DR`;
+      }}
+    />
+    <h5 className="mb-1">{doctor.name}</h5>
+    <div className="text-muted small">{doctor.specialty}</div>
+    <div className="text-muted small">{doctor.hospital}</div>
+  </div>
 );
 
-// Simplified InfoSection component
+
 const InfoSection = ({ doctor, isEditing, onSave, onCancel }) => {
+  // Local state for the form data when editing
   const [formData, setFormData] = useState({
     fullName: doctor.basicInfo.fullName,
     email: doctor.basicInfo.email,
@@ -49,178 +56,177 @@ const InfoSection = ({ doctor, isEditing, onSave, onCancel }) => {
     license: doctor.professionalInfo.license,
   });
 
-  const handleChange = (e) => {
+  // Handles input changes and updates the local form data state.
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = () => {
-    onSave(formData);
-  };
+  // Calls the onSave prop with the current form data.
+  const handleSubmit = () => onSave(formData);
 
   return (
-    <div>
-      <h5 className="mb-3">Thông tin cá nhân và chuyên môn</h5>
+    <div className="bg-white rounded shadow-sm border p-3 mb-3">
+      <h5 className="mb-3">Thông tin cá nhân & chuyên môn</h5>
       {isEditing ? (
-        <Row>
-          <Col md={6}>
-            <div className="mb-3">
-              <label className="form-label">Họ và tên</label>
-              <input
-                type="text"
-                className="form-control"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Email</label>
-              <input
-                type="email"
-                className="form-control"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Số điện thoại</label>
-              <input
-                type="text"
-                className="form-control"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Ngày sinh</label>
-              <input
-                type="text"
-                className="form-control"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
-              />
-            </div>
-          </Col>
-          <Col md={6}>
-            <div className="mb-3">
-              <label className="form-label">Chuyên khoa</label>
-              <input
-                type="text"
-                className="form-control"
-                name="specialty"
-                value={formData.specialty}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Bệnh viện</label>
-              <input
-                type="text"
-                className="form-control"
-                name="hospital"
-                value={formData.hospital}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Số năm kinh nghiệm</label>
-              <input
-                type="text"
-                className="form-control"
-                name="experienceYears"
-                value={formData.experienceYears}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Số giấy phép</label>
-              <input
-                type="text"
-                className="form-control"
-                name="license"
-                value={formData.license}
-                onChange={handleChange}
-              />
-            </div>
-          </Col>
-          <div className="d-flex justify-content-end mt-4">
-            <Button variant="outline-secondary" className="me-2" onClick={onCancel}>
-              Hủy
-            </Button>
-            <Button variant="primary" onClick={handleSubmit}>
-              Lưu
-            </Button>
+        // Render editable form fields when in editing mode
+        <div className="row">
+          <div className="col-md-6">
+            {["fullName", "email", "phone", "dob"].map((field, idx) => (
+              <div className="mb-2" key={idx}>
+                <label className="form-label small">
+                  {field === "fullName"
+                    ? "Họ và tên"
+                    : field === "email"
+                      ? "Email"
+                      : field === "phone"
+                        ? "Số điện thoại"
+                        : "Ngày sinh"}
+                </label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  name={field}
+                  value={formData[field]}
+                  onChange={handleChange}
+                />
+              </div>
+            ))}
           </div>
-        </Row>
+          <div className="col-md-6">
+            {["specialty", "hospital", "experienceYears", "license"].map(
+              (field, idx) => (
+                <div className="mb-2" key={idx}>
+                  <label className="form-label small">
+                    {field === "specialty"
+                      ? "Chuyên khoa"
+                      : field === "hospital"
+                        ? "Bệnh viện"
+                        : field === "experienceYears"
+                          ? "Số năm kinh nghiệm"
+                          : "Số giấy phép"}
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    name={field}
+                    value={formData[field]}
+                    onChange={handleChange}
+                  />
+                </div>
+              )
+            )}
+          </div>
+          <div className="d-flex justify-content-end mt-2">
+            <button
+              className="btn btn-outline-secondary btn-sm me-2"
+              onClick={onCancel}
+            >
+              Hủy
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
+              Lưu
+            </button>
+          </div>
+        </div>
       ) : (
-        <Row>
-          <Col md={6}>
-            <div className="mb-2"><strong>Họ và tên:</strong> {doctor.basicInfo.fullName}</div>
-            <div className="mb-2"><strong>Email:</strong> {doctor.basicInfo.email}</div>
-            <div className="mb-2"><strong>Số điện thoại:</strong> {doctor.basicInfo.phone}</div>
-            <div className="mb-2"><strong>Ngày sinh:</strong> {doctor.basicInfo.dob}</div>
-          </Col>
-          <Col md={6}>
-            <div className="mb-2"><strong>Chuyên khoa:</strong> {doctor.professionalInfo.specialty}</div>
-            <div className="mb-2"><strong>Bệnh viện:</strong> {doctor.professionalInfo.hospital}</div>
-            <div className="mb-2"><strong>Số năm kinh nghiệm:</strong> {doctor.professionalInfo.experienceYears}</div>
-            <div className="mb-2"><strong>Số giấy phép:</strong> {doctor.professionalInfo.license}</div>
-          </Col>
-        </Row>
+        // Render static display of information when not editing
+        <div className="row small">
+          <div className="col-md-6">
+            <p>
+              <strong>Họ và tên:</strong> {doctor.basicInfo.fullName}
+            </p>
+            <p>
+              <strong>Email:</strong> {doctor.basicInfo.email}
+            </p>
+            <p>
+              <strong>SĐT:</strong> {doctor.basicInfo.phone}
+            </p>
+            <p>
+              <strong>Ngày sinh:</strong> {doctor.basicInfo.dob}
+            </p>
+          </div>
+          <div className="col-md-6">
+            <p>
+              <strong>Chuyên khoa:</strong> {doctor.professionalInfo.specialty}
+            </p>
+            <p>
+              <strong>Bệnh viện:</strong> {doctor.professionalInfo.hospital}
+            </p>
+            <p>
+              <strong>Kinh nghiệm:</strong>{" "}
+              {doctor.professionalInfo.experienceYears}
+            </p>
+            <p>
+              <strong>Giấy phép:</strong> {doctor.professionalInfo.license}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
-// Simplified SummaryCards component
+
 const SummaryCards = ({ doctor }) => (
-  <Row className="g-4">
+  <div className="row g-2">
     {[
-      { icon: "user-md", title: "Chuyên khoa", value: doctor.professionalInfo.specialty, color: "primary" },
-      { icon: "hospital", title: "Bệnh viện", value: doctor.professionalInfo.hospital, color: "success" },
-      { icon: "briefcase", title: "Kinh nghiệm", value: doctor.professionalInfo.experienceYears, color: "warning" },
-    ].map((item, index) => (
-      <Col md={4} key={index}>
-        <Card className="shadow-sm h-100">
-          <Card.Body className="d-flex align-items-center">
-            <div className={`bg-${item.color} bg-opacity-10 rounded-circle p-3 me-3`}>
-              <i className={`fas fa-${item.icon} text-${item.color} fs-5`}></i>
-            </div>
-            <div>
-              <div className="text-muted" style={{ fontSize: "0.85rem" }}>{item.title}</div>
-              <div className="fw-semibold" style={{ fontSize: "1.2rem" }}>{item.value}</div>
-            </div>
-          </Card.Body>
-        </Card>
-      </Col>
+      {
+        icon: "user-md",
+        title: "Chuyên khoa",
+        value: doctor.professionalInfo.specialty,
+        color: "primary",
+      },
+      {
+        icon: "hospital",
+        title: "Bệnh viện",
+        value: doctor.professionalInfo.hospital,
+        color: "success",
+      },
+      {
+        icon: "briefcase",
+        title: "Kinh nghiệm",
+        value: doctor.professionalInfo.experienceYears,
+        color: "warning",
+      },
+    ].map((item, idx) => (
+      <div className="col-md-4" key={idx}>
+        <div className="bg-white rounded shadow-sm border p-2 d-flex align-items-center">
+          <div
+            className={`bg-${item.color} bg-opacity-10 rounded-circle p-2 me-2`}
+          >
+            {/* Font Awesome icon for visual representation */}
+            <i className={`fas fa-${item.icon} text-${item.color} fs-6`}></i>
+          </div>
+          <div>
+            <div className="text-muted small">{item.title}</div>
+            <div className="fw-semibold small">{item.value}</div>
+          </div>
+        </div>
+      </div>
     ))}
-  </Row>
+  </div>
 );
+
 
 export default function DoctorProfile() {
   const [doctorData, setDoctorData] = useState(initialDoctorData);
   const [isEditing, setIsEditing] = useState(false);
 
+
   const handleSave = (updatedData) => {
-    setDoctorData((prevData) => ({
-      ...prevData,
+    setDoctorData((prev) => ({
+      ...prev,
       basicInfo: {
-        ...prevData.basicInfo,
         fullName: updatedData.fullName,
         email: updatedData.email,
         phone: updatedData.phone,
         dob: updatedData.dob,
       },
       professionalInfo: {
-        ...prevData.professionalInfo,
         specialty: updatedData.specialty,
         hospital: updatedData.hospital,
         experienceYears: updatedData.experienceYears,
         license: updatedData.license,
       },
+      // Update top-level derived fields based on the new data
       name: updatedData.fullName,
       specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
       hospital: updatedData.hospital,
@@ -228,28 +234,36 @@ export default function DoctorProfile() {
     setIsEditing(false);
   };
 
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
-
   return (
-    <div className="container mt-4">
-      <h3 className="mb-4">Thông tin cá nhân</h3>
-      <ProfileHeader doctor={doctorData} />
-      <Card className="shadow-sm mb-4">
-        <Card.Body>
-          <InfoSection doctor={doctorData} isEditing={isEditing} onSave={handleSave} onCancel={handleCancel} />
-          {!isEditing && (
-            <div className="d-flex justify-content-end mt-4">
-              <Button variant="primary" className="d-flex align-items-center gap-2" onClick={() => setIsEditing(true)}>
-                <Edit size={16} />
-                Chỉnh sửa thông tin
-              </Button>
-            </div>
-          )}
-        </Card.Body>
-      </Card>
-      <SummaryCards doctor={doctorData} />
+
+    <div className="w-full h-screen bg-light flex flex-col items-center overflow-hidden">
+
+      <div className="container py-3 flex-grow-1 flex flex-col justify-start">
+        <h3 className="mb-3">Thông tin cá nhân</h3>
+
+        <ProfileHeader doctor={doctorData} />
+
+        <InfoSection
+          doctor={doctorData}
+          isEditing={isEditing}
+          onSave={handleSave}
+          onCancel={() => setIsEditing(false)}
+        />
+
+        {/* Display the Edit button only when not in editing mode */}
+        {!isEditing && (
+          <div className="flex justify-end mb-3">
+            <button
+              className="btn btn-primary btn-sm flex items-center gap-1"
+              onClick={() => setIsEditing(true)}
+            >
+              <Edit size={14} /> Chỉnh sửa
+            </button>
+          </div>
+        )}
+
+        <SummaryCards doctor={doctorData} />
+      </div>
     </div>
   );
 }

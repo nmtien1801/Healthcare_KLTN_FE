@@ -110,7 +110,7 @@ export default function LoginForm() {
                 <input
                   type="email"
                   className="form-control"
-                  placeholder="email"
+                  placeholder="Email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
