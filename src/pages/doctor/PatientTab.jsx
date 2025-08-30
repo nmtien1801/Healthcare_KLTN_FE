@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { Search, Filter, Eye, Edit, MessageSquare, Phone, ChevronDown } from "lucide-react"
+import { Search, Filter, Eye, Edit, MessageSquare, Phone, ChevronDown, X, Bot, Send } from "lucide-react"
 import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal"
 import EditPatientModal from "../../components/doctor/patient/EditPatientModal"
 
@@ -337,14 +337,37 @@ export default function PatientTab() {
     setShowEditModal(true)
   }
 
-  // Nhắn tin cho bệnh nhân
-  const handleMessagePatient = (patient) => {
-    if (patient.phone) {
-      window.location.href = `sms:${patient.phone}`
-    } else {
-      alert("Không có số điện thoại để nhắn tin")
+  // Điều hướng trang
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
     }
   }
+
+  // Nhắn tin cho bệnh nhân
+  const [showChatbot, setShowChatbot] = useState(false); // chat với bác sĩ
+  const [messageInput, setMessageInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+
+  const sendMessage = async () => {
+    if (messageInput.trim() === "") return;
+
+    setChatMessages((prev) => [...prev, { text: messageInput, sender: "doctor" }]);
+    const userMessage = messageInput;
+    setMessageInput("");
+
+    try {
+
+      //////////////////////////
+      setChatMessages((prev) => [...prev, { text: "botResponse", sender: "patient" }]);
+    } catch (err) {
+      console.error(err);
+      setChatMessages((prev) => [
+        ...prev,
+        { text: "Lỗi kết nối đến máy chủ.", sender: "patient" }
+      ]);
+    }
+  };
 
   // Gọi điện cho bệnh nhân
   const handleCallPatient = (patient) => {
@@ -355,12 +378,8 @@ export default function PatientTab() {
     }
   }
 
-  // Điều hướng trang
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page)
-    }
-  }
+
+
 
   return (
     <div className="container mt-4">
@@ -504,7 +523,7 @@ export default function PatientTab() {
                         variant="primary"
                         size="sm"
                         className="p-2"
-                        onClick={() => handleMessagePatient(patient)}
+                        onClick={() => setShowChatbot(true)}
                         title="Nhắn tin"
                       >
                         <MessageSquare size={16} />
@@ -526,6 +545,36 @@ export default function PatientTab() {
           </table>
         </div>
       </div>
+
+      {/* Chatbot Popup */}
+      {showChatbot && (
+        <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
+          <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
+            <div><Bot size={18} className="me-1" /> Bác sĩ tư vấn</div>
+            <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle"><X size={16} /></button>
+          </div>
+          <div className="p-2" style={{ height: 340, overflowY: "auto" }}>
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} className={`mb-2 ${msg.sender === "doctor" ? "text-end" : "text-start"}`}>
+                <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "doctor" ? "bg-primary text-white" : "bg-light text-dark"}`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-top d-flex p-3 align-items-center">
+            <input
+              type="text"
+              className="form-control form-control-sm rounded-pill me-2"
+              placeholder="Nhập câu hỏi..."
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <button onClick={sendMessage} className="btn btn-sm btn-primary rounded-pill"><Send size={16} /></button>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {filteredAndSortedPatients.length > 0 && (
