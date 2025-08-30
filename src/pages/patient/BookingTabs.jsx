@@ -7,10 +7,14 @@ import VideoCallModal from '../../components/call/videoModalCall'
 import {
   ref,
   onValue,
-  set,
-  remove,
   off,
 } from "firebase/database";
+import {
+  acceptCall,
+  endCall,
+  createCall,
+  generateJitsiUrl,
+} from '../../components/call/functionCall';
 
 // Custom Components
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
@@ -171,16 +175,14 @@ const upcomingAppointment = () => {
   const [receiver, setReceiver] = useState(null);
   const [isInitiator, setIsInitiator] = useState(false);
 
-  // Hàm helper để tạo key an toàn cho Firebase
-  const safeKey = (str) => {
-    return str.replace(/[.#$[\]]/g, '_');
-  };
+
 
   const handleStartCall = (caller) => {
-    if (!caller?.uid) {
-      console.error("Thiếu UID của caller");
-      return;
-    }
+    const setCallStates = {
+      setIsCalling,
+      setIsInitiator,
+      setReceiver
+    };
 
     // Tạo một callee giả (bác sĩ) với UID cố định
     const callee = {
@@ -189,89 +191,46 @@ const upcomingAppointment = () => {
       role: "doctor"
     };
 
-    setIsCalling(true);
-    setIsInitiator(true);
-    setReceiver(callee);
+    // Thêm role cho caller
+    const callerWithRole = { ...caller, role: "patient" };
 
-    const callRef = ref(dbCall, `calls/${safeKey(callee.uid)}`);
-    set(callRef, {
-      from: { 
-        uid: caller.uid,
-        username: caller.displayName || caller.email || "Bệnh nhân",
-        role: "patient"
-      },
-      to: { 
-        uid: callee.uid,
-        username: callee.name,
-        role: "doctor"
-      },
-      timestamp: Date.now(),
-      status: "pending",
-    }).catch(err => console.error("Lỗi khi ghi dữ liệu cuộc gọi:", err));
+    createCall(callerWithRole, callee, dbCall, setCallStates);
   };
 
-  const acceptCall = async () => {
-    if (!incomingCall || !user) return;
-
-    setIsCalling(true);
-    setIncomingCall(null);
-
-    const callRef = ref(dbCall, `calls/${safeKey(user.uid)}`);
-    const callerRef = ref(dbCall, `calls/${safeKey(incomingCall.uid)}`);
-
-    const callData = {
-      from: incomingCall,
-      to: { 
-        uid: user.uid,
-        username: user.displayName || user.email || "Bệnh nhân",
-        role: "patient"
-      },
-      timestamp: Date.now(),
-      status: "accepted",
+  const handleAcceptCall = async () => {
+    const setCallStates = {
+      setIsCalling,
+      setIncomingCall,
+      setReceiver,
+      setJitsiUrl
     };
 
-    try {
-      await set(callRef, callData);
-      await set(callerRef, callData);
-    } catch (err) {
-      console.error("Lỗi khi chấp nhận cuộc gọi:", err);
-    }
+    await acceptCall(incomingCall, user, dbCall, setCallStates);
   };
 
-  const endCall = async () => {
-    try {
-      if (receiver && receiver.uid) {
-        const callRef = ref(dbCall, `calls/${safeKey(receiver.uid)}`);
-        await remove(callRef);
-      }
-      if (isInitiator && user && user.uid) {
-        const callerRef = ref(dbCall, `calls/${safeKey(user.uid)}`);
-        await remove(callerRef);
-      }
-    } catch (err) {
-      console.error("Lỗi khi kết thúc cuộc gọi:", err);
-    }
+  const handleEndCall = async () => {
+    const setCallStates = {
+      setIsCalling,
+      setIncomingCall,
+      setIsInitiator,
+      setReceiver,
+      setJitsiUrl
+    };
 
-    setIsCalling(false);
-    setIncomingCall(null);
-    setIsInitiator(false);
-    setReceiver(null);
-    setJitsiUrl(null);
+    await endCall(receiver, isInitiator, user, dbCall, setCallStates);
   };
 
   // Lắng nghe trạng thái cuộc gọi khi là người khởi tạo
   useEffect(() => {
     if (isInitiator && receiver && receiver.uid) {
-      const callRef = ref(dbCall, `calls/${safeKey(receiver.uid)}`);
+      const callRef = ref(dbCall, `calls/${receiver.uid.replace(/[.#$[\]]/g, '_')}`);
       const unsubscribe = onValue(
         callRef,
         (snapshot) => {
           const callData = snapshot.val();
           if (callData && callData.status === "accepted") {
             const { from, to } = callData;
-            const members = [from.uid, to.uid];
-            const membersString = members.join("-").replaceAll(/[.#$[\]]/g, '_');
-            setJitsiUrl(`https://meet.jit.si/${membersString}`);
+            setJitsiUrl(generateJitsiUrl(from.uid, to.uid));
             setIsCalling(true);
           }
         },
@@ -289,7 +248,7 @@ const upcomingAppointment = () => {
   // Lắng nghe cuộc gọi đến
   useEffect(() => {
     if (user && user.uid) {
-      const callListener = ref(dbCall, `calls/${safeKey(user.uid)}`);
+      const callListener = ref(dbCall, `calls/${user.uid.replace(/[.#$[\]]/g, '_')}`);
       const unsubscribe = onValue(
         callListener,
         (snapshot) => {
@@ -303,9 +262,7 @@ const upcomingAppointment = () => {
           } else if (callData && callData.status === "accepted") {
             const { from, to } = callData;
             if (from?.uid && to?.uid) {
-              const members = [from.uid, to.uid];
-              const membersString = members.join("-").replaceAll(/[.#$[\]]/g, '_');
-              setJitsiUrl(`https://meet.jit.si/${membersString}`);
+              setJitsiUrl(generateJitsiUrl(from.uid, to.uid));
               setIsCalling(true);
             }
           } else {
@@ -535,10 +492,10 @@ const upcomingAppointment = () => {
               <div className="modal-body text-center p-4">
                 <h5 className="mb-3">{incomingCall.username || "Người dùng"} đang gọi bạn...</h5>
                 <div className="d-flex justify-content-center gap-3">
-                  <button className="btn btn-success" onClick={acceptCall}>
+                  <button className="btn btn-success" onClick={handleAcceptCall}>
                     Chấp nhận
                   </button>
-                  <button className="btn btn-danger" onClick={endCall}>
+                  <button className="btn btn-danger" onClick={handleEndCall}>
                     Hủy
                   </button>
                 </div>
@@ -550,7 +507,7 @@ const upcomingAppointment = () => {
       {isCalling && (
         <VideoCallModal
           jitsiUrl={jitsiUrl}
-          onClose={endCall}
+          onClose={handleEndCall}
         />
       )}
 
