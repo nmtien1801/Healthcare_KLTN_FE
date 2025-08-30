@@ -1,7 +1,10 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Search, Filter, Eye, Edit, MessageSquare, Phone, ChevronDown, X, Bot, Send } from "lucide-react"
 import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal"
 import EditPatientModal from "../../components/doctor/patient/EditPatientModal"
+import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp  } from 'firebase/firestore';
+import { useSelector, useDispatch } from "react-redux";
+import { db } from "../../../firebase";
 
 const initialPatients = [
   {
@@ -345,27 +348,95 @@ export default function PatientTab() {
   }
 
   // Nhắn tin cho bệnh nhân
-  const [showChatbot, setShowChatbot] = useState(false); // chat với bác sĩ
+  const [showChatbot, setShowChatbot] = useState(false); // chat với bệnh nhân
   const [messageInput, setMessageInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const user = useSelector((state) => state.auth.userInfo);
+  const senderId = user?.uid;
+  const receiverId = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+
+  const roomChats = [senderId, receiverId].sort().join('_');
+  useEffect(() => {
+    if (!senderId) return;
+    
+    const q = query(
+      collection(db, 'chats', roomChats, 'messages'),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        return {
+          id: doc.id,
+          text: data.message || data.text || '', // Hỗ trợ cả 'message' và 'text'
+          sender: data.senderId === senderId ? "doctor" : "patient",
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(), // Chuyển đổi Firestore timestamp
+          originalData: data // Lưu trữ dữ liệu gốc để debug
+        };
+      });
+      
+      setChatMessages(messages);
+    }, (error) => {
+      console.error('Firebase listener error:', error);
+    });
+
+    return () => unsub();
+  }, [senderId, roomChats]);
+
+  // Scroll to bottom khi có tin nhắn mới
+  useEffect(() => {
+    if (showChatbot && chatMessages.length > 0) {
+      const chatContainer = document.querySelector('.chat-messages');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
+  }, [chatMessages, showChatbot]);
 
   const sendMessage = async () => {
     if (messageInput.trim() === "") return;
-
-    setChatMessages((prev) => [...prev, { text: messageInput, sender: "doctor" }]);
-    const userMessage = messageInput;
+    
+    setIsSending(true);
+    const userMessage = messageInput.trim();
     setMessageInput("");
 
-    try {
+    // Thêm tin nhắn vào UI ngay lập tức
+    const tempMessage = { 
+      id: Date.now().toString(), // Tạo ID tạm thời
+      text: userMessage, 
+      sender: "doctor",
+      timestamp: new Date(),
+      isTemp: true // Đánh dấu là tin nhắn tạm thời
+    };
+    
+    setChatMessages((prev) => [...prev, tempMessage]);
 
-      //////////////////////////
-      setChatMessages((prev) => [...prev, { text: "botResponse", sender: "patient" }]);
+    try {
+      const docRef = await addDoc(collection(db, "chats", roomChats, "messages"), {
+        senderId,
+        receiverId,
+        message: userMessage, // Sử dụng 'message' để nhất quán
+        timestamp: serverTimestamp()
+      });
+      
+      // Cập nhật tin nhắn tạm thời thành tin nhắn thật
+      setChatMessages((prev) => prev.map(msg => 
+        msg.isTemp && msg.text === userMessage 
+          ? { ...msg, id: docRef.id, isTemp: false }
+          : msg
+      ));
+      
     } catch (err) {
-      console.error(err);
-      setChatMessages((prev) => [
-        ...prev,
-        { text: "Lỗi kết nối đến máy chủ.", sender: "patient" }
-      ]);
+      console.error('Error sending message:', err);
+      // Xóa tin nhắn khỏi UI nếu gửi thất bại
+      setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
+      // Có thể thay thế bằng toast notification sau này
+      console.error("Lỗi kết nối đến máy chủ:", err);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -374,7 +445,8 @@ export default function PatientTab() {
     if (patient.phone) {
       window.location.href = `tel:${patient.phone}`
     } else {
-      alert("Không có số điện thoại để gọi")
+      // Có thể thay thế bằng toast notification sau này
+      console.warn("Không có số điện thoại để gọi")
     }
   }
 
@@ -550,28 +622,57 @@ export default function PatientTab() {
       {showChatbot && (
         <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
           <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
-            <div><Bot size={18} className="me-1" /> Bác sĩ tư vấn</div>
+            <div><Bot size={18} className="me-1" /> Chat với bệnh nhân</div>
             <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle"><X size={16} /></button>
           </div>
-          <div className="p-2" style={{ height: 340, overflowY: "auto" }}>
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className={`mb-2 ${msg.sender === "doctor" ? "text-end" : "text-start"}`}>
-                <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "doctor" ? "bg-primary text-white" : "bg-light text-dark"}`}>
-                  {msg.text}
-                </div>
+          
+          <div className="p-2 chat-messages" style={{ height: 340, overflowY: "auto" }}>
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-muted mt-4">
+                <Bot size={24} className="mb-2" />
+                <div>Chưa có tin nhắn nào</div>
+                <small>Bắt đầu cuộc trò chuyện với bệnh nhân</small>
               </div>
-            ))}
+            ) : (
+              chatMessages.map((msg, idx) => (
+                <div key={msg.id} className={`mb-2 ${msg.sender === "doctor" ? "text-end" : "text-start"}`}>
+                  <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "doctor" ? "bg-primary text-white" : "bg-light text-dark"}`}>
+                    {msg.text}
+                  </div>
+                  <div className={`small text-muted mt-1 ${msg.sender === "doctor" ? "text-end" : "text-start"}`}>
+                    {msg.timestamp && msg.timestamp instanceof Date ? 
+                      msg.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
+                      (msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '')
+                    }
+                  </div>
+                </div>
+              ))
+            )}
           </div>
+          
           <div className="border-top d-flex p-3 align-items-center">
             <input
               type="text"
               className="form-control form-control-sm rounded-pill me-2"
-              placeholder="Nhập câu hỏi..."
+              placeholder="Nhập tin nhắn..."
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onKeyDown={(e) => e.key === "Enter" && !isSending && sendMessage()}
+              disabled={isSending}
             />
-            <button onClick={sendMessage} className="btn btn-sm btn-primary rounded-pill"><Send size={16} /></button>
+            <button 
+              onClick={sendMessage} 
+              className="btn btn-sm btn-primary rounded-pill"
+              disabled={isSending || !messageInput.trim()}
+            >
+              {isSending ? (
+                <div className="spinner-border spinner-border-sm" role="status">
+                  <span className="visually-hidden">Đang gửi...</span>
+                </div>
+              ) : (
+                <Send size={16} />
+              )}
+            </button>
           </div>
         </div>
       )}
