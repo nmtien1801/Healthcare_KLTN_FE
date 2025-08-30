@@ -2,7 +2,15 @@ import React, { useState, useEffect } from "react";
 import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send } from 'lucide-react';
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSelector, useDispatch } from "react-redux";
-import { db } from "../../../firebase";
+import { db, dbCall } from "../../../firebase";
+import VideoCallModal from '../../components/call/videoModalCall'
+import {
+  ref,
+  onValue,
+  set,
+  remove,
+  off,
+} from "firebase/database";
 
 // Custom Components
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
@@ -45,6 +53,10 @@ const upcomingAppointment = () => {
   const [isConfirmed, setIsConfirmed] = useState(true);
   const user = useSelector((state) => state.auth.userInfo);
 
+  const handleToggleStatus = () => {
+    setIsConfirmed((prev) => !prev);
+  };
+
   // chat với bác sĩ
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
@@ -52,9 +64,9 @@ const upcomingAppointment = () => {
   const senderId = user?.uid;
   const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
   const [chatMessages, setChatMessages] = useState([
-    { 
+    {
       id: 'welcome',
-      text: "Xin chào! Tôi là bác sĩ tư vấn của bạn. Bạn cần hỗ trợ gì?", 
+      text: "Xin chào! Tôi là bác sĩ tư vấn của bạn. Bạn cần hỗ trợ gì?",
       sender: "doctor",
       timestamp: new Date(),
       isWelcome: true
@@ -62,7 +74,7 @@ const upcomingAppointment = () => {
   ]);
 
   const roomChats = [senderId, receiverId].sort().join('_');
-   
+
   useEffect(() => {
     if (!senderId) return;
 
@@ -72,10 +84,10 @@ const upcomingAppointment = () => {
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
-      
+
       const firebaseMessages = snapshot.docs.map(doc => {
         const data = doc.data();
-        
+
         return {
           id: doc.id,
           text: data.message || data.text || '', // Hỗ trợ cả 'message' và 'text'
@@ -84,7 +96,7 @@ const upcomingAppointment = () => {
           originalData: data // Lưu trữ dữ liệu gốc để debug
         };
       });
-      
+
       // Giữ lại tin nhắn chào mừng nếu không có tin nhắn từ Firebase
       if (firebaseMessages.length === 0) {
         setChatMessages(prev => prev.filter(msg => msg.isWelcome));
@@ -110,20 +122,20 @@ const upcomingAppointment = () => {
 
   const sendMessage = async () => {
     if (messageInput.trim() === "") return;
-    
+
     setIsSending(true);
     const userMessage = messageInput.trim();
     setMessageInput("");
 
     // Thêm tin nhắn vào UI ngay lập tức
-    const tempMessage = { 
+    const tempMessage = {
       id: Date.now().toString(), // Tạo ID tạm thời
-      text: userMessage, 
+      text: userMessage,
       sender: "patient",
       timestamp: new Date(),
       isTemp: true // Đánh dấu là tin nhắn tạm thời
     };
-    
+
     setChatMessages((prev) => [...prev, tempMessage]);
 
     try {
@@ -133,14 +145,14 @@ const upcomingAppointment = () => {
         message: userMessage, // Sử dụng 'message' để nhất quán
         timestamp: serverTimestamp()
       });
-      
+
       // Cập nhật tin nhắn tạm thời thành tin nhắn thật
-      setChatMessages((prev) => prev.map(msg => 
-        msg.isTemp && msg.text === userMessage 
+      setChatMessages((prev) => prev.map(msg =>
+        msg.isTemp && msg.text === userMessage
           ? { ...msg, id: docRef.id, isTemp: false }
           : msg
       ));
-      
+
     } catch (err) {
       console.error('Error sending message:', err);
       // Xóa tin nhắn khỏi UI nếu gửi thất bại
@@ -152,21 +164,165 @@ const upcomingAppointment = () => {
     }
   };
 
-  const handleToggleStatus = () => {
-    setIsConfirmed((prev) => !prev);
+  // Gọi điện cho bác sĩ
+  const [isCalling, setIsCalling] = useState(false);
+  const [jitsiUrl, setJitsiUrl] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [receiver, setReceiver] = useState(null);
+  const [isInitiator, setIsInitiator] = useState(false);
+
+  // Hàm helper để tạo key an toàn cho Firebase
+  const safeKey = (str) => {
+    return str.replace(/[.#$[\]]/g, '_');
   };
 
-  // Gọi điện cho bác sĩ
-  const handleCallPatient = () => {
-    // Demo phone number for doctor
-    const doctorPhone = "0901234567";
-    if (doctorPhone) {
-      window.location.href = `tel:${doctorPhone}`;
-    } else {
-      // Có thể thay thế bằng toast notification sau này
-      console.warn("Không có số điện thoại để gọi");
+  const handleStartCall = (caller) => {
+    if (!caller?.uid) {
+      console.error("Thiếu UID của caller");
+      return;
+    }
+
+    // Tạo một callee giả (bác sĩ) với UID cố định
+    const callee = {
+      uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2", // UID của bác sĩ
+      name: "Bác sĩ Trần Thị B",
+      role: "doctor"
+    };
+
+    setIsCalling(true);
+    setIsInitiator(true);
+    setReceiver(callee);
+
+    const callRef = ref(dbCall, `calls/${safeKey(callee.uid)}`);
+    set(callRef, {
+      from: { 
+        uid: caller.uid,
+        username: caller.displayName || caller.email || "Bệnh nhân",
+        role: "patient"
+      },
+      to: { 
+        uid: callee.uid,
+        username: callee.name,
+        role: "doctor"
+      },
+      timestamp: Date.now(),
+      status: "pending",
+    }).catch(err => console.error("Lỗi khi ghi dữ liệu cuộc gọi:", err));
+  };
+
+  const acceptCall = async () => {
+    if (!incomingCall || !user) return;
+
+    setIsCalling(true);
+    setIncomingCall(null);
+
+    const callRef = ref(dbCall, `calls/${safeKey(user.uid)}`);
+    const callerRef = ref(dbCall, `calls/${safeKey(incomingCall.uid)}`);
+
+    const callData = {
+      from: incomingCall,
+      to: { 
+        uid: user.uid,
+        username: user.displayName || user.email || "Bệnh nhân",
+        role: "patient"
+      },
+      timestamp: Date.now(),
+      status: "accepted",
+    };
+
+    try {
+      await set(callRef, callData);
+      await set(callerRef, callData);
+    } catch (err) {
+      console.error("Lỗi khi chấp nhận cuộc gọi:", err);
     }
   };
+
+  const endCall = async () => {
+    try {
+      if (receiver && receiver.uid) {
+        const callRef = ref(dbCall, `calls/${safeKey(receiver.uid)}`);
+        await remove(callRef);
+      }
+      if (isInitiator && user && user.uid) {
+        const callerRef = ref(dbCall, `calls/${safeKey(user.uid)}`);
+        await remove(callerRef);
+      }
+    } catch (err) {
+      console.error("Lỗi khi kết thúc cuộc gọi:", err);
+    }
+
+    setIsCalling(false);
+    setIncomingCall(null);
+    setIsInitiator(false);
+    setReceiver(null);
+    setJitsiUrl(null);
+  };
+
+  // Lắng nghe trạng thái cuộc gọi khi là người khởi tạo
+  useEffect(() => {
+    if (isInitiator && receiver && receiver.uid) {
+      const callRef = ref(dbCall, `calls/${safeKey(receiver.uid)}`);
+      const unsubscribe = onValue(
+        callRef,
+        (snapshot) => {
+          const callData = snapshot.val();
+          if (callData && callData.status === "accepted") {
+            const { from, to } = callData;
+            const members = [from.uid, to.uid];
+            const membersString = members.join("-").replaceAll(/[.#$[\]]/g, '_');
+            setJitsiUrl(`https://meet.jit.si/${membersString}`);
+            setIsCalling(true);
+          }
+        },
+        (err) => {
+          console.error("Lỗi khi lắng nghe trạng thái cuộc gọi:", err);
+        }
+      );
+
+      return () => {
+        off(callRef);
+      };
+    }
+  }, [isInitiator, receiver]);
+
+  // Lắng nghe cuộc gọi đến
+  useEffect(() => {
+    if (user && user.uid) {
+      const callListener = ref(dbCall, `calls/${safeKey(user.uid)}`);
+      const unsubscribe = onValue(
+        callListener,
+        (snapshot) => {
+          const callData = snapshot.val();
+          if (callData && callData.status === "pending") {
+            const { from, to } = callData;
+            if (from?.uid && to?.uid) {
+              setIncomingCall(from);
+              setReceiver(to);
+            }
+          } else if (callData && callData.status === "accepted") {
+            const { from, to } = callData;
+            if (from?.uid && to?.uid) {
+              const members = [from.uid, to.uid];
+              const membersString = members.join("-").replaceAll(/[.#$[\]]/g, '_');
+              setJitsiUrl(`https://meet.jit.si/${membersString}`);
+              setIsCalling(true);
+            }
+          } else {
+            setIncomingCall(null);
+            setJitsiUrl(null);
+          }
+        },
+        (err) => {
+          console.error("Lỗi khi lắng nghe cuộc gọi:", err);
+        }
+      );
+
+      return () => {
+        off(callListener);
+      };
+    }
+  }, [user]);
 
   return (
     <div className="container my-3" >
@@ -218,7 +374,7 @@ const upcomingAppointment = () => {
                       variant="warning"
                       size="sm"
                       className="p-2"
-                      onClick={() => handleCallPatient()}
+                      onClick={() => handleStartCall(user)}
                       title="Gọi điện"
                     >
                       <Phone size={16} />
@@ -319,7 +475,7 @@ const upcomingAppointment = () => {
             <div><Bot size={18} className="me-1" /> Chat với bác sĩ</div>
             <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle"><X size={16} /></button>
           </div>
-          
+
           <div className="p-2 chat-messages" style={{ height: 340, overflowY: "auto" }}>
             {chatMessages.length === 0 ? (
               <div className="text-center text-muted mt-4">
@@ -334,8 +490,8 @@ const upcomingAppointment = () => {
                     {msg.text}
                   </div>
                   <div className={`small text-muted mt-1 ${msg.sender === "patient" ? "text-end" : "text-start"}`}>
-                    {msg.timestamp && msg.timestamp instanceof Date ? 
-                      msg.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
+                    {msg.timestamp && msg.timestamp instanceof Date ?
+                      msg.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) :
                       (msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '')
                     }
                   </div>
@@ -343,7 +499,7 @@ const upcomingAppointment = () => {
               ))
             )}
           </div>
-          
+
           <div className="border-top d-flex p-3 align-items-center">
             <input
               type="text"
@@ -354,8 +510,8 @@ const upcomingAppointment = () => {
               onKeyDown={(e) => e.key === "Enter" && !isSending && sendMessage()}
               disabled={isSending}
             />
-            <button 
-              onClick={sendMessage} 
+            <button
+              onClick={sendMessage}
               className="btn btn-sm btn-primary rounded-pill"
               disabled={isSending || !messageInput.trim()}
             >
@@ -369,6 +525,33 @@ const upcomingAppointment = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* call popup */}
+      {!isInitiator && incomingCall && (
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-body text-center p-4">
+                <h5 className="mb-3">{incomingCall.username || "Người dùng"} đang gọi bạn...</h5>
+                <div className="d-flex justify-content-center gap-3">
+                  <button className="btn btn-success" onClick={acceptCall}>
+                    Chấp nhận
+                  </button>
+                  <button className="btn btn-danger" onClick={endCall}>
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isCalling && (
+        <VideoCallModal
+          jitsiUrl={jitsiUrl}
+          onClose={endCall}
+        />
       )}
 
     </div>

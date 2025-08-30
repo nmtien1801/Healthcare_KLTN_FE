@@ -23,5 +23,5 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const provider = new GoogleAuthProvider();
 
-// Đây là Realtime Database
+// Đây là Realtime Database truyền tín hiệu liên tục
 export const dbCall = getDatabase(app);
