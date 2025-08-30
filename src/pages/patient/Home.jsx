@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from "react";
 import * as echarts from "echarts";
-import { Check, MessageCircleMore, X, Bot, Send } from "lucide-react";
+import { Check, MessageCircleMore } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
 const Home = () => {
   const navigate = useNavigate();
-  const [showChatbot, setShowChatbot] = useState(false);
-  const [messageInput, setMessageInput] = useState("");
-  const [chatMessages, setChatMessages] = useState([
-    { text: "Xin chào! Tôi là trợ lý AI. Bạn cần hỗ trợ gì?", sender: "bot" },
-  ]);
 
   const userData = {
     name: "Nguyễn Văn A",
@@ -34,38 +29,6 @@ const Home = () => {
     updated[index].taken = !updated[index].taken;
     setMedications(updated);
   };
-
-
-  const sendMessage = async () => {
-    if (messageInput.trim() === "") return;
-
-    setChatMessages((prev) => [...prev, { text: messageInput, sender: "user" }]);
-    const userMessage = messageInput;
-    setMessageInput("");
-
-    try {
-      const res = await axios.post(
-        "https://nmtien1801.app.n8n.cloud/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
-        {
-          message: {
-            text: userMessage,
-          }
-        },
-      );
-
-      const botResponse = res.data.myField;
-      console.log("Bot response:", res);
-
-      setChatMessages((prev) => [...prev, { text: botResponse, sender: "bot" }]);
-    } catch (err) {
-      console.error(err);
-      setChatMessages((prev) => [
-        ...prev,
-        { text: "Lỗi kết nối đến máy chủ.", sender: "bot" }
-      ]);
-    }
-  };
-
 
   return (
     <div className="bg-light min-vh-100 p-3">
@@ -172,36 +135,6 @@ const Home = () => {
           </div>
         </div>
       </div>
-
-      {/* Chatbot Popup */}
-      {showChatbot && (
-        <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
-          <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
-            <div><Bot size={18} className="me-1" /> Trợ lý AI</div>
-            <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle"><X size={16} /></button>
-          </div>
-          <div className="p-2" style={{ height: 340, overflowY: "auto" }}>
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className={`mb-2 ${msg.sender === "user" ? "text-end" : "text-start"}`}>
-                <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "user" ? "bg-primary text-white" : "bg-light text-dark"}`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="p-2 border-top d-flex">
-            <input
-              type="text"
-              className="form-control form-control-sm rounded-pill me-2"
-              placeholder="Nhập câu hỏi..."
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            />
-            <button onClick={sendMessage} className="btn btn-sm btn-primary rounded-pill"><Send size={16} /></button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

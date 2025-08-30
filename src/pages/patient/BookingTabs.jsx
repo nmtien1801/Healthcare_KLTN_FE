@@ -1,8 +1,70 @@
 import React, { useState } from "react";
-import { Hospital, Video, Calendar, Clock, MapPin, Star, CheckCircle, MessageCircle, Shield, Award, ClockIcon as Clock24 } from 'lucide-react';
+import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send } from 'lucide-react';
+
+// Custom Components
+const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
+  const baseClasses =
+    "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm"
+
+  const variants = {
+    primary: "btn-primary text-white",
+    secondary: "btn-light text-dark border",
+    success: "btn-success text-white",
+    danger: "btn-danger text-white",
+    warning: "btn-warning text-dark",
+    info: "btn-info text-white",
+    light: "btn-light text-dark",
+    dark: "btn-dark text-white",
+    outline: "btn-outline-primary",
+    ghost: "btn-light text-muted border-0 shadow-none",
+  }
+
+  const sizes = {
+    sm: "btn-sm px-2 py-1",
+    md: "btn-md px-3 py-2",
+    lg: "btn-lg px-4 py-3",
+  }
+
+  return (
+    <button
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      style={{ borderRadius: "8px" }}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
 
 const upcomingAppointment = () => {
   const [isConfirmed, setIsConfirmed] = useState(true);
+  const [showChatbot, setShowChatbot] = useState(false); // chat với bác sĩ
+  const [messageInput, setMessageInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    { text: "Xin chào! Tôi là bác sĩ tư vấn của bạn. Bạn cần hỗ trợ gì?", sender: "doctor" },
+  ]);
+
+  const sendMessage = async () => {
+    if (messageInput.trim() === "") return;
+
+    setChatMessages((prev) => [...prev, { text: messageInput, sender: "patient" }]);
+    const userMessage = messageInput;
+    setMessageInput("");
+
+    try {
+
+      //////////////////////////
+      setChatMessages((prev) => [...prev, { text: "botResponse", sender: "doctor" }]);
+    } catch (err) {
+      console.error(err);
+      setChatMessages((prev) => [
+        ...prev,
+        { text: "Lỗi kết nối đến máy chủ.", sender: "doctor" }
+      ]);
+    }
+  };
 
   const handleToggleStatus = () => {
     setIsConfirmed((prev) => !prev);
@@ -44,10 +106,26 @@ const upcomingAppointment = () => {
                   <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
                     <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Online
                   </span>
-                  <button className="btn btn-primary btn-sm rounded-pill d-flex align-items-center px-3 py-2">
-                    <MessageCircle size={16} className="me-1" />
-                    Chat
-                  </button>
+                  <div className="d-flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="p-2"
+                      onClick={() => setShowChatbot(true)}
+                      title="Nhắn tin"
+                    >
+                      <MessageSquare size={16} />
+                    </Button>
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      className="p-2"
+                      onClick={() => handleCallPatient(patient)}
+                      title="Gọi điện"
+                    >
+                      <Phone size={16} />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -135,6 +213,37 @@ const upcomingAppointment = () => {
           </div>
         </div>
       </div>
+
+      {/* Chatbot Popup */}
+      {showChatbot && (
+        <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
+          <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
+            <div><Bot size={18} className="me-1" /> Bác sĩ tư vấn</div>
+            <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle"><X size={16} /></button>
+          </div>
+          <div className="p-2" style={{ height: 340, overflowY: "auto" }}>
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} className={`mb-2 ${msg.sender === "patient" ? "text-end" : "text-start"}`}>
+                <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "patient" ? "bg-primary text-white" : "bg-light text-dark"}`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-top d-flex p-3 align-items-center">
+            <input
+              type="text"
+              className="form-control form-control-sm rounded-pill me-2"
+              placeholder="Nhập câu hỏi..."
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <button onClick={sendMessage} className="btn btn-sm btn-primary rounded-pill"><Send size={16} /></button>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
