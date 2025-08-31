@@ -172,101 +172,110 @@ const Chart = ({ bloodSugar }) => {
   // biểu đồ
   useEffect(() => {
     const chartDom = document.getElementById("health-chart");
-    if (chartDom && bloodSugar.length > 0) {
-      const myChart = echarts.init(chartDom);
+    if (!chartDom) return;
 
-      // trung bình bloodSugar mỗi ngày
-      let dailyBloodSugar = bloodSugarDaily({ bloodSugar })
+    // Tạo chart instance
+    const myChart = echarts.init(chartDom);
 
-      const option = {
-        title: {
-          text: "Chỉ số đường huyết (mmol/L) - Trung bình theo ngày",
-          left: "center",
-          textStyle: { fontSize: 14 },
-        },
-        tooltip: {
-          trigger: "axis",
-          formatter: function (params) {
-            let result = params[0].axisValue + '<br/>';
-            params.forEach(param => {
-              if (param.value !== null) {
-                result += param.marker + ' ' + param.seriesName + ': ' + Number(param.value.toFixed(1)) + ' mmol/L<br/>';
-              }
-            });
-            return result;
-          }
-        },
-        legend: {
-          top: "10%",
-          data: ["Lúc đói", "Sau ăn"],
-        },
-        xAxis: {
-          type: "category",
-          data: dailyBloodSugar.dates,
-        },
-        yAxis: {
-          type: "value",
-          min: 4,
-          max: 10,
-          axisLabel: { formatter: "{value} mmol/L" },
-        },
-        series: [
-          {
-            name: "Lúc đói",
-            data: dailyBloodSugar.fastingData,
-            type: "line",
-            smooth: true,
-            lineStyle: { color: "#3b82f6" }, // xanh
-            itemStyle: { color: "#3b82f6" },
-            connectNulls: false, // Không nối các điểm null
-            markLine: {
-              data: [
-                {
-                  yAxis: 5.6,
-                  lineStyle: { color: "#10b981" },
-                  label: { formatter: "Ngưỡng bình thường (đói)" },
-                },
-                {
-                  yAxis: 7.0,
-                  lineStyle: { color: "#ef4444" },
-                  label: { formatter: "Ngưỡng cao" },
-                },
-              ],
-            },
-          },
-          {
-            name: "Sau ăn",
-            data: dailyBloodSugar.postMealData,
-            type: "line",
-            smooth: true,
-            lineStyle: { color: "#f59e0b" }, // vàng cam
-            itemStyle: { color: "#f59e0b" },
-            connectNulls: false, // Không nối các điểm null
-            markLine: {
-              data: [
-                {
-                  yAxis: 7.8,
-                  lineStyle: { color: "#10b981" },
-                  label: { formatter: "Ngưỡng bình thường (sau ăn)" },
-                },
-                {
-                  yAxis: 11.1,
-                  lineStyle: { color: "#ef4444" },
-                  label: { formatter: "Ngưỡng cao" },
-                },
-              ],
-            },
-          },
-        ],
-        grid: { left: "10%", right: "10%", bottom: "15%" },
-      };
+    // Xử lý data
+    let dailyBloodSugar = { dates: [], fastingData: [], postMealData: [] };
 
-      myChart.setOption(option);
-
-      return () => {
-        myChart.dispose();
-      };
+    if (bloodSugar && bloodSugar.length > 0) {
+      try {
+        dailyBloodSugar = bloodSugarDaily({ bloodSugar });
+      } catch (error) {
+        console.error('Error processing bloodSugar data:', error);
+      }
     }
+
+    const option = {
+      title: {
+        text: "Chỉ số đường huyết (mmol/L) - Trung bình theo ngày",
+        left: "center",
+        textStyle: { fontSize: 14 },
+      },
+      tooltip: {
+        trigger: "axis",
+        formatter: function (params) {
+          let result = params[0].axisValue + '<br/>';
+          params.forEach(param => {
+            if (param.value !== null) {
+              result += param.marker + ' ' + param.seriesName + ': ' + Number(param.value.toFixed(1)) + ' mmol/L<br/>';
+            }
+          });
+          return result;
+        }
+      },
+      legend: {
+        top: "10%",
+        data: ["Lúc đói", "Sau ăn"],
+      },
+      xAxis: {
+        type: "category",
+        data: dailyBloodSugar.dates,
+      },
+      yAxis: {
+        type: "value",
+        min: 4,
+        max: 10,
+        axisLabel: { formatter: "{value} mmol/L" },
+      },
+      series: [
+        {
+          name: "Lúc đói",
+          data: dailyBloodSugar.fastingData,
+          type: "line",
+          smooth: true,
+          lineStyle: { color: "#3b82f6" }, // xanh
+          itemStyle: { color: "#3b82f6" },
+          connectNulls: false, // Không nối các điểm null
+          markLine: {
+            data: [
+              {
+                yAxis: 5.6,
+                lineStyle: { color: "#10b981" },
+                label: { formatter: "Ngưỡng bình thường (đói)" },
+              },
+              {
+                yAxis: 7.0,
+                lineStyle: { color: "#ef4444" },
+                label: { formatter: "Ngưỡng cao" },
+              },
+            ],
+          },
+        },
+        {
+          name: "Sau ăn",
+          data: dailyBloodSugar.postMealData,
+          type: "line",
+          smooth: true,
+          lineStyle: { color: "#f59e0b" }, // vàng cam
+          itemStyle: { color: "#f59e0b" },
+          connectNulls: false, // Không nối các điểm null
+          markLine: {
+            data: [
+              {
+                yAxis: 7.8,
+                lineStyle: { color: "#10b981" },
+                label: { formatter: "Ngưỡng bình thường (sau ăn)" },
+              },
+              {
+                yAxis: 11.1,
+                lineStyle: { color: "#ef4444" },
+                label: { formatter: "Ngưỡng cao" },
+              },
+            ],
+          },
+        },
+      ],
+      grid: { left: "10%", right: "10%", bottom: "15%" },
+    };
+
+    myChart.setOption(option);
+
+    return () => {
+      myChart.dispose();
+    };
   }, [bloodSugar]);
 
   return (
@@ -278,7 +287,7 @@ const Chart = ({ bloodSugar }) => {
         </div>
         <h5 className="mb-0 fw-semibold text-dark">Biểu đồ theo dõi</h5>
       </div>
-      <div id="health-chart" className="w-100" style={{ height: "16rem" }}></div>
+      <div id="health-chart" className="w-100" style={{ height: "16rem", minHeight: "16rem" }}></div>
     </div>
   )
 }
@@ -422,11 +431,14 @@ const HealthTabs = () => {
   const [aiPlan, setAiPlan] = useState({});
   let user = useSelector((state) => state.auth.userInfo);
   const [measurementType, setMeasurementType] = useState("before");
-  let [bloodSugar, setBloodSugar] = useState([])
+  const [bloodSugar, setBloodSugar] = useState([])
 
   // get bloodSugar
   useEffect(() => {
-    if (!user?.userId) return;
+    if (!user?.userId) {
+      console.log('No userId, skipping fetchBloodSugarData');
+      return;
+    }
 
     let fetchBloodSugarData = async () => {
       try {
@@ -439,12 +451,45 @@ const HealthTabs = () => {
         // Gộp dữ liệu từ cả hai API calls
         const allData = [];
 
+        // Kiểm tra response structure - thử nhiều format khác nhau
+        let postMealData = null;
+        let fastingData = null;
+
+        // Thử format 1: payload.DT.bloodSugarData
         if (postMealRes?.payload?.DT?.bloodSugarData) {
-          allData.push(...postMealRes.payload.DT.bloodSugarData);
+          postMealData = postMealRes.payload.DT.bloodSugarData;
+        }
+        // Thử format 2: payload.DT
+        else if (postMealRes?.payload?.DT && Array.isArray(postMealRes.payload.DT)) {
+          postMealData = postMealRes.payload.DT;
+        }
+        // Thử format 3: payload trực tiếp
+        else if (postMealRes?.payload && Array.isArray(postMealRes.payload)) {
+          postMealData = postMealRes.payload;
         }
 
         if (fastingRes?.payload?.DT?.bloodSugarData) {
-          allData.push(...fastingRes.payload.DT.bloodSugarData);
+          fastingData = fastingRes.payload.DT.bloodSugarData;
+        }
+        else if (fastingRes?.payload?.DT && Array.isArray(fastingRes.payload.DT)) {
+          fastingData = fastingRes.payload.DT;
+        }
+        else if (fastingRes?.payload && Array.isArray(fastingRes.payload)) {
+          fastingData = fastingRes.payload;
+        }
+
+        // Thêm data vào allData nếu có
+        if (postMealData && Array.isArray(postMealData)) {
+          console.log('Adding postMeal data:', postMealData);
+          allData.push(...postMealData);
+        } else {
+          console.log('No postMeal data found in response');
+        }
+
+        if (fastingData && Array.isArray(fastingData)) {
+          allData.push(...fastingData);
+        } else {
+          console.log('No fasting data found in response');
         }
 
         setBloodSugar(allData);
@@ -456,38 +501,49 @@ const HealthTabs = () => {
     fetchBloodSugarData()
   }, [dispatch, user?.userId])
 
+  // Theo dõi thay đổi của bloodSugar
+  useEffect(() => {
+    console.log('BloodSugar state changed:', bloodSugar);
+    console.log('BloodSugar length:', bloodSugar?.length);
+  }, [bloodSugar]);
+
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
+
+    // Lưu giá trị input trước khi clear
+    const inputValue = messageInput.trim();
+    const inputType = measurementType;
 
     // xử lý dữ liệu
     let result = '';
 
-    if (measurementType === "before") {
-      if (messageInput < 3.9) {
+    if (inputType === "before") {
+      if (inputValue < 3.9) {
         result = '<3,9';
-      } else if (messageInput >= 3.9 && messageInput <= 5.6) {
+      } else if (inputValue >= 3.9 && inputValue <= 5.6) {
         result = '3,9 – 5,6';
-      } else if (messageInput > 5.6 && messageInput <= 6.9) {
+      } else if (inputValue > 5.6 && inputValue <= 6.9) {
         result = '5,7 – 6,9';
-      } else if (messageInput >= 7) {
+      } else if (inputValue >= 7) {
         result = '>=7';
       } else {
         result = 'Giá trị không hợp lệ';
       }
-    } else if (measurementType === "after") {
-      if (messageInput < 3.9) {
+    } else if (inputType === "after") {
+      if (inputValue < 3.9) {
         result = '<3,9';
-      } else if (messageInput >= 3.9 && messageInput <= 7.7) {
+      } else if (inputValue >= 3.9 && inputValue <= 7.7) {
         result = '3,9 – 7,7';
-      } else if (messageInput > 7.8 && messageInput <= 11) {
+      } else if (inputValue > 7.8 && inputValue <= 11) {
         result = '7,8 - 11';
-      } else if (messageInput > 11) {
+      } else if (inputValue > 11) {
         result = '>11';
       } else {
         result = 'Giá trị không hợp lệ';
       }
     }
 
+    // Clear input sau khi xử lý xong
     setMessageInput("");
 
     try {
@@ -495,8 +551,8 @@ const HealthTabs = () => {
         "http://localhost:5678/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
         {
           message: {
-            input: messageInput,
-            measurementType: measurementType,
+            input: inputValue,
+            measurementType: inputType,
             type: result
           }
         },
@@ -504,9 +560,15 @@ const HealthTabs = () => {
 
       const botResponse = res.data;
       setAiPlan(botResponse);
-      // await dispatch(setMedicine(botResponse.thuoc))
+
+      // Thêm thông báo thành công
+      alert('Đã lưu chỉ số đường huyết thành công!');
+
     } catch (err) {
-      console.error(err);
+      console.error('API error:', err);
+      // Khôi phục input nếu API fail
+      setMessageInput(inputValue);
+      alert('Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại!');
     }
   }
 
