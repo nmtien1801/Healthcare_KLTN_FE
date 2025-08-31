@@ -314,41 +314,6 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // lấy thuốc khi chưa xác nhận
-  // useEffect(() => {
-  //   const fetchMedicine = async () => {
-  //     await dispatch(getMedicine())
-  //   };
-
-  //   fetchMedicine();
-  // }, []);
-
-  // bấm xác nhận dùng thuốc
-  // const applyMedicine = async (medicinePlan) => {
-  //   let data = {
-  //     email: user.email,
-  //     medicinePlan: medicinePlan,
-  //   }
-
-  //   try {
-  //     const res = await axios.post(
-  //       "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
-  //       {
-  //         message: {
-  //           text: data,
-  //         }
-  //       },
-  //     );
-
-  //     const botResponse = res.data.myField;
-
-
-  //     console.log("Bot response AI:", botResponse);
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // }
-
   // kiểm tra calo hiện tại
   useEffect(() => {
     const fetchFood = async () => {

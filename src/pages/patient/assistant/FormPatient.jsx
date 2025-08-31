@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "../../../apis/assistant";
 import {
     Box,
@@ -19,9 +19,15 @@ import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatBox from "./ChatBox";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectMedicineError } from "../../../redux/medicineAiSlice";
 
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
+    const dispatch = useDispatch();
+    const medicineLoading = useSelector(selectMedicineLoading);
+    const trendMedicine = useSelector(selectTrendMedicine);
+    const medicineError = useSelector(selectMedicineError);
 
     const [formData, setFormData] = useState({
         year: currentYear,
@@ -59,6 +65,32 @@ const FormPatient = () => {
             text: "💉 Xin chào! Vui lòng nhập thông tin bệnh nhân để dự đoán hoặc đặt câu hỏi.",
         },
     ]);
+
+    // Monitor medicine data changes
+    useEffect(() => {
+        if (trendMedicine && prescriptionStatus === "created") {
+            let medicineText = "💊 Đã nhận được khuyến nghị thuốc từ AI:\n";
+            if (trendMedicine.data) {
+                medicineText += `📋 ${trendMedicine.data}`;
+            } else {
+                medicineText += `📋 ${JSON.stringify(trendMedicine)}`;
+            }
+            setMessages((prev) => [...prev, {
+                sender: "bot",
+                text: medicineText
+            }]);
+        }
+    }, [trendMedicine, prescriptionStatus]);
+
+    // Monitor medicine errors
+    useEffect(() => {
+        if (medicineError) {
+            setMessages((prev) => [...prev, {
+                sender: "bot",
+                text: `❌ Lỗi khi lấy dữ liệu thuốc: ${medicineError}`
+            }]);
+        }
+    }, [medicineError]);
 
     const handleChange = (e) => {
         const { name, value, checked, type } = e.target;
@@ -121,18 +153,73 @@ const FormPatient = () => {
         } else {
             setPrescriptionStatus("not_created");
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const createPrescription = () => {
-        const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
-        // Nếu chưa có dữ liệu thuốc, tạo mẫu mặc định để người dùng thấy ngay
-        if (!hasAny(medicines.sang) && !hasAny(medicines.trua) && !hasAny(medicines.toi)) {
-            setMedicines({ sang: ["Metformin 500mg"], trua: ["Aspirin 81mg"], toi: [] });
+
+    // lấy thuốc khi chưa xác nhận
+    // useEffect(() => {
+    //   const fetchMedicine = async () => {
+    //     await dispatch(getMedicine())
+    //   };
+
+    //   fetchMedicine();
+    // }, []);
+
+    // bấm xác nhận dùng thuốc
+    // const applyMedicine = async (medicinePlan) => {
+    //   let data = {
+    //     email: user.email,
+    //     medicinePlan: medicinePlan,
+    //   }
+
+    //   try {
+    //     const res = await axios.post(
+    //       "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
+    //       {
+    //         message: {
+    //           text: data,
+    //         }
+    //       },
+    //     );
+
+    //     const botResponse = res.data.myField;
+
+
+    //     console.log("Bot response AI:", botResponse);
+    //   } catch (err) {
+    //     console.error(err);
+    //   }
+    // }
+
+    const createPrescription = async () => {
+        try {
+            const medicineData = {
+                age: formData.age,
+                gender: formData.gender === "female" ? "female" : "male",
+                BMI: formData.bmi,
+                HbA1c: formData.hbA1c_level,
+                bloodSugar: formData.blood_glucose_level
+            };
+
+            await dispatch(fetchTrendMedicine(medicineData)).unwrap();
+
+            // 🚀 cập nhật medicines
+            setMedicines(a);
+
+            setPrescriptionStatus("created");
+            setMessages((prev) => [
+                ...prev,
+                { sender: "bot", text: "📝 Đã tạo đơn thuốc dựa trên thông tin bệnh nhân và AI phân tích." }
+            ]);
+        } catch (error) {
+            console.error("Lỗi khi tạo đơn thuốc:", error);
+            setMessages((prev) => [
+                ...prev,
+                { sender: "bot", text: "⚠️ Có lỗi xảy ra khi tạo đơn thuốc. Vui lòng thử lại!" }
+            ]);
         }
-        setPrescriptionStatus("created");
-        setMessages((prev) => [...prev, { sender: "bot", text: "📝 Đã tạo đơn thuốc từ kế hoạch hiện tại." }]);
     };
+
 
     const applyPrescriptionOneWeek = () => {
         if (prescriptionStatus !== "created") return;
@@ -401,9 +488,14 @@ const FormPatient = () => {
                                             color="warning"
                                             size="small"
                                             onClick={createPrescription}
+                                            disabled={medicineLoading}
                                             sx={{ textTransform: "none", borderRadius: 2 }}
                                         >
-                                            Tạo đơn thuốc
+                                            {medicineLoading ? (
+                                                <CircularProgress size={20} color="inherit" />
+                                            ) : (
+                                                "Tạo đơn thuốc"
+                                            )}
                                         </Button>
                                     )}
                                     {prescriptionStatus === "created" && (
@@ -437,7 +529,6 @@ const FormPatient = () => {
                                 variant="contained"
                                 endIcon={!loading && <SendIcon />}
                                 className="gradient-color-parent"
-                                
                                 sx={{
                                     mt: 4,
                                     py: 1.5,
