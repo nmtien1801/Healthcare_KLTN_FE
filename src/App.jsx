@@ -56,32 +56,48 @@ function App() {
 
   // authContext -> duy trì trạng thái đăng nhập của người dùng
   useEffect(() => {
-
     const unsubscribe = auth.onIdTokenChanged((firebaseUser) => {
-      let userInfo = JSON.parse(localStorage.getItem('userInfo'));
       if (firebaseUser) {
-        dispatch(setUser({
-          userId: userInfo.userId,
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          username: userInfo.username,
-          photoURL: firebaseUser.photoURL,
-          role: userInfo.role,
-          address: userInfo.address,
-          phone: userInfo.phone,
-          dob: userInfo.dob,
-          gender: userInfo.gender,
-        }));
-        if (firebaseUser.accessToken !== localStorage.getItem('access_Token')) {
-          alert('token hết hạn');
-          localStorage.setItem("access_Token", firebaseUser.accessToken);
-          // window.location.reload();
+        // Có Firebase user, kiểm tra localStorage
+        let userInfo = null;
+        try {
+          userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        } catch (error) {
+          console.error('Error parsing userInfo from localStorage:', error);
+          userInfo = null;
         }
-        setIsLoading(false);
-        return;
+ 
+        if (userInfo && userInfo.userId) {
+          // Có đầy đủ thông tin từ MongoDB
+          dispatch(setUser({
+            userId: userInfo.userId,
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            username: userInfo.username || firebaseUser.displayName || 'User',
+            photoURL: firebaseUser.photoURL,
+            role: userInfo.role || 'patient',
+            address: userInfo.address || '',
+            phone: userInfo.phone || '',
+            dob: userInfo.dob || '',
+            gender: userInfo.gender || '',
+          }));
+          
+          if (firebaseUser.accessToken !== localStorage.getItem('access_Token')) {
+            localStorage.setItem("access_Token", firebaseUser.accessToken);
+          }
+          setIsLoading(false);
+        } else {
+          // Firebase user exists but no valid userInfo in localStorage
+          console.log('Firebase user exists but no valid userInfo in localStorage');
+          console.log('UserInfo:', userInfo);
+          setIsLoading(false);
+          dispatch(setUser(null));
+          localStorage.clear();
+          // Có thể redirect về login page ở đây
+        }
       } else {
-        // reset user info
-        console.log('reset');
+        // Không có Firebase user
+        console.log('No Firebase user - logging out');
         setIsLoading(false);
         dispatch(setUser(null));
         localStorage.clear();
