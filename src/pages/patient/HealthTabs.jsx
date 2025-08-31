@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 import { fetchBloodSugar } from '../../redux/patientSlice'
 
-const following = (user) => {
+const Following = ({ user }) => {
   const latestReading = 7.2;
 
   const readingStatus = {
@@ -129,7 +129,7 @@ const following = (user) => {
   </div>
 }
 
-const bloodSugarDaily = (bloodSugar) => {
+const bloodSugarDaily = ({ bloodSugar }) => {
   // 👉 Nhóm dữ liệu theo ngày và tính trung bình
   const dailyData = {};
 
@@ -168,7 +168,7 @@ const bloodSugarDaily = (bloodSugar) => {
   return { dates, fastingData, postMealData }
 }
 
-const char = (bloodSugar) => {
+const Chart = ({ bloodSugar }) => {
   // biểu đồ
   useEffect(() => {
     const chartDom = document.getElementById("health-chart");
@@ -176,7 +176,7 @@ const char = (bloodSugar) => {
       const myChart = echarts.init(chartDom);
 
       // trung bình bloodSugar mỗi ngày
-      let dailyBloodSugar = bloodSugarDaily(bloodSugar)
+      let dailyBloodSugar = bloodSugarDaily({ bloodSugar })
 
       const option = {
         title: {
@@ -283,7 +283,7 @@ const char = (bloodSugar) => {
   )
 }
 
-const getYesterdayAvg = (dailyBloodSugar) => {
+const getYesterdayAvg = ({ dailyBloodSugar }) => {
   const len = dailyBloodSugar.dates.length;
   if (len < 1) return null;
 
@@ -298,47 +298,47 @@ const getYesterdayAvg = (dailyBloodSugar) => {
   return { fasting, postMeal, avg };
 };
 
-const Plan = (aiPlan, user, bloodSugar) => {
+const Plan = ({ aiPlan, user, bloodSugar }) => {
   const [food, setFood] = useState([]);
   const [showAllFood, setShowAllFood] = useState(false);
-  const medicines = useSelector((state) => state.foodAi.medicines);
+  // const medicines = useSelector((state) => state.foodAi.medicines);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // lấy thuốc khi chưa xác nhận
-  useEffect(() => {
-    const fetchMedicine = async () => {
-      await dispatch(getMedicine())
-    };
+  // useEffect(() => {
+  //   const fetchMedicine = async () => {
+  //     await dispatch(getMedicine())
+  //   };
 
-    fetchMedicine();
-  }, []);
+  //   fetchMedicine();
+  // }, []);
 
   // bấm xác nhận dùng thuốc
-  const applyMedicine = async (medicinePlan) => {
-    let data = {
-      email: user.email,
-      medicinePlan: medicinePlan,
-    }
+  // const applyMedicine = async (medicinePlan) => {
+  //   let data = {
+  //     email: user.email,
+  //     medicinePlan: medicinePlan,
+  //   }
 
-    try {
-      const res = await axios.post(
-        "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
-        {
-          message: {
-            text: data,
-          }
-        },
-      );
+  //   try {
+  //     const res = await axios.post(
+  //       "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
+  //       {
+  //         message: {
+  //           text: data,
+  //         }
+  //       },
+  //     );
 
-      const botResponse = res.data.myField;
+  //     const botResponse = res.data.myField;
 
 
-      console.log("Bot response AI:", botResponse);
-    } catch (err) {
-      console.error(err);
-    }
-  }
+  //     console.log("Bot response AI:", botResponse);
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  // }
 
   // kiểm tra calo hiện tại
   useEffect(() => {
@@ -349,8 +349,8 @@ const Plan = (aiPlan, user, bloodSugar) => {
         setFood(cached);
         return;
       }
-      let dailyBloodSugar = bloodSugarDaily(bloodSugar)
-      let yesterday = getYesterdayAvg(dailyBloodSugar);
+      let dailyBloodSugar = bloodSugarDaily({ bloodSugar })
+      let yesterday = getYesterdayAvg({ dailyBloodSugar });
 
       // Lấy calo từ server
       const res = await dispatch(GetCaloFood(user.userId));
@@ -372,22 +372,6 @@ const Plan = (aiPlan, user, bloodSugar) => {
 
   return (
     <>
-      {/* KẾ HOẠCH THUỐC */}
-      {medicines &&
-        <div className="bg-success bg-opacity-10 p-3 rounded mt-3">
-          <h5 className="fw-medium text-success mb-2">📋 Kế hoạch dùng thuốc</h5>
-          <ul className="list-unstyled small mb-3">
-            <li><strong>Sáng:</strong> {medicines && medicines.sang?.length > 0 ? medicines.sang.join(", ") : "Không dùng"}</li>
-            <li><strong>Trưa:</strong> {medicines && medicines.trua?.length > 0 ? medicines.trua.join(", ") : "Không dùng"}</li>
-            <li><strong>Tối:</strong> {medicines && medicines.toi?.length > 0 ? medicines.toi.join(", ") : "Không dùng"}</li>
-          </ul>
-          <div className="d-flex justify-content-end">
-            <button className="btn btn-sm btn-success" onClick={() => applyMedicine(aiPlan)}>
-              Áp dụng thuốc
-            </button>
-          </div>
-        </div>}
-
       {/* Lời khuyên */}
       <div className="bg-danger bg-opacity-10 p-3 rounded mt-3" >
         <h5 className="fw-medium text-danger mb-1">👉 Lời Khuyên</h5>
@@ -520,7 +504,7 @@ const HealthTabs = () => {
 
       const botResponse = res.data;
       setAiPlan(botResponse);
-      await dispatch(setMedicine(botResponse.thuoc))
+      // await dispatch(setMedicine(botResponse.thuoc))
     } catch (err) {
       console.error(err);
     }
@@ -529,10 +513,10 @@ const HealthTabs = () => {
   return (
     <div className="d-flex flex-column gap-4">
       {/* tiêu đề */}
-      {following(user)}
+      <Following user={user} />
 
       {/* Biểu đồ */}
-      {char(bloodSugar)}
+      <Chart bloodSugar={bloodSugar} />
 
       <div className="d-flex flex-column flex-lg-row gap-4">
         {/* Nhập chỉ số mới */}
@@ -575,7 +559,7 @@ const HealthTabs = () => {
             Nhập chỉ số đường huyết theo đơn vị mmol/L
           </div>
 
-          {aiPlan && Plan(aiPlan, user, bloodSugar)}
+          {aiPlan && <Plan aiPlan={aiPlan} user={user} bloodSugar={bloodSugar} />}
         </div>
 
 

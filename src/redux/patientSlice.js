@@ -15,8 +15,8 @@ export const fetchBloodSugar = createAsyncThunk(
     }
 );
 
-const authSlice = createSlice({
-    name: "auth",
+const patientSlice = createSlice({
+    name: "patient",
     initialState,
 
     reducers: {},
@@ -33,7 +33,7 @@ const authSlice = createSlice({
 });
 
 // Export actions
-export const { } = authSlice.actions;
+export const { } = patientSlice.actions;
 
 // Export reducer
-export default authSlice.reducer;
+export default patientSlice.reducer;
