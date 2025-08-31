@@ -269,7 +269,7 @@ const Avatar = ({ src, alt, fallback, className = "" }) => {
   )
 }
 
-export default function PatientTab() {
+export default function PatientTab({ handleStartCall }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name")
@@ -452,110 +452,6 @@ export default function PatientTab() {
     }
   };
 
-  // Gọi điện cho bệnh nhân
-  const [isCalling, setIsCalling] = useState(false);
-  const [jitsiUrl, setJitsiUrl] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null);
-  const [receiver, setReceiver] = useState(null);
-  const [isInitiator, setIsInitiator] = useState(false);
-
-  const handleStartCall = (caller, callee) => {
-    const setCallStates = {
-      setIsCalling,
-      setIsInitiator,
-      setReceiver
-    };
-
-    // Thêm role cho caller
-    const callerWithRole = { ...caller, role: "doctor" };
-
-    createCall(callerWithRole, callee, dbCall, setCallStates);
-  };
-
-  const handleAcceptCall = async () => {
-    const setCallStates = {
-      setIsCalling,
-      setIncomingCall,
-      setReceiver,
-      setJitsiUrl
-    };
-
-    await acceptCall(incomingCall, user, dbCall, setCallStates);
-  };
-
-  const handleEndCall = async () => {
-    const setCallStates = {
-      setIsCalling,
-      setIncomingCall,
-      setIsInitiator,
-      setReceiver,
-      setJitsiUrl
-    };
-
-    await endCall(receiver, isInitiator, user, dbCall, setCallStates);
-  };
-
-  // Lắng nghe trạng thái cuộc gọi khi là người khởi tạo
-  useEffect(() => {
-    if (isInitiator && receiver && receiver.uid) {
-      const callRef = ref(dbCall, `calls/${receiver.uid.replace(/[.#$[\]]/g, '_')}`);
-      const unsubscribe = onValue(
-        callRef,
-        (snapshot) => {
-          const callData = snapshot.val();
-          if (callData && callData.status === "accepted") {
-            const { from, to } = callData;
-            setJitsiUrl(generateJitsiUrl(from.uid, to.uid));
-            setIsCalling(true);
-          }
-        },
-        (err) => {
-          console.error("Lỗi khi lắng nghe trạng thái cuộc gọi:", err);
-        }
-      );
-
-      return () => {
-        off(callRef);
-      };
-    }
-  }, [isInitiator, receiver]);
-
-  // Lắng nghe cuộc gọi đến
-  useEffect(() => {
-    if (user && user.uid) {
-      const callListener = ref(dbCall, `calls/${user.uid.replace(/[.#$[\]]/g, '_')}`);
-      const unsubscribe = onValue(
-        callListener,
-        (snapshot) => {
-          const callData = snapshot.val();
-          if (callData && callData.status === "pending") {
-            const { from, to } = callData;
-            if (from?.uid && to?.uid) {
-              setIncomingCall(from);
-              setReceiver(to);
-            }
-          } else if (callData && callData.status === "accepted") {
-            const { from, to } = callData;
-            if (from?.uid && to?.uid) {
-              setJitsiUrl(generateJitsiUrl(from.uid, to.uid));
-              setIsCalling(true);
-            }
-          } else {
-            setIncomingCall(null);
-            setJitsiUrl(null);
-          }
-        },
-        (err) => {
-          console.error("Lỗi khi lắng nghe cuộc gọi:", err);
-        }
-      );
-
-      return () => {
-        off(callListener);
-      };
-    }
-  }, [user]);
-
   return (
     <div className="container mt-4">
       <h3 className="mb-4">Quản lý bệnh nhân</h3>
@@ -707,7 +603,7 @@ export default function PatientTab() {
                         variant="warning"
                         size="sm"
                         className="p-2"
-                        onClick={() => handleStartCall(user, { uid: 'cq6SC0A1RZXdLwFE1TKGRJG8fgl2' })}
+                        onClick={() => handleStartCall(user, { uid: 'cq6SC0A1RZXdLwFE1TKGRJG8fgl2' }, "doctor")}
                         title="Gọi điện"
                       >
                         <Phone size={16} />
@@ -778,33 +674,6 @@ export default function PatientTab() {
             </button>
           </div>
         </div>
-      )}
-
-      {/* call popup */}
-      {!isInitiator && incomingCall && (
-        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-body text-center p-4">
-                <h5 className="mb-3">{incomingCall.username || "Người dùng"} đang gọi bạn...</h5>
-                <div className="d-flex justify-content-center gap-3">
-                  <button className="btn btn-success" onClick={handleAcceptCall}>
-                    Chấp nhận
-                  </button>
-                  <button className="btn btn-danger" onClick={handleEndCall}>
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {isCalling && (
-        <VideoCallModal
-          jitsiUrl={jitsiUrl}
-          onClose={handleEndCall}
-        />
       )}
 
       {/* Pagination */}

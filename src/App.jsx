@@ -33,6 +33,19 @@ import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
 import { getAuth } from 'firebase/auth';
 import AttendanceTab from "./pages/doctor/AttendanceTab";
 import FormPatient from "./pages/patient/assistant/FormPatient";
+import { dbCall } from "../firebase";
+import VideoCallModal from './components/call/videoModalCall'
+import {
+  ref,
+  onValue,
+  off,
+} from "firebase/database";
+import {
+  acceptCall,
+  endCall,
+  createCall,
+  generateJitsiUrl,
+} from './components/call/functionCall';
 
 function App() {
   const dispatch = useDispatch();
@@ -80,6 +93,110 @@ function App() {
 
   console.log('user', user);
 
+  // Gọi điện
+  const [isCalling, setIsCalling] = useState(false);
+  const [jitsiUrl, setJitsiUrl] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [receiver, setReceiver] = useState(null);
+  const [isInitiator, setIsInitiator] = useState(false);
+
+  const handleStartCall = (caller, callee, role) => {
+    const setCallStates = {
+      setIsCalling,
+      setIsInitiator,
+      setReceiver
+    };
+
+    // Thêm role cho caller
+    const callerWithRole = { ...caller, role: role };
+
+    createCall(callerWithRole, callee, dbCall, setCallStates);
+  };
+
+  const handleAcceptCall = async () => {
+    const setCallStates = {
+      setIsCalling,
+      setIncomingCall,
+      setReceiver,
+      setJitsiUrl
+    };
+
+    await acceptCall(incomingCall, user, dbCall, setCallStates);
+  };
+
+  const handleEndCall = async () => {
+    const setCallStates = {
+      setIsCalling,
+      setIncomingCall,
+      setIsInitiator,
+      setReceiver,
+      setJitsiUrl
+    };
+
+    await endCall(receiver, isInitiator, user, dbCall, setCallStates);
+  };
+
+  // Lắng nghe trạng thái cuộc gọi khi là người khởi tạo
+  useEffect(() => {
+    if (isInitiator && receiver && receiver.uid) {
+      const callRef = ref(dbCall, `calls/${receiver.uid.replace(/[.#$[\]]/g, '_')}`);
+      const unsubscribe = onValue(
+        callRef,
+        (snapshot) => {
+          const callData = snapshot.val();
+          if (callData && callData.status === "accepted") {
+            const { from, to } = callData;
+            setJitsiUrl(generateJitsiUrl(from.uid, to.uid));
+            setIsCalling(true);
+          }
+        },
+        (err) => {
+          console.error("Lỗi khi lắng nghe trạng thái cuộc gọi:", err);
+        }
+      );
+
+      return () => {
+        off(callRef);
+      };
+    }
+  }, [isInitiator, receiver]);
+
+  // Lắng nghe cuộc gọi đến
+  useEffect(() => {
+    if (user && user.uid) {
+      const callListener = ref(dbCall, `calls/${user.uid.replace(/[.#$[\]]/g, '_')}`);
+      const unsubscribe = onValue(
+        callListener,
+        (snapshot) => {
+          const callData = snapshot.val();
+          if (callData && callData.status === "pending") {
+            const { from, to } = callData;
+            if (from?.uid && to?.uid) {
+              setIncomingCall(from);
+              setReceiver(to);
+            }
+          } else if (callData && callData.status === "accepted") {
+            const { from, to } = callData;
+            if (from?.uid && to?.uid) {
+              setJitsiUrl(generateJitsiUrl(from.uid, to.uid));
+              setIsCalling(true);
+            }
+          } else {
+            setIncomingCall(null);
+            setJitsiUrl(null);
+          }
+        },
+        (err) => {
+          console.error("Lỗi khi lắng nghe cuộc gọi:", err);
+        }
+      );
+
+      return () => {
+        off(callListener);
+      };
+    }
+  }, [user]);
+
   if (isLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -123,7 +240,7 @@ function App() {
                   {user.role === "doctor" ? (
                     <>
                       <Route path="/overviewTab" element={<OverviewTab />} />
-                      <Route path="/patientTab" element={<PatientTab />} />
+                      <Route path="/patientTab" element={<PatientTab handleStartCall={handleStartCall}/>} />
                       <Route path="/appointmentTab" element={<AppointmentTab />} />
                       <Route path="/settingTabs" element={<SettingTabs />} />
                       <Route path="/informationTab" element={<InformationTab />} />
@@ -137,7 +254,7 @@ function App() {
                       <Route path="/healthTabs" element={<HealthTabs />} />
                       <Route path="/nutrition" element={<FoodTrackerApp />} />
                       <Route path="/suggestedFood" element={<SuggestedFood />} />
-                      <Route path="/bookingTabs" element={<BookingTabs />} />
+                      <Route path="/bookingTabs" element={<BookingTabs handleStartCall={handleStartCall}/>} />
                       <Route path="/personalTabs" element={<PersonalTabs />} />
                       <Route path="/assitant" element={<FormPatient />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /home */}
@@ -151,6 +268,33 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* call popup */}
+      {!isInitiator && incomingCall && (
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-body text-center p-4">
+                <h5 className="mb-3">{incomingCall.username || "Người dùng"} đang gọi bạn...</h5>
+                <div className="d-flex justify-content-center gap-3">
+                  <button className="btn btn-success" onClick={handleAcceptCall}>
+                    Chấp nhận
+                  </button>
+                  <button className="btn btn-danger" onClick={handleEndCall}>
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isCalling && (
+        <VideoCallModal
+          jitsiUrl={jitsiUrl}
+          onClose={handleEndCall}
+        />
+      )}
 
       {/* <ToastContainer
         position="top-right"
