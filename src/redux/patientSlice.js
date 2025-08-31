@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
     fetchBloodSugarService,
+    saveBloodSugarService
 } from "../apis/patientService";
 
 const initialState = {
@@ -8,9 +9,17 @@ const initialState = {
 };
 
 export const fetchBloodSugar = createAsyncThunk(
-    "auth/fetchBloodSugar",
+    "patient/fetchBloodSugar",
     async ({ userId, type, days }, thunkAPI) => {
         const response = await fetchBloodSugarService(userId, type, days);
+        return response;
+    }
+);
+
+export const saveBloodSugar = createAsyncThunk(
+    "patient/saveBloodSugar",
+    async ({ userId, value, type }, thunkAPI) => {
+        const response = await saveBloodSugarService(userId, value, type);
         return response;
     }
 );
@@ -29,6 +38,12 @@ const patientSlice = createSlice({
                 state.bloodSugar = action.payload;
             })
             .addCase(fetchBloodSugar.rejected, (state, action) => { });
+
+        // saveBloodSugar
+        builder
+            .addCase(saveBloodSugar.pending, (state) => { })
+            .addCase(saveBloodSugar.fulfilled, (state, action) => { })
+            .addCase(saveBloodSugar.rejected, (state, action) => { });
     },
 });
 

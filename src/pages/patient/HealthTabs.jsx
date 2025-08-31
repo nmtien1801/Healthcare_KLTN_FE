@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
-import { fetchBloodSugar } from '../../redux/patientSlice'
+import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 
 const Following = ({ user }) => {
   const latestReading = 7.2;
@@ -200,7 +200,7 @@ const Chart = ({ bloodSugar }) => {
           let result = params[0].axisValue + '<br/>';
           params.forEach(param => {
             if (param.value !== null) {
-              result += param.marker + ' ' + param.seriesName + ': ' + Number(param.value.toFixed(1)) + ' mmol/L<br/>';
+              result += param.marker + ' ' + param.seriesName + ': ' + Number(param.value?.toFixed(1)) + ' mmol/L<br/>';
             }
           });
           return result;
@@ -501,12 +501,6 @@ const HealthTabs = () => {
     fetchBloodSugarData()
   }, [dispatch, user?.userId])
 
-  // Theo dõi thay đổi của bloodSugar
-  useEffect(() => {
-    console.log('BloodSugar state changed:', bloodSugar);
-    console.log('BloodSugar length:', bloodSugar?.length);
-  }, [bloodSugar]);
-
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
 
@@ -547,6 +541,15 @@ const HealthTabs = () => {
     setMessageInput("");
 
     try {
+      // Lưu chỉ số đường huyết vào BE
+      const saveResult = await dispatch(saveBloodSugar({
+        userId: user.userId,
+        value: parseFloat(inputValue),
+        type: inputType === "before" ? "fasting" : "postMeal"
+      }));
+      console.log('sssssssssssssss ', saveResult);
+
+      // Gọi AI để lấy lời khuyên
       const res = await axios.post(
         "http://localhost:5678/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
         {
@@ -563,6 +566,10 @@ const HealthTabs = () => {
 
       // Thêm thông báo thành công
       alert('Đã lưu chỉ số đường huyết thành công!');
+
+      // Refresh blood sugar data để hiển thị trên chart
+      dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 7 }));
+      dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 7 }));
 
     } catch (err) {
       console.error('API error:', err);
