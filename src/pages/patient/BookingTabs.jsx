@@ -1,26 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send } from 'lucide-react';
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useSelector, useDispatch } from "react-redux";
-import { db, dbCall } from "../../../firebase";
-import VideoCallModal from '../../components/call/videoModalCall'
-import {
-  ref,
-  onValue,
-  off,
-} from "firebase/database";
-import {
-  acceptCall,
-  endCall,
-  createCall,
-  generateJitsiUrl,
-} from '../../components/call/functionCall';
+import { useSelector } from "react-redux";
+import { db } from "../../../firebase";
+import ApiBooking from "../../apis/ApiBooking";
 
-// Custom Components
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
-  const baseClasses =
-    "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm"
-
+  const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
   const variants = {
     primary: "btn-primary text-white",
     secondary: "btn-light text-dark border",
@@ -32,13 +18,12 @@ const Button = ({ children, className = "", variant = "primary", size = "md", on
     dark: "btn-dark text-white",
     outline: "btn-outline-primary",
     ghost: "btn-light text-muted border-0 shadow-none",
-  }
-
+  };
   const sizes = {
     sm: "btn-sm px-2 py-1",
     md: "btn-md px-3 py-2",
     lg: "btn-lg px-4 py-3",
-  }
+  };
 
   return (
     <button
@@ -50,18 +35,48 @@ const Button = ({ children, className = "", variant = "primary", size = "md", on
     >
       {children}
     </button>
-  )
-}
+  );
+};
 
-const upcomingAppointment = (handleStartCall) => {
+const upcomingAppointment = ({ handleStartCall }) => {
   const [isConfirmed, setIsConfirmed] = useState(true);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const user = useSelector((state) => state.auth.userInfo);
+
+  // Fetch appointments từ API
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      console.log("Fetching appointments...");
+      try {
+        setLoading(true);
+        const response = await ApiBooking.getUpcomingAppointments();
+        console.log("Appointments fetched:", response);
+
+        // đảm bảo appointments luôn là array
+        const data = Array.isArray(response)
+          ? response
+          : response?.appointments || response?.data || [];
+
+        setAppointments(data);
+      } catch (err) {
+        console.error("Error fetching appointments:", err);
+        setError("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+
+    };
+
+    fetchAppointments();
+  }, []);
 
   const handleToggleStatus = () => {
     setIsConfirmed((prev) => !prev);
   };
 
-  // chat với bác sĩ
+  // Chat với bác sĩ
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -73,7 +88,7 @@ const upcomingAppointment = (handleStartCall) => {
       text: "Xin chào! Tôi là bác sĩ tư vấn của bạn. Bạn cần hỗ trợ gì?",
       sender: "doctor",
       timestamp: new Date(),
-      isWelcome: true
+      isWelcome: true,
     },
   ]);
 
@@ -169,107 +184,133 @@ const upcomingAppointment = (handleStartCall) => {
   };
 
   return (
-    <div className="container my-3" >
+    <div className="container my-3">
       <div className="bg-white rounded shadow border p-4">
-        <div className="">
+        <div>
           {/* Header */}
           <div className="d-flex align-items-center mb-4">
             <Calendar className="text-primary me-2" size={24} />
             <h4 className="mb-0 fw-bold text-dark">Lịch hẹn sắp tới</h4>
           </div>
 
-          {/* Appointment Card */}
-          <div
-            className="card shadow-sm mb-4"
-            style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
-          >
-            <div className="card-body p-4">
-              {/* Doctor Info */}
-              <div className="d-flex align-items-start justify-content-between mb-3">
-                <div className="d-flex align-items-center">
-                  <div className="position-relative me-3">
-                    <img
-                      src="https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-                      alt="Doctor Avatar"
-                      className="rounded-circle"
-                      style={{ width: "60px", height: "60px", objectFit: "cover" }}
-                    />
-                  </div>
-                  <div>
-                    <h5 className="mb-1 fw-bold text-dark">Bác sĩ Trần Thị B</h5>
-                    <p className="mb-0 text-muted">Chuyên khoa Nội tiết</p>
-                  </div>
-                </div>
-                <div className="d-flex flex-column align-items-end">
-                  <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
-                    <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Online
-                  </span>
-                  <div className="d-flex gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="p-2"
-                      onClick={() => setShowChatbot(true)}
-                      title="Nhắn tin"
-                    >
-                      <MessageSquare size={16} />
-                    </Button>
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      className="p-2"
-                      onClick={() => handleStartCall(user, {
-                        uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2", // UID của bác sĩ
-                        name: "Bác sĩ Trần Thị B",
-                        role: "doctor"
-                      }, "patient")}
-                      title="Gọi điện"
-                    >
-                      <Phone size={16} />
-                    </Button>
-                  </div>
-                </div>
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Đang tải...</span>
               </div>
-
-              {/* Appointment Details */}
-              <div className="mb-3">
-                <div className="d-flex align-items-center mb-2">
-                  <Calendar className="text-primary me-2" size={18} />
-                  <span className="text-dark">23/6/2023</span>
-                </div>
-                <div className="d-flex align-items-center mb-3">
-                  <Clock className="text-primary me-2" size={18} />
-                  <span className="text-dark">09:30 - 10:00</span>
-                </div>
-              </div>
-
-              {/* Status and Actions */}
-              <div className="d-flex align-items-center justify-content-between">
-                {/* Trạng thái xác nhận */}
-                <div className="d-flex align-items-center">
-                  <CheckCircle
-                    className={isConfirmed ? "text-success me-2" : "text-warning me-2"}
-                    size={18}
-                  />
-                  <span
-                    className={isConfirmed ? "text-success fw-medium" : "text-warning fw-medium"}
-                  >
-                    {isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
-                  </span>
-                </div>
-
-                {/* Nút xác nhận hoặc hủy */}
-                <button
-                  className={`btn btn-sm rounded-pill px-3 py-2 ${isConfirmed ? "btn-outline-danger" : "btn-outline-primary"
-                    }`}
-                  onClick={handleToggleStatus}
-                >
-                  {isConfirmed ? "Hủy lịch" : "Xác nhận"}
-                </button>
-              </div>
-
             </div>
-          </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
+
+          {/* Appointment Cards */}
+          {!loading && !error && appointments.length === 0 && (
+            <div className="text-center text-muted">
+              <p>Không có lịch hẹn sắp tới.</p>
+            </div>
+          )}
+
+          {!loading && !error && appointments.map((appointment) => (
+            <div
+              key={appointment._id}
+              className="card shadow-sm mb-4"
+              style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
+            >
+              <div className="card-body p-4">
+                {/* Doctor Info */}
+                <div className="d-flex align-items-start justify-content-between mb-3">
+                  <div className="d-flex align-items-center">
+                    <div className="position-relative me-3">
+                      <img
+                        src="https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+                        alt="Doctor Avatar"
+                        className="rounded-circle"
+                        style={{ width: "60px", height: "60px", objectFit: "cover" }}
+                      />
+                    </div>
+                    <div>
+                      <h5 className="mb-1 fw-bold text-dark">{appointment.doctorId?.name || "Bác sĩ Trần Thị B"}</h5>
+                      <p className="mb-0 text-muted">Chuyên khoa Nội tiết</p>
+                    </div>
+                  </div>
+                  <div className="d-flex flex-column align-items-end">
+                    <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
+                      <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Online
+                    </span>
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="p-2"
+                        onClick={() => setShowChatbot(true)}
+                        title="Nhắn tin"
+                      >
+                        <MessageSquare size={16} />
+                      </Button>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        className="p-2"
+                        onClick={() => handleStartCall(user, {
+                          uid: appointment.doctorId?._id || "weHP9TWfdrZo5L9rmY81BRYxNXr2",
+                          name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
+                          role: "doctor",
+                        }, "patient")}
+                        title="Gọi điện"
+                      >
+                        <Phone size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Appointment Details */}
+                <div className="mb-3">
+                  <div className="d-flex align-items-center mb-2">
+                    <Calendar className="text-primary me-2" size={18} />
+                    <span className="text-dark">
+                      {new Date(appointment.date).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <div className="d-flex align-items-center mb-3">
+                    <Clock className="text-primary me-2" size={18} />
+                    <span className="text-dark">{appointment.time}</span>
+                  </div>
+                </div>
+
+                {/* Status and Actions */}
+                <div className="d-flex align-items-center justify-content-between">
+                  <div className="d-flex align-items-center">
+                    <CheckCircle
+                      className={appointment.status === "pending" ? "text-warning me-2" : "text-success me-2"}
+                      size={18}
+                    />
+                    <span
+                      className={appointment.status === "pending" ? "text-warning fw-medium" : "text-success fw-medium"}
+                    >
+                      {appointment.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận"}
+                    </span>
+                  </div>
+                  <button
+                    className={`btn btn-sm rounded-pill px-3 py-2 ${appointment.status === "pending" ? "btn-outline-primary" : "btn-outline-danger"}`}
+                    onClick={handleToggleStatus}
+                  >
+                    {appointment.status === "pending" ? "Xác nhận" : "Hủy lịch"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
 
           {/* Features Section */}
           <div className="row g-3">
@@ -375,8 +416,9 @@ const upcomingAppointment = (handleStartCall) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
+
 
 const BookingNew = (doctors, timeSlots, handleSubmit) => {
   const [appointmentType, setAppointmentType] = useState('clinic');
