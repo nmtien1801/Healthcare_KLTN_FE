@@ -4,6 +4,8 @@ import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 
 import { useSelector } from "react-redux";
 import { db } from "../../../firebase";
 import ApiBooking from "../../apis/ApiBooking";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
   const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
@@ -451,132 +453,193 @@ const upcomingAppointment = ({ handleStartCall }) => {
   );
 };
 
-const BookingNew = (doctors, timeSlots, handleSubmit) => {
-  const [appointmentType, setAppointmentType] = useState('clinic');
+const BookingNew = ({ handleSubmit }) => {
+  const [appointmentType, setAppointmentType] = useState("clinic");
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [reason, setReason] = useState('');
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [reason, setReason] = useState("");
 
-  return <div className="container my-4">
-    <div className="bg-white rounded shadow border p-4">
-      <h2 className="h5 mb-2">Đặt lịch khám mới</h2>
-      <p className="text-muted mb-4">Vui lòng điền đầy đủ thông tin để đặt lịch</p>
+  const [doctors, setDoctors] = useState([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
-      {/* Appointment Type */}
-      <div className="mb-4">
-        <label className="form-label fw-semibold">Loại hình khám</label>
-        <div className="row g-2">
-          <div className="col">
-            <button
-              className={`btn w-100 ${appointmentType === 'clinic' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
-              onClick={() => setAppointmentType('clinic')}
-            >
-              <MapPin size={18} className="mb-1" /><br />Tại phòng khám
-            </button>
-          </div>
-          <div className="col">
-            <button
-              className={`btn w-100 ${appointmentType === 'online' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
-              onClick={() => setAppointmentType('online')}
-            >
-              <Video size={18} className="mb-1" /><br />Khám trực tuyến
-            </button>
-          </div>
-        </div>
-      </div>
+  const timeSlots = [
+    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+    "11:00", "11:30", "14:00", "14:30", "15:00", "15:30"
+  ];
 
-      {/* Doctor Selection */}
-      <div className="mb-4">
-        <label className="form-label fw-semibold">Chọn bác sĩ</label>
-        <div className="row g-3">
-          {doctors.map((doctor) => (
-            <div className="col-md-6" key={doctor.id}>
-              <div
-                className={`card p-3 cursor-pointer ${selectedDoctor === doctor.id ? 'border-primary shadow' : ''}`}
-                onClick={() => setSelectedDoctor(doctor.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="d-flex align-items-center">
-                  <img
-                    src={doctor.image}
-                    alt={doctor.name}
-                    className="rounded-circle me-3"
-                    style={{ width: 50, height: 50, objectFit: 'cover' }}
-                  />
-                  <div className="flex-grow-1">
-                    <h6 className="mb-0">{doctor.name}</h6>
-                    <small className="text-muted d-block">{doctor.specialty}</small>
-                    <small className="text-muted">{doctor.experience}</small>
-                  </div>
-                  <div className="text-end">
-                    <div className="d-flex align-items-center text-warning">
-                      <Star size={14} fill="currentColor" />
-                      <span className="ms-1 small">{doctor.rating}</span>
-                    </div>
-                    <small className="text-muted">{doctor.patients}</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+  // Lấy bác sĩ theo ngày
+  useEffect(() => {
+    if (!selectedDate) return;
 
-      {/* Date */}
-      <div className="mb-4">
-        <label className="form-label fw-semibold">Chọn ngày</label>
-        <input
-          type="date"
-          className="form-control"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-        />
-      </div>
+    const fetchDoctors = async () => {
+      setLoadingDoctors(true);
+      try {
+        const response = await ApiBooking.getDoctorsByDate(selectedDate);
+        // Chuẩn hóa data
+        const data = Array.isArray(response)
+          ? response
+          : response?.data || [];
+        setDoctors(data);
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách bác sĩ:", err);
+        setDoctors([]);
+      } finally {
+        setLoadingDoctors(false);
+      }
+    };
 
-      {/* Time */}
-      <div className="mb-4">
-        <label className="form-label fw-semibold">Chọn giờ</label>
-        <div className="row g-2">
-          {timeSlots.map((time) => (
-            <div className="col-3" key={time}>
+    fetchDoctors();
+  }, [selectedDate]);
+
+  return (
+    <div className="container my-4">
+      <div className="bg-white rounded shadow border p-4">
+        <h2 className="h5 mb-2">Đặt lịch khám mới</h2>
+        <p className="text-muted mb-4">
+          Vui lòng điền đầy đủ thông tin để đặt lịch
+        </p>
+
+        {/* Appointment Type */}
+        <div className="mb-4">
+          <label className="form-label fw-semibold">Loại hình khám</label>
+          <div className="row g-2">
+            <div className="col">
               <button
-                className={`btn w-100 btn-sm ${selectedTime === time ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
-                onClick={() => setSelectedTime(time)}
+                className={`btn w-100 ${appointmentType === "clinic"
+                  ? "btn-primary text-white"
+                  : "btn-outline-secondary"
+                  }`}
+                onClick={() => setAppointmentType("clinic")}
               >
-                {time}
+                <MapPin size={18} className="mb-1" />
+                <br />Tại phòng khám
               </button>
             </div>
-          ))}
+            <div className="col">
+              <button
+                className={`btn w-100 ${appointmentType === "online"
+                  ? "btn-primary text-white"
+                  : "btn-outline-secondary"
+                  }`}
+                onClick={() => setAppointmentType("online")}
+              >
+                <Video size={18} className="mb-1" />
+                <br />Khám trực tuyến
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Date */}
+        <div className="mb-4">
+          <label className="form-label fw-semibold">Chọn ngày</label>
+          <DatePicker
+            selected={selectedDate ? new Date(selectedDate) : null}
+            onChange={(date) => setSelectedDate(date.toISOString().split("T")[0])}
+            minDate={new Date()}
+            dateFormat="dd/MM/yyyy"
+            className="form-control mt-2"
+            placeholderText="Chọn ngày"
+          />
+        </div>
+
+
+        {/* Doctor Selection */}
+        <div className="mb-4">
+          <label className="form-label fw-semibold">Chọn bác sĩ</label>
+          {loadingDoctors ? (
+            <div>Đang tải danh sách bác sĩ...</div>
+          ) : doctors.length === 0 && selectedDate ? (
+            <div className="text-muted">Không có bác sĩ làm việc thời gian này.</div>
+          ) : (
+            <div className="row g-3">
+              {doctors.map((doctor) => (
+                <div className="col-md-6" key={doctor.id || doctor._id}>
+                  <div
+                    className={`card p-3 ${selectedDoctor === doctor.id ? "border-primary shadow" : ""
+                      }`}
+                    onClick={() => setSelectedDoctor(doctor.id || doctor._id)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="d-flex align-items-center">
+                      <img
+                        src={
+                          doctor.avatar ||
+                          "https://png.pngtree.com/png-clipart/20210310/original/pngtree-hospital-hotline-avatar-female-doctor-png-image_5951490.jpg"
+                        }
+                        alt={doctor.name}
+                        className="rounded-circle me-3"
+                        style={{ width: 50, height: 50, objectFit: "cover" }}
+                      />
+                      <div className="flex-grow-1">
+                        <h6 className="mb-0">{doctor.name}</h6>
+                        <small className="text-muted d-block">
+                          {doctor.hospital || "Bệnh viện chưa cập nhật"}
+                        </small>
+                        <small className="text-muted">
+                          {doctor.exp} năm kinh nghiệm
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Time */}
+        <div className="mb-4">
+          <label className="form-label fw-semibold">Chọn giờ</label>
+          <div className="row g-2">
+            {timeSlots.map((time) => (
+              <div className="col-3" key={time}>
+                <button
+                  className={`btn w-100 btn-sm ${selectedTime === time
+                    ? "btn-primary text-white"
+                    : "btn-outline-secondary"
+                    }`}
+                  onClick={() => setSelectedTime(time)}
+                >
+                  {time}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Reason */}
+        <div className="mb-4">
+          <label className="form-label fw-semibold">Lý do khám</label>
+          <textarea
+            className="form-control"
+            rows="3"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Mô tả ngắn gọn lý do bạn muốn khám..."
+          />
+        </div>
+
+        {/* Submit */}
+        <button
+          className="btn btn-primary w-100 py-3 fw-semibold"
+          onClick={() =>
+            handleSubmit({
+              type: appointmentType,
+              doctor: selectedDoctor,
+              date: selectedDate,
+              time: selectedTime,
+              reason,
+            })
+          }
+        >
+          Xác nhận đặt lịch khám
+        </button>
       </div>
-
-      {/* Reason */}
-      <div className="mb-4">
-        <label className="form-label fw-semibold">Lý do khám</label>
-        <textarea
-          className="form-control"
-          rows="3"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Mô tả ngắn gọn lý do bạn muốn khám..."
-        />
-      </div>
-
-      {/* Submit */}
-      <button className="btn btn-primary w-100 py-3 fw-semibold" onClick={handleSubmit}>
-        Xác nhận đặt lịch khám
-      </button>
-
-      <p className="text-center text-muted small mt-3">
-        Bằng cách đặt lịch, bạn đồng ý với
-        <a href="#" className="text-decoration-none ms-1">điều khoản sử dụng</a> và
-        <a href="#" className="text-decoration-none ms-1">chính sách bảo mật</a>
-      </p>
     </div>
-  </div>
-}
+  );
+};
 
 const BookingTabs = ({ handleStartCall }) => {
   const [selectedTime, setSelectedTime] = useState("09:30")
