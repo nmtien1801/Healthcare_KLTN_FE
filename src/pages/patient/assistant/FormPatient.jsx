@@ -25,6 +25,7 @@ import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectM
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
     const dispatch = useDispatch();
+    let user = useSelector((state) => state.auth.userInfo);
     const medicineLoading = useSelector(selectMedicineLoading);
     const trendMedicine = useSelector(selectTrendMedicine);
     const medicineError = useSelector(selectMedicineError);
@@ -167,28 +168,7 @@ const FormPatient = () => {
 
     // bấm xác nhận dùng thuốc
     // const applyMedicine = async (medicinePlan) => {
-    //   let data = {
-    //     email: user.email,
-    //     medicinePlan: medicinePlan,
-    //   }
 
-    //   try {
-    //     const res = await axios.post(
-    //       "http://localhost:5678/webhook-test/apply-medicine", // Thay bằng webhook thực tế của bạn
-    //       {
-    //         message: {
-    //           text: data,
-    //         }
-    //       },
-    //     );
-
-    //     const botResponse = res.data.myField;
-
-
-    //     console.log("Bot response AI:", botResponse);
-    //   } catch (err) {
-    //     console.error(err);
-    //   }
     // }
 
     const createPrescription = async () => {
@@ -201,10 +181,10 @@ const FormPatient = () => {
                 bloodSugar: formData.blood_glucose_level
             };
 
-            await dispatch(fetchTrendMedicine(medicineData)).unwrap();
+            let res = await dispatch(fetchTrendMedicine(medicineData)).unwrap();
 
             // 🚀 cập nhật medicines
-            setMedicines(a);
+            setMedicines(res);
 
             setPrescriptionStatus("created");
             setMessages((prev) => [
@@ -221,8 +201,29 @@ const FormPatient = () => {
     };
 
 
-    const applyPrescriptionOneWeek = () => {
+    const applyPrescriptionOneWeek = async () => {
         if (prescriptionStatus !== "created") return;
+
+        let data = {
+            email: user.email,
+            medicinePlan: medicines,
+        }
+
+        try {
+            const res = await axios.post(
+                "http://localhost:5678/webhook/apply-medicine", // Thay bằng webhook thực tế của bạn
+                {
+                    message: {
+                        text: data,
+                    }
+                },
+            );
+
+            const botResponse = res.data.myField;
+        } catch (err) {
+            console.error(err);
+        }
+
         setPrescriptionStatus("applied");
         setMessages((prev) => [...prev, { sender: "bot", text: "✅ Đã áp dụng đơn thuốc trong 1 tuần. Hãy theo dõi chỉ số thường xuyên." }]);
     };
