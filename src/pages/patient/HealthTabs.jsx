@@ -512,11 +512,10 @@ const HealthTabs = () => {
         value: parseFloat(inputValue),
         type: inputType === "before" ? "fasting" : "postMeal"
       }));
-      console.log('sssssssssssssss ', saveResult);
 
       // Gọi AI để lấy lời khuyên
       const res = await axios.post(
-        "http://localhost:5678/webhook-test/mess-fb-new", // Thay bằng webhook thực tế của bạn
+        "http://localhost:5678/webhook/mess-fb-new", // Thay bằng webhook thực tế của bạn
         {
           message: {
             input: inputValue,

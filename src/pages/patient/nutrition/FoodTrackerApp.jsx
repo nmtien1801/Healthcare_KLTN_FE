@@ -196,7 +196,7 @@ export default function FoodTrackerApp() {
     useEffect(() => {
         if (food && food?.chosen?.length > 0) {
             const mappedFoods = food.chosen.map((food) => ({
-                image: '🍅',
+                image: food.image ?? '🍅',
                 name: food.name,
                 details: `${food.weight}g • ${food.calo}cal`,
                 macros: [
@@ -432,16 +432,27 @@ export default function FoodTrackerApp() {
                                     }}>
                                     <div className="d-flex gap-4 align-items-center">
                                         <div className="flex-shrink-0">
-                                            <div className="rounded-circle d-flex align-items-center justify-content-center"
+                                            <div
+                                                className="rounded-circle d-flex align-items-center justify-content-center"
                                                 style={{
                                                     width: 60,
                                                     height: 60,
                                                     fontSize: 28,
                                                     backgroundColor: currentMealColor.bg,
                                                     color: currentMealColor.text,
-                                                    border: `2px solid ${currentMealColor.border}`
-                                                }}>
-                                                {item.image}
+                                                    border: `2px solid ${currentMealColor.border}`,
+                                                    overflow: "hidden" // để ảnh không tràn ra ngoài
+                                                }}
+                                            >
+                                                <img
+                                                    src={item.image}
+                                                    alt="food"
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        objectFit: "cover" // ảnh vừa khít vòng tròn
+                                                    }}
+                                                />
                                             </div>
                                         </div>
 
