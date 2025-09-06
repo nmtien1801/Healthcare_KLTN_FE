@@ -225,15 +225,89 @@ const upcomingAppointment = ({ handleStartCall }) => {
 
           {!loading && !error && currentAppointment && (
             <>
-              <div className="d-flex justify-content-between mb-2">
-                <button className="btn btn-light btn-sm" onClick={handlePrev}>
-                  ←
+              {/* Pagination */}
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <button 
+                  className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
+                  onClick={handlePrev}
+                  disabled={appointments.length <= 1}
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    borderColor: "#0ea5e9",
+                    color: "#0ea5e9",
+                    transition: "all 0.3s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (appointments.length > 1) {
+                      e.target.style.backgroundColor = "#0ea5e9";
+                      e.target.style.color = "white";
+                      e.target.style.transform = "translateX(-2px)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (appointments.length > 1) {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#0ea5e9";
+                      e.target.style.transform = "translateX(0)";
+                    }
+                  }}
+                >
+                  <span className="me-1">←</span> Trước
                 </button>
-                <span>
-                  {currentIndex + 1} / {appointments.length}
-                </span>
-                <button className="btn btn-light btn-sm" onClick={handleNext}>
-                  →
+                
+                <div className="d-flex align-items-center">
+                  <div className="bg-primary rounded-pill px-3 py-2 text-white fw-semibold" style={{ fontSize: "14px" }}>
+                    {currentIndex + 1} / {appointments.length}
+                  </div>
+                  {appointments.length > 1 && (
+                    <div className="ms-3">
+                      <div className="d-flex gap-1">
+                        {appointments.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`rounded-circle ${index === currentIndex ? 'bg-primary' : 'bg-light'}`}
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              cursor: "pointer",
+                              transition: "all 0.3s ease"
+                            }}
+                            onClick={() => setCurrentIndex(index)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <button 
+                  className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
+                  onClick={handleNext}
+                  disabled={appointments.length <= 1}
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    borderColor: "#0ea5e9",
+                    color: "#0ea5e9",
+                    transition: "all 0.3s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (appointments.length > 1) {
+                      e.target.style.backgroundColor = "#0ea5e9";
+                      e.target.style.color = "white";
+                      e.target.style.transform = "translateX(2px)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (appointments.length > 1) {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#0ea5e9";
+                      e.target.style.transform = "translateX(0)";
+                    }
+                  }}
+                >
+                  Sau <span className="ms-1">→</span>
                 </button>
               </div>
               <div
@@ -336,11 +410,10 @@ const upcomingAppointment = ({ handleStartCall }) => {
                       </span>
                     </div>
                     <button
-                      className={`btn btn-sm rounded-pill px-3 py-2 ${currentAppointment.status === "pending" ? "btn-outline-primary" : "btn-outline-danger"
-                        }`}
+                      className="btn btn-sm rounded-pill px-3 py-2 btn-outline-danger"
                       onClick={handleToggleStatus}
                     >
-                      {currentAppointment.status === "pending" ? "Xác nhận" : "Hủy lịch"}
+                      Hủy lịch
                     </button>
                   </div>
                 </div>
@@ -463,10 +536,10 @@ const BookingNew = ({ handleSubmit }) => {
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
 
-  const timeSlots = [
-    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-    "11:00", "11:30", "14:00", "14:30", "15:00", "15:30"
-  ];
+  const timeSlots = {
+    morning: ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"],
+    afternoon: ["14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"]
+  };
 
   // Lấy bác sĩ theo ngày
   useEffect(() => {
@@ -494,94 +567,229 @@ const BookingNew = ({ handleSubmit }) => {
 
   return (
     <div className="container my-4">
-      <div className="bg-white rounded shadow border p-4">
-        <h2 className="h5 mb-2">Đặt lịch khám mới</h2>
-        <p className="text-muted mb-4">
-          Vui lòng điền đầy đủ thông tin để đặt lịch
-        </p>
+      <div className="bg-white rounded-4 shadow-lg border-0 p-5" style={{ background: "linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)" }}>
+        <div className="text-center mb-4">
+          <div className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style={{ width: "60px", height: "60px", background: "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" }}>
+            <Calendar size={28} className="text-white" />
+          </div>
+          <h2 className="h4 mb-2 fw-bold" style={{ color: "#2d3748" }}>🩺 Đặt lịch khám mới</h2>
+          <p className="text-muted mb-0" style={{ fontSize: "16px" }}>
+            Vui lòng điền đầy đủ thông tin để đặt lịch
+          </p>
+        </div>
 
         {/* Appointment Type */}
-        <div className="mb-4">
-          <label className="form-label fw-semibold">Loại hình khám</label>
-          <div className="row g-2">
+        <div className="mb-5">
+          <label className="form-label fw-bold mb-3" style={{ color: "#2d3748", fontSize: "16px" }}>
+            <span className="me-2">🏥</span>Loại hình khám
+          </label>
+          <div className="row g-3">
             <div className="col">
               <button
-                className={`btn w-100 ${appointmentType === "clinic"
-                  ? "btn-primary text-white"
-                  : "btn-outline-secondary"
+                className={`btn w-100 py-3 rounded-4 border-0 position-relative overflow-hidden ${appointmentType === "clinic"
+                  ? "text-white"
+                  : "text-dark"
                   }`}
+                style={{
+                  background: appointmentType === "clinic" 
+                    ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
+                    : "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
+                  boxShadow: appointmentType === "clinic" 
+                    ? "0 8px 25px rgba(13, 110, 253, 0.3)" 
+                    : "0 4px 15px rgba(0,0,0,0.1)",
+                  transition: "all 0.3s ease",
+                  border: appointmentType === "clinic" ? "none" : "2px solid #e2e8f0"
+                }}
                 onClick={() => setAppointmentType("clinic")}
+                onMouseEnter={(e) => {
+                  if (appointmentType !== "clinic") {
+                    e.target.style.transform = "translateY(-2px)";
+                    e.target.style.boxShadow = "0 8px 25px rgba(0,0,0,0.15)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (appointmentType !== "clinic") {
+                    e.target.style.transform = "translateY(0)";
+                    e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.1)";
+                  }
+                }}
               >
-                <MapPin size={18} className="mb-1" />
-                <br />Tại phòng khám
+                <MapPin size={24} className="mb-2" />
+                <div className="fw-semibold">Tại phòng khám</div>
+                <small className="opacity-75">Khám trực tiếp tại bệnh viện</small>
+                {appointmentType === "clinic" && (
+                  <div className="position-absolute top-0 end-0 m-2">
+                    <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "24px", height: "24px" }}>
+                      <span className="text-primary fw-bold" style={{ fontSize: "12px" }}>✓</span>
+                    </div>
+                  </div>
+                )}
               </button>
             </div>
             <div className="col">
               <button
-                className={`btn w-100 ${appointmentType === "online"
-                  ? "btn-primary text-white"
-                  : "btn-outline-secondary"
+                className={`btn w-100 py-3 rounded-4 border-0 position-relative overflow-hidden ${appointmentType === "online"
+                  ? "text-white"
+                  : "text-dark"
                   }`}
+                style={{
+                  background: appointmentType === "online" 
+                    ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
+                    : "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
+                  boxShadow: appointmentType === "online" 
+                    ? "0 8px 25px rgba(13, 110, 253, 0.3)" 
+                    : "0 4px 15px rgba(0,0,0,0.1)",
+                  transition: "all 0.3s ease",
+                  border: appointmentType === "online" ? "none" : "2px solid #e2e8f0"
+                }}
                 onClick={() => setAppointmentType("online")}
+                onMouseEnter={(e) => {
+                  if (appointmentType !== "online") {
+                    e.target.style.transform = "translateY(-2px)";
+                    e.target.style.boxShadow = "0 8px 25px rgba(0,0,0,0.15)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (appointmentType !== "online") {
+                    e.target.style.transform = "translateY(0)";
+                    e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.1)";
+                  }
+                }}
               >
-                <Video size={18} className="mb-1" />
-                <br />Khám trực tuyến
+                <Video size={24} className="mb-2" />
+                <div className="fw-semibold">Khám trực tuyến</div>
+                <small className="opacity-75">Tư vấn qua video call</small>
+                {appointmentType === "online" && (
+                  <div className="position-absolute top-0 end-0 m-2">
+                    <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "24px", height: "24px" }}>
+                      <span className="text-primary fw-bold" style={{ fontSize: "12px" }}>✓</span>
+                    </div>
+                  </div>
+                )}
               </button>
             </div>
           </div>
         </div>
 
         {/* Date */}
-        <div className="mb-4">
-          <label className="form-label fw-semibold">Chọn ngày</label>
-          <DatePicker
-            selected={selectedDate ? new Date(selectedDate) : null}
-            onChange={(date) => setSelectedDate(date.toISOString().split("T")[0])}
-            minDate={new Date()}
-            dateFormat="dd/MM/yyyy"
-            className="form-control mt-2"
-            placeholderText="Chọn ngày"
-          />
+        <div className="mb-5">
+          <label className="form-label fw-bold mb-3" style={{ color: "#2d3748", fontSize: "16px" }}>
+            <span className="me-2">📅</span>Chọn ngày khám
+          </label>
+          <div className="position-relative">
+            <DatePicker
+              selected={selectedDate ? new Date(selectedDate) : null}
+              onChange={(date) => setSelectedDate(date.toISOString().split("T")[0])}
+              minDate={new Date()}
+              dateFormat="dd/MM/yyyy"
+              className="form-control form-control-lg rounded-4 border-2"
+              placeholderText="📅 Chọn ngày khám"
+              style={{
+                borderColor: "#e2e8f0",
+                fontSize: "14px",
+                padding: "12px 16px",
+                background: "linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.05)"
+              }}
+            />
+            <div className="position-absolute top-50 end-0 translate-middle-y me-3">
+              <Calendar size={20} className="text-muted" />
+            </div>
+          </div>
         </div>
 
 
         {/* Doctor Selection */}
-        <div className="mb-4">
-          <label className="form-label fw-semibold">Chọn bác sĩ</label>
+        <div className="mb-5">
+          <label className="form-label fw-bold mb-3" style={{ color: "#2d3748", fontSize: "16px" }}>
+            <span className="me-2">👨‍⚕️</span>Chọn bác sĩ
+          </label>
           {loadingDoctors ? (
-            <div>Đang tải danh sách bác sĩ...</div>
+            <div className="text-center py-4">
+              <div className="spinner-border text-primary mb-3" role="status">
+                <span className="visually-hidden">Đang tải...</span>
+              </div>
+              <div className="text-muted">Đang tải danh sách bác sĩ...</div>
+            </div>
           ) : doctors.length === 0 && selectedDate ? (
-            <div className="text-muted">Không có bác sĩ làm việc thời gian này.</div>
+            <div className="text-center py-4">
+              <div className="text-muted">
+                <div className="mb-2">👨‍⚕️</div>
+                Không có bác sĩ làm việc thời gian này.
+              </div>
+            </div>
           ) : (
             <div className="row g-3">
               {doctors.map((doctor) => (
                 <div className="col-md-6" key={doctor.id || doctor._id}>
                   <div
-                    className={`card p-3 ${selectedDoctor === doctor.id ? "border-primary shadow" : ""
+                    className={`card p-4 rounded-4 position-relative overflow-hidden ${selectedDoctor === (doctor.doctorId || doctor.id || doctor._id) 
+                      ? "border-primary shadow-lg" 
+                      : "border-0 shadow-sm"
                       }`}
-                    onClick={() => setSelectedDoctor(doctor.id || doctor._id)}
-                    style={{ cursor: "pointer" }}
+                    onClick={() => setSelectedDoctor(doctor.doctorId || doctor.id || doctor._id)}
+                    style={{ 
+                      cursor: "pointer",
+                      background: selectedDoctor === (doctor.doctorId || doctor.id || doctor._id)
+                        ? "linear-gradient(135deg, #e7f1ff 0%, #f0f8ff 100%)"
+                        : "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
+                      transition: "all 0.3s ease",
+                      border: selectedDoctor === (doctor.doctorId || doctor.id || doctor._id) ? "2px solid #0d6efd" : "2px solid #e2e8f0"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedDoctor !== (doctor.doctorId || doctor.id || doctor._id)) {
+                        e.target.style.transform = "translateY(-2px)";
+                        e.target.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedDoctor !== (doctor.doctorId || doctor.id || doctor._id)) {
+                        e.target.style.transform = "translateY(0)";
+                        e.target.style.boxShadow = "0 2px 10px rgba(0,0,0,0.05)";
+                      }
+                    }}
                   >
                     <div className="d-flex align-items-center">
-                      <img
-                        src={
-                          doctor.avatar ||
-                          "https://png.pngtree.com/png-clipart/20210310/original/pngtree-hospital-hotline-avatar-female-doctor-png-image_5951490.jpg"
-                        }
-                        alt={doctor.name}
-                        className="rounded-circle me-3"
-                        style={{ width: 50, height: 50, objectFit: "cover" }}
-                      />
+                      <div className="position-relative me-3">
+                        <img
+                          src={
+                            doctor.avatar ||
+                            "https://png.pngtree.com/png-clipart/20210310/original/pngtree-hospital-hotline-avatar-female-doctor-png-image_5951490.jpg"
+                          }
+                          alt={doctor.name}
+                          className="rounded-circle"
+                          style={{ 
+                            width: 60, 
+                            height: 60, 
+                            objectFit: "cover",
+                            border: "3px solid #e2e8f0"
+                          }}
+                        />
+                        <div className="position-absolute bottom-0 end-0 bg-success rounded-circle" style={{ width: "16px", height: "16px", border: "2px solid white" }}>
+                        </div>
+                      </div>
                       <div className="flex-grow-1">
-                        <h6 className="mb-0">{doctor.name}</h6>
-                        <small className="text-muted d-block">
+                        <h6 className="mb-1 fw-bold" style={{ color: "#2d3748" }}>{doctor.name}</h6>
+                        <small className="text-muted d-block mb-1">
                           {doctor.hospital || "Bệnh viện chưa cập nhật"}
                         </small>
-                        <small className="text-muted">
-                          {doctor.exp} năm kinh nghiệm
-                        </small>
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="d-flex align-items-center text-warning">
+                            <Star size={14} className="me-1" />
+                            <small className="fw-semibold">4.9</small>
+                          </div>
+                          <small className="text-muted">•</small>
+                          <small className="text-muted">{doctor.exp || "10"} năm KN</small>
+                        </div>
                       </div>
                     </div>
+                    {selectedDoctor === (doctor.doctorId || doctor.id || doctor._id) && (
+                      <div className="position-absolute top-0 end-0 m-3">
+                        <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: "24px", height: "24px" }}>
+                          <span className="text-white fw-bold" style={{ fontSize: "12px" }}>✓</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -590,52 +798,261 @@ const BookingNew = ({ handleSubmit }) => {
         </div>
 
         {/* Time */}
-        <div className="mb-4">
-          <label className="form-label fw-semibold">Chọn giờ</label>
-          <div className="row g-2">
-            {timeSlots.map((time) => (
-              <div className="col-3" key={time}>
-                <button
-                  className={`btn w-100 btn-sm ${selectedTime === time
-                    ? "btn-primary text-white"
-                    : "btn-outline-secondary"
-                    }`}
-                  onClick={() => setSelectedTime(time)}
-                >
-                  {time}
-                </button>
-              </div>
-            ))}
-          </div>
+        <div className="mb-5">
+          <label className="form-label fw-bold mb-3" style={{ color: "#2d3748", fontSize: "16px" }}>
+            <span className="me-2">⏰</span>Chọn giờ khám
+            {!selectedDoctor && (
+              <small className="ms-2 text-muted">(Vui lòng chọn bác sĩ trước)</small>
+            )}
+          </label>
+          {(() => {
+            // Tạo tất cả các giờ từ 08:00 đến 16:30 (30 phút một lần)
+            const allTimeSlots = [];
+            for (let hour = 8; hour <= 16; hour++) {
+              for (let minute = 0; minute < 60; minute += 30) {
+                if (hour === 16 && minute > 30) break; // Dừng ở 16:30
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                allTimeSlots.push(timeString);
+              }
+            }
+            
+            // Lấy thông tin bác sĩ đã chọn (nếu có)
+            const selectedDoctorData = selectedDoctor ? doctors.find(d => (d.id || d._id || d.doctorId) === selectedDoctor) : null;
+            const doctorStartTime = selectedDoctorData?.shift?.start || "08:00";
+            const doctorEndTime = selectedDoctorData?.shift?.end || "17:00";
+            
+            // Kiểm tra giờ nào nằm trong khung làm việc của bác sĩ đã chọn
+            const isTimeInWorkingHours = (time) => {
+              if (!selectedDoctor) return false; // Nếu chưa chọn bác sĩ thì không có giờ nào available
+              return time >= doctorStartTime && time <= doctorEndTime;
+            };
+
+            // Phân chia giờ theo buổi
+            const morningSlots = allTimeSlots.filter(time => time <= "12:00");
+            const afternoonSlots = allTimeSlots.filter(time => time >= "12:30");
+
+            return (
+              <>
+                {/* Buổi sáng */}
+                {morningSlots.length > 0 && (
+                  <div className="mb-4">
+                    <div className="d-flex align-items-center mb-3">
+                      <div className="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style={{ 
+                        width: "32px", 
+                        height: "32px", 
+                        background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)"
+                      }}>
+                        <span style={{ fontSize: "16px" }}>🌅</span>
+                      </div>
+                      <h6 className="mb-0 fw-bold" style={{ color: "#2d3748" }}>
+                        Buổi sáng
+                      </h6>
+                      <div className="flex-grow-1"></div>
+                      <small className="text-muted">
+                        08:00 - 12:00
+                      </small>
+                    </div>
+                    <div className="d-flex flex-wrap gap-2">
+                      {morningSlots.map((time) => {
+                        const isInWorkingHours = isTimeInWorkingHours(time);
+                        const canSelect = selectedDoctor && isInWorkingHours;
+                        return (
+                          <button
+                            key={time}
+                            className={`btn py-2 px-3 rounded-4 position-relative overflow-hidden ${selectedTime === time
+                              ? "text-white"
+                              : canSelect ? "text-dark" : "text-muted"
+                              }`}
+                            onClick={() => canSelect && setSelectedTime(time)}
+                            disabled={!canSelect}
+                            style={{
+                              background: selectedTime === time 
+                                ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
+                                : canSelect 
+                                  ? "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)"
+                                  : "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+                              boxShadow: selectedTime === time 
+                                ? "0 4px 15px rgba(13, 110, 253, 0.3)" 
+                                : "0 2px 6px rgba(0,0,0,0.08)",
+                              transition: "all 0.3s ease",
+                              border: selectedTime === time ? "none" : "2px solid #e2e8f0",
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              minWidth: "70px",
+                              opacity: canSelect ? 1 : 0.4,
+                              cursor: canSelect ? "pointer" : "not-allowed"
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedTime !== time && canSelect) {
+                                e.target.style.transform = "translateY(-2px)";
+                                e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedTime !== time && canSelect) {
+                                e.target.style.transform = "translateY(0)";
+                                e.target.style.boxShadow = "0 2px 6px rgba(0,0,0,0.08)";
+                              }
+                            }}
+                          >
+                            <Clock size={12} className="me-1" />
+                            {time}
+                            {selectedTime === time && (
+                              <div className="position-absolute top-0 end-0 m-1">
+                                <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "16px", height: "16px" }}>
+                                  <span className="text-primary fw-bold" style={{ fontSize: "8px" }}>✓</span>
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Buổi chiều */}
+                {afternoonSlots.length > 0 && (
+                  <div className="mb-4">
+                    <div className="d-flex align-items-center mb-3">
+                      <div className="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style={{ 
+                        width: "32px", 
+                        height: "32px", 
+                        background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+                      }}>
+                        <span style={{ fontSize: "16px" }}>🌙</span>
+                      </div>
+                      <h6 className="mb-0 fw-bold" style={{ color: "#2d3748" }}>
+                        Buổi chiều
+                      </h6>
+                      <div className="flex-grow-1"></div>
+                      <small className="text-muted">
+                        12:30 - 16:30
+                      </small>
+                    </div>
+                    <div className="d-flex flex-wrap gap-2">
+                      {afternoonSlots.map((time) => {
+                        const isInWorkingHours = isTimeInWorkingHours(time);
+                        const canSelect = selectedDoctor && isInWorkingHours;
+                        return (
+                          <button
+                            key={time}
+                            className={`btn py-2 px-3 rounded-4 position-relative overflow-hidden ${selectedTime === time
+                              ? "text-white"
+                              : canSelect ? "text-dark" : "text-muted"
+                              }`}
+                            onClick={() => canSelect && setSelectedTime(time)}
+                            disabled={!canSelect}
+                            style={{
+                              background: selectedTime === time 
+                                ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
+                                : canSelect 
+                                  ? "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)"
+                                  : "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+                              boxShadow: selectedTime === time 
+                                ? "0 4px 15px rgba(13, 110, 253, 0.3)" 
+                                : "0 2px 6px rgba(0,0,0,0.08)",
+                              transition: "all 0.3s ease",
+                              border: selectedTime === time ? "none" : "2px solid #e2e8f0",
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              minWidth: "70px",
+                              opacity: canSelect ? 1 : 0.4,
+                              cursor: canSelect ? "pointer" : "not-allowed"
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedTime !== time && canSelect) {
+                                e.target.style.transform = "translateY(-2px)";
+                                e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedTime !== time && canSelect) {
+                                e.target.style.transform = "translateY(0)";
+                                e.target.style.boxShadow = "0 2px 6px rgba(0,0,0,0.08)";
+                              }
+                            }}
+                          >
+                            <Clock size={12} className="me-1" />
+                            {time}
+                            {selectedTime === time && (
+                              <div className="position-absolute top-0 end-0 m-1">
+                                <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "16px", height: "16px" }}>
+                                  <span className="text-primary fw-bold" style={{ fontSize: "8px" }}>✓</span>
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Reason */}
-        <div className="mb-4">
-          <label className="form-label fw-semibold">Lý do khám</label>
+        <div className="mb-5">
+          <label className="form-label fw-bold mb-3" style={{ color: "#2d3748", fontSize: "16px" }}>
+            <span className="me-2">📝</span>Lý do khám
+          </label>
           <textarea
-            className="form-control"
-            rows="3"
+            className="form-control form-control-lg rounded-4 border-2"
+            rows="4"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Mô tả ngắn gọn lý do bạn muốn khám..."
+            placeholder="📝 Mô tả ngắn gọn lý do bạn muốn khám..."
+            style={{
+              borderColor: "#e2e8f0",
+              fontSize: "16px",
+              padding: "16px",
+              background: "linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+              resize: "none"
+            }}
           />
         </div>
 
         {/* Submit */}
-        <button
-          className="btn btn-primary w-100 py-3 fw-semibold"
-          onClick={() =>
-            handleSubmit({
-              type: appointmentType,
-              doctor: selectedDoctor,
-              date: selectedDate,
-              time: selectedTime,
-              reason,
-            })
-          }
-        >
-          Xác nhận đặt lịch khám
-        </button>
+        <div className="text-center">
+          <button
+            className="btn btn-lg w-100 py-4 fw-bold rounded-4 border-0 position-relative overflow-hidden"
+            onClick={() =>
+              handleSubmit({
+                type: appointmentType,
+                doctor: selectedDoctor,
+                date: selectedDate,
+                time: selectedTime,
+                reason,
+              })
+            }
+            style={{
+              background: "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)",
+              color: "white",
+              boxShadow: "0 8px 30px rgba(13, 110, 253, 0.4)",
+              fontSize: "18px",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 12px 40px rgba(13, 110, 253, 0.5)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "0 8px 30px rgba(13, 110, 253, 0.4)";
+            }}
+          >
+            <span className="me-2">✅</span>
+            Xác nhận đặt lịch khám
+            <div className="position-absolute top-0 start-0 w-100 h-100" style={{
+              background: "linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)",
+              transform: "translateX(-100%)",
+              transition: "transform 0.6s ease"
+            }}></div>
+          </button>
+        </div>
       </div>
     </div>
   );
