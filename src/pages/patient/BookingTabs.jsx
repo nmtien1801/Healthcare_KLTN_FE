@@ -45,6 +45,7 @@ const upcomingAppointment = ({ handleStartCall }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
   const user = useSelector((state) => state.auth.userInfo);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -88,6 +89,28 @@ const upcomingAppointment = ({ handleStartCall }) => {
 
   const currentAppointment = appointments[currentIndex];
 
+  // Hủy lịch hẹn
+  const handleCancelBooking = async (appointmentId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này không?")) return;
+    try {
+      setCancelling(true);
+      await ApiBooking.cancelBooking(appointmentId);
+
+      setAppointments((prev) =>
+        prev.filter((appt) => appt._id !== appointmentId)
+      );
+
+      // Reset index
+      setCurrentIndex((prev) =>
+        prev >= appointments.length - 1 ? 0 : prev
+      );
+    } catch (err) {
+      console.error("Lỗi khi hủy lịch:", err);
+      alert("Không thể hủy lịch. Vui lòng thử lại sau.");
+    } finally {
+      setCancelling(false);
+    }
+  };
   // Chat với bác sĩ
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
@@ -227,7 +250,7 @@ const upcomingAppointment = ({ handleStartCall }) => {
             <>
               {/* Pagination */}
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <button 
+                <button
                   className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
                   onClick={handlePrev}
                   disabled={appointments.length <= 1}
@@ -255,7 +278,7 @@ const upcomingAppointment = ({ handleStartCall }) => {
                 >
                   <span className="me-1">←</span> Trước
                 </button>
-                
+
                 <div className="d-flex align-items-center">
                   <div className="bg-primary rounded-pill px-3 py-2 text-white fw-semibold" style={{ fontSize: "14px" }}>
                     {currentIndex + 1} / {appointments.length}
@@ -280,8 +303,8 @@ const upcomingAppointment = ({ handleStartCall }) => {
                     </div>
                   )}
                 </div>
-                
-                <button 
+
+                <button
                   className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
                   onClick={handleNext}
                   disabled={appointments.length <= 1}
@@ -411,10 +434,13 @@ const upcomingAppointment = ({ handleStartCall }) => {
                     </div>
                     <button
                       className="btn btn-sm rounded-pill px-3 py-2 btn-outline-danger"
-                      onClick={handleToggleStatus}
+                      onClick={() => handleCancelBooking(currentAppointment._id || currentAppointment.id)}
+
+                      disabled={cancelling}
                     >
-                      Hủy lịch
+                      {cancelling ? "Đang hủy..." : "Hủy lịch"}
                     </button>
+
                   </div>
                 </div>
               </div>
@@ -591,11 +617,11 @@ const BookingNew = ({ handleSubmit }) => {
                   : "text-dark"
                   }`}
                 style={{
-                  background: appointmentType === "clinic" 
-                    ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
+                  background: appointmentType === "clinic"
+                    ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)"
                     : "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
-                  boxShadow: appointmentType === "clinic" 
-                    ? "0 8px 25px rgba(13, 110, 253, 0.3)" 
+                  boxShadow: appointmentType === "clinic"
+                    ? "0 8px 25px rgba(13, 110, 253, 0.3)"
                     : "0 4px 15px rgba(0,0,0,0.1)",
                   transition: "all 0.3s ease",
                   border: appointmentType === "clinic" ? "none" : "2px solid #e2e8f0"
@@ -633,11 +659,11 @@ const BookingNew = ({ handleSubmit }) => {
                   : "text-dark"
                   }`}
                 style={{
-                  background: appointmentType === "online" 
-                    ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
+                  background: appointmentType === "online"
+                    ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)"
                     : "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
-                  boxShadow: appointmentType === "online" 
-                    ? "0 8px 25px rgba(13, 110, 253, 0.3)" 
+                  boxShadow: appointmentType === "online"
+                    ? "0 8px 25px rgba(13, 110, 253, 0.3)"
                     : "0 4px 15px rgba(0,0,0,0.1)",
                   transition: "all 0.3s ease",
                   border: appointmentType === "online" ? "none" : "2px solid #e2e8f0"
@@ -723,12 +749,12 @@ const BookingNew = ({ handleSubmit }) => {
               {doctors.map((doctor) => (
                 <div className="col-md-6" key={doctor.id || doctor._id}>
                   <div
-                    className={`card p-4 rounded-4 position-relative overflow-hidden ${selectedDoctor === (doctor.doctorId || doctor.id || doctor._id) 
-                      ? "border-primary shadow-lg" 
+                    className={`card p-4 rounded-4 position-relative overflow-hidden ${selectedDoctor === (doctor.doctorId || doctor.id || doctor._id)
+                      ? "border-primary shadow-lg"
                       : "border-0 shadow-sm"
                       }`}
                     onClick={() => setSelectedDoctor(doctor.doctorId || doctor.id || doctor._id)}
-                    style={{ 
+                    style={{
                       cursor: "pointer",
                       background: selectedDoctor === (doctor.doctorId || doctor.id || doctor._id)
                         ? "linear-gradient(135deg, #e7f1ff 0%, #f0f8ff 100%)"
@@ -758,9 +784,9 @@ const BookingNew = ({ handleSubmit }) => {
                           }
                           alt={doctor.name}
                           className="rounded-circle"
-                          style={{ 
-                            width: 60, 
-                            height: 60, 
+                          style={{
+                            width: 60,
+                            height: 60,
                             objectFit: "cover",
                             border: "3px solid #e2e8f0"
                           }}
@@ -815,12 +841,12 @@ const BookingNew = ({ handleSubmit }) => {
                 allTimeSlots.push(timeString);
               }
             }
-            
+
             // Lấy thông tin bác sĩ đã chọn (nếu có)
             const selectedDoctorData = selectedDoctor ? doctors.find(d => (d.id || d._id || d.doctorId) === selectedDoctor) : null;
             const doctorStartTime = selectedDoctorData?.shift?.start || "08:00";
             const doctorEndTime = selectedDoctorData?.shift?.end || "17:00";
-            
+
             // Kiểm tra giờ nào nằm trong khung làm việc của bác sĩ đã chọn
             const isTimeInWorkingHours = (time) => {
               if (!selectedDoctor) return false; // Nếu chưa chọn bác sĩ thì không có giờ nào available
@@ -837,9 +863,9 @@ const BookingNew = ({ handleSubmit }) => {
                 {morningSlots.length > 0 && (
                   <div className="mb-4">
                     <div className="d-flex align-items-center mb-3">
-                      <div className="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style={{ 
-                        width: "32px", 
-                        height: "32px", 
+                      <div className="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style={{
+                        width: "32px",
+                        height: "32px",
                         background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)"
                       }}>
                         <span style={{ fontSize: "16px" }}>🌅</span>
@@ -866,13 +892,13 @@ const BookingNew = ({ handleSubmit }) => {
                             onClick={() => canSelect && setSelectedTime(time)}
                             disabled={!canSelect}
                             style={{
-                              background: selectedTime === time 
-                                ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
-                                : canSelect 
+                              background: selectedTime === time
+                                ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)"
+                                : canSelect
                                   ? "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)"
                                   : "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
-                              boxShadow: selectedTime === time 
-                                ? "0 4px 15px rgba(13, 110, 253, 0.3)" 
+                              boxShadow: selectedTime === time
+                                ? "0 4px 15px rgba(13, 110, 253, 0.3)"
                                 : "0 2px 6px rgba(0,0,0,0.08)",
                               transition: "all 0.3s ease",
                               border: selectedTime === time ? "none" : "2px solid #e2e8f0",
@@ -915,9 +941,9 @@ const BookingNew = ({ handleSubmit }) => {
                 {afternoonSlots.length > 0 && (
                   <div className="mb-4">
                     <div className="d-flex align-items-center mb-3">
-                      <div className="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style={{ 
-                        width: "32px", 
-                        height: "32px", 
+                      <div className="d-inline-flex align-items-center justify-content-center rounded-circle me-3" style={{
+                        width: "32px",
+                        height: "32px",
                         background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
                       }}>
                         <span style={{ fontSize: "16px" }}>🌙</span>
@@ -944,13 +970,13 @@ const BookingNew = ({ handleSubmit }) => {
                             onClick={() => canSelect && setSelectedTime(time)}
                             disabled={!canSelect}
                             style={{
-                              background: selectedTime === time 
-                                ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)" 
-                                : canSelect 
+                              background: selectedTime === time
+                                ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)"
+                                : canSelect
                                   ? "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)"
                                   : "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
-                              boxShadow: selectedTime === time 
-                                ? "0 4px 15px rgba(13, 110, 253, 0.3)" 
+                              boxShadow: selectedTime === time
+                                ? "0 4px 15px rgba(13, 110, 253, 0.3)"
                                 : "0 2px 6px rgba(0,0,0,0.08)",
                               transition: "all 0.3s ease",
                               border: selectedTime === time ? "none" : "2px solid #e2e8f0",
