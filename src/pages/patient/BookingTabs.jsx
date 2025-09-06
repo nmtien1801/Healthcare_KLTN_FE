@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send } from 'lucide-react';
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSelector } from "react-redux";
@@ -40,7 +40,7 @@ const Button = ({ children, className = "", variant = "primary", size = "md", on
   );
 };
 
-const upcomingAppointment = ({ handleStartCall }) => {
+const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment }) => {
   const [isConfirmed, setIsConfirmed] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,11 +70,24 @@ const upcomingAppointment = ({ handleStartCall }) => {
       } finally {
         setLoading(false);
       }
-
     };
 
     fetchAppointments();
-  }, []);
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    if (onNewAppointment) {
+      setAppointments((prev) => {
+        // Kiểm tra tránh trùng lặp
+        const exists = prev.some(appt => appt._id === onNewAppointment._id);
+        if (!exists) {
+          return [...prev, onNewAppointment];
+        }
+        return prev;
+      });
+      setCurrentIndex(appointments.length);
+    }
+  }, [onNewAppointment]);
 
   const handleToggleStatus = () => {
     setIsConfirmed((prev) => !prev);
@@ -111,6 +124,7 @@ const upcomingAppointment = ({ handleStartCall }) => {
       setCancelling(false);
     }
   };
+
   // Chat với bác sĩ
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
@@ -138,20 +152,17 @@ const upcomingAppointment = ({ handleStartCall }) => {
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
-
       const firebaseMessages = snapshot.docs.map(doc => {
         const data = doc.data();
-
         return {
           id: doc.id,
-          text: data.message || data.text || '', // Hỗ trợ cả 'message' và 'text'
+          text: data.message || data.text || '',
           sender: data.senderId === senderId ? "patient" : "doctor",
-          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(), // Chuyển đổi Firestore timestamp
-          originalData: data // Lưu trữ dữ liệu gốc để debug
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          originalData: data
         };
       });
 
-      // Giữ lại tin nhắn chào mừng nếu không có tin nhắn từ Firebase
       if (firebaseMessages.length === 0) {
         setChatMessages(prev => prev.filter(msg => msg.isWelcome));
       } else {
@@ -164,7 +175,6 @@ const upcomingAppointment = ({ handleStartCall }) => {
     return () => unsub();
   }, [senderId, roomChats]);
 
-  // Scroll to bottom khi có tin nhắn mới
   useEffect(() => {
     if (showChatbot && chatMessages.length > 0) {
       const chatContainer = document.querySelector('.chat-messages');
@@ -181,13 +191,12 @@ const upcomingAppointment = ({ handleStartCall }) => {
     const userMessage = messageInput.trim();
     setMessageInput("");
 
-    // Thêm tin nhắn vào UI ngay lập tức
     const tempMessage = {
-      id: Date.now().toString(), // Tạo ID tạm thời
+      id: Date.now().toString(),
       text: userMessage,
       sender: "patient",
       timestamp: new Date(),
-      isTemp: true // Đánh dấu là tin nhắn tạm thời
+      isTemp: true
     };
 
     setChatMessages((prev) => [...prev, tempMessage]);
@@ -196,11 +205,10 @@ const upcomingAppointment = ({ handleStartCall }) => {
       const docRef = await addDoc(collection(db, "chats", roomChats, "messages"), {
         senderId,
         receiverId,
-        message: userMessage, // Sử dụng 'message' để nhất quán
+        message: userMessage,
         timestamp: serverTimestamp()
       });
 
-      // Cập nhật tin nhắn tạm thời thành tin nhắn thật
       setChatMessages((prev) => prev.map(msg =>
         msg.isTemp && msg.text === userMessage
           ? { ...msg, id: docRef.id, isTemp: false }
@@ -209,14 +217,13 @@ const upcomingAppointment = ({ handleStartCall }) => {
 
     } catch (err) {
       console.error('Error sending message:', err);
-      // Xóa tin nhắn khỏi UI nếu gửi thất bại
       setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
-      // Có thể thay thế bằng toast notification sau này
       console.error("Lỗi kết nối đến máy chủ:", err);
     } finally {
       setIsSending(false);
     }
   };
+
   return (
     <div className="container my-3">
       <div className="bg-white rounded shadow border p-4">
@@ -248,7 +255,6 @@ const upcomingAppointment = ({ handleStartCall }) => {
 
           {!loading && !error && currentAppointment && (
             <>
-              {/* Pagination */}
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <button
                   className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
@@ -344,7 +350,7 @@ const upcomingAppointment = ({ handleStartCall }) => {
                       <div className="position-relative me-3">
                         <img
                           src={
-                            currentAppointment.doctorId?.image ||
+                            currentAppointment.doctorId?.userId.avatar ||
                             "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
                           }
                           alt="Doctor Avatar"
@@ -354,10 +360,10 @@ const upcomingAppointment = ({ handleStartCall }) => {
                       </div>
                       <div>
                         <h5 className="mb-1 fw-bold text-dark">
-                          {currentAppointment.doctorId?.name || "Bác sĩ Trần Thị B"}
+                          {currentAppointment.doctorId?.userId.username || "Bác sĩ Trần Thị B"}
                         </h5>
                         <p className="mb-0 text-muted">
-                          {currentAppointment.doctorId?.specialty || "Chuyên khoa Nội tiết"}
+                          {currentAppointment.doctorId?.hospital || "Chuyên khoa Nội tiết"}
                         </p>
                       </div>
                     </div>
@@ -435,12 +441,10 @@ const upcomingAppointment = ({ handleStartCall }) => {
                     <button
                       className="btn btn-sm rounded-pill px-3 py-2 btn-outline-danger"
                       onClick={() => handleCancelBooking(currentAppointment._id || currentAppointment.id)}
-
                       disabled={cancelling}
                     >
                       {cancelling ? "Đang hủy..." : "Hủy lịch"}
                     </button>
-
                   </div>
                 </div>
               </div>
@@ -489,7 +493,6 @@ const upcomingAppointment = ({ handleStartCall }) => {
             </div>
           </div>
         </div>
-        {/* Chatbot Popup */}
         {showChatbot && (
           <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
             <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
@@ -553,19 +556,29 @@ const upcomingAppointment = ({ handleStartCall }) => {
 };
 
 const BookingNew = ({ handleSubmit }) => {
-  const [appointmentType, setAppointmentType] = useState("clinic");
+  const [appointmentType, setAppointmentType] = useState("onsite");
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [reason, setReason] = useState("");
-
+  const [notes, setNotes] = useState("");
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const user = useSelector((state) => state.auth.userInfo);
 
-  const timeSlots = {
-    morning: ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"],
-    afternoon: ["14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"]
-  };
+  // SỬA: Thêm useEffect để tự động xóa thông báo sau 5 giây
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccess(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
 
   // Lấy bác sĩ theo ngày
   useEffect(() => {
@@ -583,6 +596,7 @@ const BookingNew = ({ handleSubmit }) => {
       } catch (err) {
         console.error("Lỗi khi tải danh sách bác sĩ:", err);
         setDoctors([]);
+        setError("Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.");
       } finally {
         setLoadingDoctors(false);
       }
@@ -590,6 +604,112 @@ const BookingNew = ({ handleSubmit }) => {
 
     fetchDoctors();
   }, [selectedDate]);
+
+  const onSubmit = useCallback(async () => {
+    console.log("onSubmit called");
+
+    // Kiểm tra các trường bắt buộc
+    if (!user?.uid) {
+      console.log("Error: User not logged in", user); // Log thông tin user
+      setError("Vui lòng đăng nhập để đặt lịch.");
+      return;
+    }
+    if (!selectedDoctor || !selectedDate || !selectedTime) {
+      console.log("Error: Missing required fields", {
+        selectedDoctor,
+        selectedDate,
+        selectedTime,
+        reason
+      }); // Log các trường bắt buộc
+      setError("Vui lòng chọn bác sĩ, ngày, giờ khám và nhập lý do khám.");
+      return;
+    }
+
+    // Kiểm tra ngày hợp lệ
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selected = new Date(selectedDate);
+    if (selected < today) {
+      console.log("Error: Invalid date", { selectedDate, today }); // Log ngày
+      setError("Không thể chọn ngày trong quá khứ.");
+      return;
+    }
+
+    // Kiểm tra thời gian trong khung giờ làm việc của bác sĩ
+    const selectedDoctorData = doctors.find(d => (d.id || d._id || d.doctorId) === selectedDoctor);
+    if (!selectedDoctorData) {
+      console.log("Error: Invalid doctor", { selectedDoctor, doctors }); // Log bác sĩ
+      setError("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
+      return;
+    }
+    const doctorStartTime = selectedDoctorData?.shift?.start || "08:00";
+    const doctorEndTime = selectedDoctorData?.shift?.end || "17:00";
+    if (selectedTime < doctorStartTime || selectedTime > doctorEndTime) {
+      console.log("Error: Invalid time", { selectedTime, doctorStartTime, doctorEndTime }); // Log thời gian
+      setError("Thời gian chọn không nằm trong khung giờ làm việc của bác sĩ.");
+      return;
+    }
+
+    console.log("Submitting booking with:", {
+      firebaseUid: user.uid,
+      doctorId: selectedDoctor,
+      date: selectedDate,
+      time: selectedTime,
+      type: appointmentType,
+      reason: reason.trim(),
+      notes: notes.trim()
+    });
+    try {
+      // SỬA: Chuẩn hóa payload trước khi gửi
+      const payload = {
+        firebaseUid: user.uid,
+        doctorId: selectedDoctor,
+        date: selectedDate,
+        time: selectedTime,
+        type: appointmentType,
+        reason: reason.trim(),
+        notes: notes.trim(),
+        createdAt: new Date().toISOString() // Thêm thời gian tạo để theo dõi
+      };
+
+      const response = await ApiBooking.bookAppointment(payload);
+
+      console.log("Booking response:", response);
+      const newAppointment = {
+        _id: response._id || response.id || Date.now().toString(), // Đảm bảo có _id
+        doctorId: {
+          _id: selectedDoctor,
+          name: selectedDoctorData.name,
+          specialty: selectedDoctorData.specialty || "Chuyên khoa Nội tiết",
+          image: selectedDoctorData.avatar || "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+        },
+        date: selectedDate,
+        time: selectedTime,
+        status: response.status || "pending" // Mặc định là pending nếu API không trả về status
+      };
+
+      // SỬA: Thông báo thành công chi tiết hơn
+      setSuccess(`Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`);
+
+      // Reset form
+      setSelectedDoctor(null);
+      setSelectedDate("");
+      setSelectedTime("");
+      setReason("");
+      setNotes("");
+      setAppointmentType("onsite");
+
+      // Gọi handleSubmit từ props
+      handleSubmit(newAppointment);
+
+    } catch (err) {
+      console.error("Lỗi khi đặt lịch:", err);
+      // SỬA: Thông báo lỗi chi tiết hơn
+      setError(err.response?.data?.message || err.message || "Không thể đặt lịch. Vui lòng kiểm tra kết nối và thử lại.");
+    } finally {
+      setLoadingSubmit(false);
+    }
+  }, [user, selectedDoctor, selectedDate, selectedTime, reason, notes, appointmentType, doctors, handleSubmit]);
 
   return (
     <div className="container my-4">
@@ -604,6 +724,19 @@ const BookingNew = ({ handleSubmit }) => {
           </p>
         </div>
 
+        {/* Hiển thị thông báo lỗi hoặc thành công */}
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show" role="alert">
+            {error}
+            <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+          </div>
+        )}
+        {success && (
+          <div className="alert alert-success alert-dismissible fade show" role="alert">
+            {success}
+            <button type="button" className="btn-close" onClick={() => setSuccess(null)}></button>
+          </div>
+        )}
         {/* Appointment Type */}
         <div className="mb-5">
           <label className="form-label fw-bold mb-3" style={{ color: "#2d3748", fontSize: "16px" }}>
@@ -612,29 +745,29 @@ const BookingNew = ({ handleSubmit }) => {
           <div className="row g-3">
             <div className="col">
               <button
-                className={`btn w-100 py-3 rounded-4 border-0 position-relative overflow-hidden ${appointmentType === "clinic"
+                className={`btn w-100 py-3 rounded-4 border-0 position-relative overflow-hidden ${appointmentType === "onsite"
                   ? "text-white"
                   : "text-dark"
                   }`}
                 style={{
-                  background: appointmentType === "clinic"
+                  background: appointmentType === "onsite"
                     ? "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)"
                     : "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
-                  boxShadow: appointmentType === "clinic"
+                  boxShadow: appointmentType === "onsite"
                     ? "0 8px 25px rgba(13, 110, 253, 0.3)"
                     : "0 4px 15px rgba(0,0,0,0.1)",
                   transition: "all 0.3s ease",
-                  border: appointmentType === "clinic" ? "none" : "2px solid #e2e8f0"
+                  border: appointmentType === "onsite" ? "none" : "2px solid #e2e8f0"
                 }}
-                onClick={() => setAppointmentType("clinic")}
+                onClick={() => setAppointmentType("onsite")}
                 onMouseEnter={(e) => {
-                  if (appointmentType !== "clinic") {
+                  if (appointmentType !== "onsite") {
                     e.target.style.transform = "translateY(-2px)";
                     e.target.style.boxShadow = "0 8px 25px rgba(0,0,0,0.15)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (appointmentType !== "clinic") {
+                  if (appointmentType !== "onsite") {
                     e.target.style.transform = "translateY(0)";
                     e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.1)";
                   }
@@ -643,7 +776,7 @@ const BookingNew = ({ handleSubmit }) => {
                 <MapPin size={24} className="mb-2" />
                 <div className="fw-semibold">Tại phòng khám</div>
                 <small className="opacity-75">Khám trực tiếp tại bệnh viện</small>
-                {appointmentType === "clinic" && (
+                {appointmentType === "onsite" && (
                   <div className="position-absolute top-0 end-0 m-2">
                     <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "24px", height: "24px" }}>
                       <span className="text-primary fw-bold" style={{ fontSize: "12px" }}>✓</span>
@@ -723,7 +856,6 @@ const BookingNew = ({ handleSubmit }) => {
             </div>
           </div>
         </div>
-
 
         {/* Doctor Selection */}
         <div className="mb-5">
@@ -836,7 +968,7 @@ const BookingNew = ({ handleSubmit }) => {
             const allTimeSlots = [];
             for (let hour = 8; hour <= 16; hour++) {
               for (let minute = 0; minute < 60; minute += 30) {
-                if (hour === 16 && minute > 30) break; // Dừng ở 16:30
+                if (hour === 16 && minute > 30) break;
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 allTimeSlots.push(timeString);
               }
@@ -849,7 +981,7 @@ const BookingNew = ({ handleSubmit }) => {
 
             // Kiểm tra giờ nào nằm trong khung làm việc của bác sĩ đã chọn
             const isTimeInWorkingHours = (time) => {
-              if (!selectedDoctor) return false; // Nếu chưa chọn bác sĩ thì không có giờ nào available
+              if (!selectedDoctor) return false;
               return time >= doctorStartTime && time <= doctorEndTime;
             };
 
@@ -859,7 +991,6 @@ const BookingNew = ({ handleSubmit }) => {
 
             return (
               <>
-                {/* Buổi sáng */}
                 {morningSlots.length > 0 && (
                   <div className="mb-4">
                     <div className="d-flex align-items-center mb-3">
@@ -937,7 +1068,6 @@ const BookingNew = ({ handleSubmit }) => {
                   </div>
                 )}
 
-                {/* Buổi chiều */}
                 {afternoonSlots.length > 0 && (
                   <div className="mb-4">
                     <div className="d-flex align-items-center mb-3">
@@ -1045,33 +1175,37 @@ const BookingNew = ({ handleSubmit }) => {
         <div className="text-center">
           <button
             className="btn btn-lg w-100 py-4 fw-bold rounded-4 border-0 position-relative overflow-hidden"
-            onClick={() =>
-              handleSubmit({
-                type: appointmentType,
-                doctor: selectedDoctor,
-                date: selectedDate,
-                time: selectedTime,
-                reason,
-              })
-            }
+            onClick={onSubmit}
+            disabled={loadingSubmit}
             style={{
-              background: "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)",
+              background: loadingSubmit ? "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)" : "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)",
               color: "white",
-              boxShadow: "0 8px 30px rgba(13, 110, 253, 0.4)",
+              boxShadow: loadingSubmit ? "0 8px 30px rgba(0,0,0,0.3)" : "0 8px 30px rgba(13, 110, 253, 0.4)",
               fontSize: "18px",
-              transition: "all 0.3s ease"
+              transition: "all 0.3s ease",
+              cursor: loadingSubmit ? "not-allowed" : "pointer"
             }}
             onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 12px 40px rgba(13, 110, 253, 0.5)";
+              if (!loadingSubmit) {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 12px 40px rgba(13, 110, 253, 0.5)";
+              }
             }}
             onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 8px 30px rgba(13, 110, 253, 0.4)";
+              if (!loadingSubmit) {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "0 8px 30px rgba(13, 110, 253, 0.4)";
+              }
             }}
           >
-            <span className="me-2">✅</span>
-            Xác nhận đặt lịch khám
+            {loadingSubmit ? (
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Đang xử lý...</span>
+              </div>
+            ) : (
+              <span className="me-2">✅</span>
+            )}
+            {loadingSubmit ? "Đang đặt lịch..." : "Xác nhận đặt lịch khám"}
             <div className="position-absolute top-0 start-0 w-100 h-100" style={{
               background: "linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)",
               transform: "translateX(-100%)",
@@ -1085,58 +1219,22 @@ const BookingNew = ({ handleSubmit }) => {
 };
 
 const BookingTabs = ({ handleStartCall }) => {
-  const [selectedTime, setSelectedTime] = useState("09:30")
-  const [appointmentType, setAppointmentType] = useState("clinic")
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedDoctor, setSelectedDoctor] = useState("tran-thi-b")
-  const [reason, setReason] = useState("")
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [newAppointment, setNewAppointment] = useState(null);
 
-  const timeSlots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30"]
-
-  const doctors = [
-    {
-      id: "tran-thi-b",
-      name: "Bác sĩ Trần Thị B",
-      specialty: "Chuyên khoa Nội tiết",
-      experience: "15 năm kinh nghiệm",
-      rating: 4.9,
-      patients: "2,500+",
-      image: "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: "nguyen-van-a",
-      name: "Bác sĩ Nguyễn Văn A",
-      specialty: "Chuyên khoa Tim mạch",
-      experience: "12 năm kinh nghiệm",
-      rating: 4.8,
-      patients: "1,800+",
-      image: "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: "le-thi-c",
-      name: "Bác sĩ Lê Thị C",
-      specialty: "Chuyên khoa Da liễu",
-      experience: "10 năm kinh nghiệm",
-      rating: 4.9,
-      patients: "2,200+",
-      image: "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-    }
-  ]
-
-  const handleSubmit = () => {
-    console.log("Booking appointment:", {
-      type: appointmentType,
-      doctor: selectedDoctor,
-      date: selectedDate,
-      time: selectedTime,
-      reason
-    })
-  }
+  const handleSubmit = (appointment) => {
+    setRefreshTrigger((prev) => prev + 1);
+    setNewAppointment(appointment); // THÊM: Lưu lịch hẹn mới
+  };
 
   return (
-    <div >
-      {upcomingAppointment(handleStartCall)}
-      {BookingNew(doctors, timeSlots, handleSubmit)}
+    <div>
+      <UpcomingAppointment
+        handleStartCall={handleStartCall}
+        refreshTrigger={refreshTrigger}
+        onNewAppointment={newAppointment} // THÊM: Truyền newAppointment
+      />
+      <BookingNew handleSubmit={handleSubmit} />
     </div>
   );
 };
