@@ -569,7 +569,7 @@ const BookingNew = ({ handleSubmit }) => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const user = useSelector((state) => state.auth.userInfo);
 
-  // SỬA: Thêm useEffect để tự động xóa thông báo sau 5 giây
+
   useEffect(() => {
     if (error || success) {
       const timer = setTimeout(() => {
@@ -660,7 +660,6 @@ const BookingNew = ({ handleSubmit }) => {
       notes: notes.trim()
     });
     try {
-      // SỬA: Chuẩn hóa payload trước khi gửi
       const payload = {
         firebaseUid: user.uid,
         doctorId: selectedDoctor,
@@ -688,7 +687,6 @@ const BookingNew = ({ handleSubmit }) => {
         status: response.status || "pending" // Mặc định là pending nếu API không trả về status
       };
 
-      // SỬA: Thông báo thành công chi tiết hơn
       setSuccess(`Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`);
 
       // Reset form
@@ -1224,7 +1222,7 @@ const BookingTabs = ({ handleStartCall }) => {
 
   const handleSubmit = (appointment) => {
     setRefreshTrigger((prev) => prev + 1);
-    setNewAppointment(appointment); // THÊM: Lưu lịch hẹn mới
+    setNewAppointment(appointment);
   };
 
   return (
@@ -1232,7 +1230,7 @@ const BookingTabs = ({ handleStartCall }) => {
       <UpcomingAppointment
         handleStartCall={handleStartCall}
         refreshTrigger={refreshTrigger}
-        onNewAppointment={newAppointment} // THÊM: Truyền newAppointment
+        onNewAppointment={newAppointment}
       />
       <BookingNew handleSubmit={handleSubmit} />
     </div>
