@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   getTrendMedicine,
-  applyMedicinesService
+  applyMedicinesService,
+  fetchMedicinesService
 } from "../apis/medicineAiService";
 
 const initialState = {
@@ -23,10 +24,22 @@ export const fetchTrendMedicine = createAsyncThunk(
 );
 
 export const applyMedicines = createAsyncThunk(
-  "patient/applyMedicines",
+  "medicineAi/applyMedicines",
   async ({ userId, name, time, lieu_luong, status }, thunkAPI) => {
     const response = await applyMedicinesService(userId, name, time, lieu_luong, status);
     return response;
+  }
+);
+
+export const fetchMedicines = createAsyncThunk(
+  "medicineAi/fetchMedicines ",
+  async ({ userId, date }, thunkAPI) => {
+    try {
+      const response = await fetchMedicinesService(userId, date );
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response || error.message);
+    }
   }
 );
 
@@ -66,6 +79,12 @@ const medicineAiSlice = createSlice({
       .addCase(applyMedicines.pending, (state) => { })
       .addCase(applyMedicines.fulfilled, (state, action) => { })
       .addCase(applyMedicines.rejected, (state, action) => { });
+
+    // fetchMedicines
+    builder
+      .addCase(fetchMedicines.pending, (state) => { })
+      .addCase(fetchMedicines.fulfilled, (state, action) => { })
+      .addCase(fetchMedicines.rejected, (state, action) => { });
   },
 });
 

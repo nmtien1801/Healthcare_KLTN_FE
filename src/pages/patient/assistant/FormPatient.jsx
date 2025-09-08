@@ -20,7 +20,7 @@ import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatBox from "./ChatBox";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectMedicineError, applyMedicines } from "../../../redux/medicineAiSlice";
+import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectMedicineError, applyMedicines, fetchMedicines } from "../../../redux/medicineAiSlice";
 
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
@@ -146,30 +146,69 @@ const FormPatient = () => {
         }
     };
 
-    // Khởi tạo trạng thái đơn thuốc theo dữ liệu hiện có
+    // Cập nhật trạng thái đơn thuốc theo dữ liệu hiện có
     React.useEffect(() => {
         const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
-        if (hasAny(medicines.sang) || hasAny(medicines.trua) || hasAny(medicines.toi)) {
-            setPrescriptionStatus("created");
-        } else {
-            setPrescriptionStatus("not_created");
+        const anyMedicines = hasAny(medicines.sang) || hasAny(medicines.trua) || hasAny(medicines.toi);
+        if (prescriptionStatus !== "applied") {
+            if (anyMedicines) {
+                setPrescriptionStatus("created");
+            } else {
+                setPrescriptionStatus("not_created");
+            }
         }
-    }, []);
+    }, [medicines, prescriptionStatus]);
 
 
-    // lấy thuốc khi chưa xác nhận
-    // useEffect(() => {
-    //   const fetchMedicine = async () => {
-    //     await dispatch(getMedicine())
-    //   };
+    // lấy thuốc 
+    const categorizeMedicines = (list) => {
+        const sang = [];
+        const trua = [];
+        const toi = [];
 
-    //   fetchMedicine();
-    // }, []);
+        const instructions = {
+            sang: "uống sau ăn",
+            trua: "uống trước ăn",
+            toi: "tiêm trước khi đi ngủ",
+        };
 
-    // bấm xác nhận dùng thuốc
-    // const applyMedicine = async (medicinePlan) => {
+        list.forEach((m) => {
+            const hour = m.time.split("T")[1].split(":")[0];
+            const hourNum = parseInt(hour, 10);
 
-    // }
+            if (hourNum >= 5 && hourNum < 11) {
+                sang.push(`${m.name} ${m.lieu_luong} - ${instructions.sang}`);
+            } else if (hourNum >= 11 && hourNum < 17) {
+                trua.push(`${m.name} ${m.lieu_luong} - ${instructions.trua}`);
+            } else if (hourNum >= 17 && hourNum <= 22) {
+                toi.push(`${m.name} ${m.lieu_luong} - ${instructions.toi}`);
+            }
+        });
+
+        return { sang, trua, toi };
+    };
+
+    useEffect(() => {
+        const fetchMedicine = async () => {
+            const today = new Date();
+            const res = await dispatch(fetchMedicines({ userId: user.userId, date: today }));
+
+            if (res?.payload?.DT) {
+                const categorized = categorizeMedicines(res.payload.DT);
+                setMedicines(categorized);
+                const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
+                if (prescriptionStatus !== "applied") {
+                    if (hasAny(categorized.sang) || hasAny(categorized.trua) || hasAny(categorized.toi)) {
+                        setPrescriptionStatus("created");
+                    } else {
+                        setPrescriptionStatus("not_created");
+                    }
+                }
+            }
+        };
+
+        fetchMedicine();
+    }, [dispatch, user.userId]);
 
     const createPrescription = async () => {
         try {
@@ -248,11 +287,11 @@ const FormPatient = () => {
 
         Object.entries(medicines).forEach(([time, arr]) => {
             arr.forEach(item => {
-              const parsed = parseMedicine(item, time, user?.userId);
-              console.log("=> parse:", parsed);
-              dispatch(applyMedicines(parsed));
+                const parsed = parseMedicine(item, time, user?.userId);
+                console.log("=> parse:", parsed);
+                dispatch(applyMedicines(parsed));
             });
-          });
+        });
 
         setPrescriptionStatus("applied");
         setMessages((prev) => [...prev, { sender: "bot", text: "✅ Đã áp dụng đơn thuốc trong 1 tuần. Hãy theo dõi chỉ số thường xuyên." }]);

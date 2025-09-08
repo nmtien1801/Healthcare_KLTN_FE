@@ -14,7 +14,12 @@ const applyMedicinesService = (userId, name, time, lieu_luong, status) => {
   return customizeAxios.post("/applyMedicines", { userId, name, time, lieu_luong, status });
 };
 
+const fetchMedicinesService = (userId, date) => {
+  return customizeAxios.post("/fetchMedicines", { userId, date });
+};
+
 export {
   getTrendMedicine,
-  applyMedicinesService
+  applyMedicinesService,
+  fetchMedicinesService
 };
