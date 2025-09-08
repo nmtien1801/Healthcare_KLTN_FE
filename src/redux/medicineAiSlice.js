@@ -1,5 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getTrendMedicine } from "../apis/medicineAiService";
+import {
+  getTrendMedicine,
+  applyMedicinesService
+} from "../apis/medicineAiService";
 
 const initialState = {
   trendMedicine: null,
@@ -19,6 +22,14 @@ export const fetchTrendMedicine = createAsyncThunk(
   }
 );
 
+export const applyMedicines = createAsyncThunk(
+  "patient/applyMedicines",
+  async ({ userId, name, time, lieu_luong, status }, thunkAPI) => {
+    const response = await applyMedicinesService(userId, name, time, lieu_luong, status);
+    return response;
+  }
+);
+
 const medicineAiSlice = createSlice({
   name: "medicineAi",
   initialState,
@@ -34,6 +45,7 @@ const medicineAiSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    // fetchTrendMedicine
     builder
       .addCase(fetchTrendMedicine.pending, (state) => {
         state.loading = true;
@@ -48,6 +60,12 @@ const medicineAiSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Failed to fetch trend medicine";
       });
+
+    // applyMedicines
+    builder
+      .addCase(applyMedicines.pending, (state) => { })
+      .addCase(applyMedicines.fulfilled, (state, action) => { })
+      .addCase(applyMedicines.rejected, (state, action) => { });
   },
 });
 

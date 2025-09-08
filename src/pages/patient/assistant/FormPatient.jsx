@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { api } from "../../../apis/assistant";
+import { api, apply_medicine } from "../../../apis/assistant";
 import {
     Box,
     Typography,
@@ -20,7 +20,7 @@ import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatBox from "./ChatBox";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectMedicineError } from "../../../redux/medicineAiSlice";
+import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectMedicineError, applyMedicines } from "../../../redux/medicineAiSlice";
 
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
@@ -200,6 +200,28 @@ const FormPatient = () => {
         }
     };
 
+    function parseMedicine(item, time, userId) {
+        const [thuocLieu, cachDung] = item.split(" - ");
+        const parts = thuocLieu?.trim().split(" ") || [];
+        const idx = parts.findIndex(p => /\d/.test(p));
+
+        let thuoc = thuocLieu || "";
+        let lieuluong = "";
+
+        if (idx !== -1) {
+            thuoc = parts.slice(0, idx).join(" ");
+            lieuluong = parts.slice(idx).join(" ");
+        }
+
+        return {
+            userId,
+            name: thuoc.trim(),
+            lieu_luong: lieuluong.trim(),
+            Cachdung: cachDung?.trim(),
+            time: time,
+            status: "chưa uống"
+        };
+    }
 
     const applyPrescriptionOneWeek = async () => {
         if (prescriptionStatus !== "created") return;
@@ -210,8 +232,8 @@ const FormPatient = () => {
         }
 
         try {
-            const res = await axios.post(
-                "http://localhost:5678/webhook/apply-medicine", // Thay bằng webhook thực tế của bạn
+            const res = await apply_medicine.post(
+                "/apply-medicine", // Thay bằng webhook thực tế của bạn
                 {
                     message: {
                         text: data,
@@ -223,6 +245,14 @@ const FormPatient = () => {
         } catch (err) {
             console.error(err);
         }
+
+        Object.entries(medicines).forEach(([time, arr]) => {
+            arr.forEach(item => {
+              const parsed = parseMedicine(item, time, user?.userId);
+              console.log("=> parse:", parsed);
+              dispatch(applyMedicines(parsed));
+            });
+          });
 
         setPrescriptionStatus("applied");
         setMessages((prev) => [...prev, { sender: "bot", text: "✅ Đã áp dụng đơn thuốc trong 1 tuần. Hãy theo dõi chỉ số thường xuyên." }]);

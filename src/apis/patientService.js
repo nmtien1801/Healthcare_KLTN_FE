@@ -8,6 +8,10 @@ const saveBloodSugarService = (userId, value, type) => {
   return customizeAxios.post("/saveBloodSugar", { userId, value, type });
 };
 
+const applyService = (userId, value, type) => {
+  return customizeAxios.post("/saveBloodSugar", { userId, value, type });
+};
+
 export {
   fetchBloodSugarService,
   saveBloodSugarService
