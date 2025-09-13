@@ -120,7 +120,7 @@ const OverviewTab = () => {
   const revenueChartRef = useRef(null)
   const healthChartRef = useRef(null)
   const [appointmentToday, setAppointmentToday] = useState(0);
-  const [appointmentAll, setAppointmentAll] = useState(0);
+  const [appointmentNext, setAppointmentNext] = useState(0);
   useEffect(() => {
     const fetchTodayAppointments = async () => {
       try {
@@ -141,7 +141,7 @@ const OverviewTab = () => {
     const fetchTodayAppointments = async () => {
       try {
         const res = await ApiDoctor.getAppointments();
-        setAppointmentAll(res.length);
+        setAppointmentNext(res.length);
         console.log(
           "Số lượng cuộc hẹn sắp tới:",
           res.length);
@@ -221,7 +221,7 @@ const OverviewTab = () => {
       <Row className="mb-4">
         {[
           { icon: "user-plus", title: "Bệnh nhân mới", value: mockData.summary.newPatients, change: mockData.summary.newPatientsChange, color: "primary" },
-          { icon: "calendar-check", title: "Cuộc hẹn hôm nay", value: appointmentToday, change: `${appointmentAll} cuộc hẹn sắp tới`, color: "warning" },
+          { icon: "calendar-check", title: "Cuộc hẹn hôm nay", value: appointmentToday, change: `${appointmentNext} cuộc hẹn sắp tới`, color: "warning" },
           { icon: "money-bill-wave", title: "Doanh thu tháng", value: mockData.summary.monthlyRevenue, change: mockData.summary.monthlyRevenueChange, color: "success" },
         ].map((item, index) => (
           <Col md={4} key={index}>
