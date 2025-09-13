@@ -125,7 +125,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     }
   };
 
-  // Chat với bác sĩ
+  // chat với bác sĩ
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -137,7 +137,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       text: "Xin chào! Tôi là bác sĩ tư vấn của bạn. Bạn cần hỗ trợ gì?",
       sender: "doctor",
       timestamp: new Date(),
-      isWelcome: true,
+      isWelcome: true
     },
   ]);
 
@@ -152,17 +152,20 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
+
       const firebaseMessages = snapshot.docs.map(doc => {
         const data = doc.data();
+
         return {
           id: doc.id,
-          text: data.message || data.text || '',
+          text: data.message || data.text || '', // Hỗ trợ cả 'message' và 'text'
           sender: data.senderId === senderId ? "patient" : "doctor",
-          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-          originalData: data
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(), // Chuyển đổi Firestore timestamp
+          originalData: data // Lưu trữ dữ liệu gốc để debug
         };
       });
 
+      // Giữ lại tin nhắn chào mừng nếu không có tin nhắn từ Firebase
       if (firebaseMessages.length === 0) {
         setChatMessages(prev => prev.filter(msg => msg.isWelcome));
       } else {
@@ -175,6 +178,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     return () => unsub();
   }, [senderId, roomChats]);
 
+  // Scroll to bottom khi có tin nhắn mới
   useEffect(() => {
     if (showChatbot && chatMessages.length > 0) {
       const chatContainer = document.querySelector('.chat-messages');
@@ -191,12 +195,13 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     const userMessage = messageInput.trim();
     setMessageInput("");
 
+    // Thêm tin nhắn vào UI ngay lập tức
     const tempMessage = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // Tạo ID tạm thời
       text: userMessage,
       sender: "patient",
       timestamp: new Date(),
-      isTemp: true
+      isTemp: true // Đánh dấu là tin nhắn tạm thời
     };
 
     setChatMessages((prev) => [...prev, tempMessage]);
@@ -205,10 +210,11 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       const docRef = await addDoc(collection(db, "chats", roomChats, "messages"), {
         senderId,
         receiverId,
-        message: userMessage,
+        message: userMessage, // Sử dụng 'message' để nhất quán
         timestamp: serverTimestamp()
       });
 
+      // Cập nhật tin nhắn tạm thời thành tin nhắn thật
       setChatMessages((prev) => prev.map(msg =>
         msg.isTemp && msg.text === userMessage
           ? { ...msg, id: docRef.id, isTemp: false }
@@ -217,7 +223,9 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
 
     } catch (err) {
       console.error('Error sending message:', err);
+      // Xóa tin nhắn khỏi UI nếu gửi thất bại
       setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
+      // Có thể thay thế bằng toast notification sau này
       console.error("Lỗi kết nối đến máy chủ:", err);
     } finally {
       setIsSending(false);
@@ -493,6 +501,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             </div>
           </div>
         </div>
+        {/* Chatbot Popup */}
         {showChatbot && (
           <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
             <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
