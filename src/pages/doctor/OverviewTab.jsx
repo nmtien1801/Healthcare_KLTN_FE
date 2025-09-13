@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react"
 import * as echarts from "echarts"
 import { Card, Button, Table, Row, Col, Image, Badge } from "react-bootstrap"
-
+import ApiDoctor from "../../apis/ApiDoctor"
 // Mock data
 const mockData = {
   revenue: {
@@ -119,6 +119,42 @@ const OverviewTab = () => {
   const [selectedPatient, setSelectedPatient] = useState(mockData.health.patients[0])
   const revenueChartRef = useRef(null)
   const healthChartRef = useRef(null)
+  const [appointmentToday, setAppointmentToday] = useState(0);
+  const [appointmentAll, setAppointmentAll] = useState(0);
+  useEffect(() => {
+    const fetchTodayAppointments = async () => {
+      try {
+        const res = await ApiDoctor.getAppointmentsToday();
+        setAppointmentToday(res.length);
+        console.log(
+          "Số lượng cuộc hẹn hôm nay:",
+          res.length);
+      } catch (err) {
+        console.error("Lỗi khi lấy số lượng cuộc hẹn hôm nay:", err);
+      }
+    };
+
+    fetchTodayAppointments();
+  }, []);
+
+  useEffect(() => {
+    const fetchTodayAppointments = async () => {
+      try {
+        const res = await ApiDoctor.getAppointments();
+        setAppointmentAll(res.length);
+        console.log(
+          "Số lượng cuộc hẹn sắp tới:",
+          res.length);
+
+      } catch (err) {
+        console.error("Lỗi khi lấy số lượng cuộc hẹn sắp tới:", err);
+      }
+    };
+
+    fetchTodayAppointments();
+  }, []);
+
+
 
   // Chart options for revenue
   const getRevenueChartOptions = (period) => ({
@@ -185,7 +221,7 @@ const OverviewTab = () => {
       <Row className="mb-4">
         {[
           { icon: "user-plus", title: "Bệnh nhân mới", value: mockData.summary.newPatients, change: mockData.summary.newPatientsChange, color: "primary" },
-          { icon: "calendar-check", title: "Cuộc hẹn hôm nay", value: mockData.summary.appointmentsToday, change: `${mockData.summary.upcomingAppointments} cuộc hẹn sắp tới`, color: "warning" },
+          { icon: "calendar-check", title: "Cuộc hẹn hôm nay", value: appointmentToday, change: `${appointmentAll} cuộc hẹn sắp tới`, color: "warning" },
           { icon: "money-bill-wave", title: "Doanh thu tháng", value: mockData.summary.monthlyRevenue, change: mockData.summary.monthlyRevenueChange, color: "success" },
         ].map((item, index) => (
           <Col md={4} key={index}>
