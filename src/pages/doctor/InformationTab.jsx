@@ -1,26 +1,8 @@
-import { useState } from "react";
-import { Card, Button, Row, Col, Image } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Card, Button, Row, Col, Image, Spinner } from "react-bootstrap";
 import { Edit } from "lucide-react";
+import ApiDoctor from "../../apis/ApiDoctor";
 
-// Mock initial doctor data
-const initialDoctorData = {
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-  name: "BS. Nguyễn Văn An",
-  specialty: "Bác sĩ chuyên khoa Tim mạch",
-  hospital: "Bệnh viện Đa khoa Trung ương",
-  basicInfo: {
-    fullName: "BS. Nguyễn Văn An",
-    email: "nguyenvanan@healthcare.vn",
-    phone: "0912345678",
-    dob: "15/08/1980",
-  },
-  professionalInfo: {
-    specialty: "Tim mạch",
-    hospital: "Bệnh viện Đa khoa Trung ương",
-    experienceYears: "15 năm",
-    license: "00123456/BYT-CCHN",
-  },
-};
 
 // Simplified ProfileHeader component
 const ProfileHeader = ({ doctor }) => (
@@ -201,8 +183,47 @@ const SummaryCards = ({ doctor }) => (
 );
 
 export default function DoctorProfile() {
-  const [doctorData, setDoctorData] = useState(initialDoctorData);
+  const [doctorData, setDoctorData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDoctorInfo = async () => {
+      try {
+        const res = await ApiDoctor.getDoctorInfo();
+        const data = res;
+
+        console.log("Fetched doctor data:", data);
+        const mappedData = {
+          avatar: data.userId.avatar,
+          name: data.userId.username,
+          specialty: `Bác sĩ chuyên khoa ${data.specialty || "Nội tiết"}`,
+          hospital: data.hospital,
+          basicInfo: {
+            fullName: data.userId.username,
+            email: data.userId.email,
+            phone: data.userId.phone,
+            dob: new Date(data.userId.dob).toLocaleDateString("vi-VN"),
+          },
+          professionalInfo: {
+            specialty: data.specialty || "Nội tiết",
+            hospital: data.hospital,
+            experienceYears: `${data.exp} năm`,
+            license: data.giay_phep,
+          },
+        };
+
+
+        setDoctorData(mappedData);
+      } catch (error) {
+        console.error("Lỗi khi fetch doctor info:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctorInfo();
+  }, []);
 
   const handleSave = (updatedData) => {
     setDoctorData((prevData) => ({
@@ -232,16 +253,37 @@ export default function DoctorProfile() {
     setIsEditing(false);
   };
 
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center mt-5">
+        <Spinner animation="border" />
+      </div>
+    );
+  }
+
+  if (!doctorData) {
+    return <div className="text-center mt-5">Không có dữ liệu bác sĩ.</div>;
+  }
+
   return (
     <div className="container mt-4">
       <h3 className="mb-4">Thông tin cá nhân</h3>
       <ProfileHeader doctor={doctorData} />
       <Card className="shadow-sm mb-4">
         <Card.Body>
-          <InfoSection doctor={doctorData} isEditing={isEditing} onSave={handleSave} onCancel={handleCancel} />
+          <InfoSection
+            doctor={doctorData}
+            isEditing={isEditing}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
           {!isEditing && (
             <div className="d-flex justify-content-end mt-4">
-              <Button variant="primary" className="d-flex align-items-center gap-2" onClick={() => setIsEditing(true)}>
+              <Button
+                variant="primary"
+                className="d-flex align-items-center gap-2"
+                onClick={() => setIsEditing(true)}
+              >
                 <Edit size={16} />
                 Chỉnh sửa thông tin
               </Button>
