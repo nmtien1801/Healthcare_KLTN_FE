@@ -3,14 +3,15 @@ import * as echarts from "echarts";
 import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../redux/foodAiSlice'
+import { suggestFoodsByAi, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
 
 const Following = ({ user, nearestAppointment }) => {
-  const latestReading = 7.2;
+  let bloodSugar = useSelector((state) => state.patient.bloodSugar);
+  const latestReading = bloodSugar?.DT?.bloodSugarData[0].value;
 
   const readingStatus = {
     status: latestReading < 6 ? 'normal' : latestReading < 7 ? 'prediabetes' : 'danger',

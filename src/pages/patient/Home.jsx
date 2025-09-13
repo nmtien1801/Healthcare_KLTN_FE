@@ -2,27 +2,77 @@ import React, { useState, useEffect } from "react";
 import * as echarts from "echarts";
 import { Check, MessageCircleMore } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-import axios from "axios";
+import { useSelector, useDispatch } from "react-redux";
+import ApiBooking from '../../apis/ApiBooking'
 
 const Home = () => {
   const navigate = useNavigate();
+  let user = useSelector((state) => state.auth.userInfo);
+  let bloodSugar = useSelector((state) => state.patient.bloodSugar);
+  const [nearestAppointment, setNearestAppointment] = useState(null);
+
+  let calculateAge = (user) => {
+    if (!user.dob) return "";
+    const dob = new Date(user.dob);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  // Lấy lịch hẹn gần nhất
+  useEffect(() => {
+    const fetchNearestAppointment = async () => {
+      try {
+        const appointments = await ApiBooking.getUpcomingAppointments();
+
+        if (appointments && appointments.length > 0) {
+          // Sắp xếp theo thời gian: kết hợp date và time
+          const sortedAppointments = appointments.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+
+            // Kiểm tra xem date có hợp lệ không
+            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+              return 0;
+            }
+
+            // Nếu cùng ngày, so sánh theo giờ
+            if (dateA.getTime() === dateB.getTime()) {
+              return a.time.localeCompare(b.time);
+            }
+
+            return dateA - dateB;
+          });
+
+          // Lấy lịch hẹn gần nhất (phần tử đầu tiên)
+          setNearestAppointment(sortedAppointments[0]);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy lịch hẹn:', error);
+      }
+    };
+
+    fetchNearestAppointment();
+  }, []);
 
   const userData = {
-    name: "Nguyễn Văn A",
-    age: 45,
-    gender: "Nam",
+    name: user.username,
+    age: calculateAge(user),
+    gender: user.gender,
     condition: "Tiểu đường type 2",
-    doctor: "Bác sĩ Trần Thị B",
-    nextAppointment: "2025-06-30",
-    bloodSugar: [5.6, 6.2, 5.8, 6.5, 6.0, 5.9, 6.3],
+    doctor: nearestAppointment?.doctorId?.userId?.username ?? "",
+    nextAppointment: nearestAppointment?.date ? new Date(nearestAppointment.date).toLocaleDateString('vi-VN') : "13/09/2025",
+    bloodSugar: bloodSugar?.DT?.bloodSugarData
+      ? Object.values(bloodSugar.DT.bloodSugarData).map(item => item.value)
+      : [],
   };
 
-  const [medications, setMedications] = useState([
-    { name: "Metformin", dosage: "500mg", time: "08:00", taken: false },
-    { name: "Gliclazide", dosage: "80mg", time: "12:00", taken: false },
-    { name: "Metformin", dosage: "500mg", time: "20:00", taken: false },
-  ]);
-
+  // thuốc
+  const [medications, setMedications] = useState([]);
 
   const handleMedicationToggle = (index) => {
     const updated = [...medications];
@@ -64,12 +114,12 @@ const Home = () => {
                   <div className="fw-medium">{userData.gender}</div>
                 </div>
                 <div className="col">
-                  <div className="text-muted">Bác sĩ</div>
+                  <div className="text-muted">Bác sĩ theo dõi</div>
                   <div className="fw-medium">{userData.doctor}</div>
                 </div>
               </div>
               <div className="text-center mt-3">
-                <small className="text-muted">Lịch hẹn tiếp theo: {new Date(userData.nextAppointment).toLocaleDateString("vi-VN")}</small>
+                <small className="text-muted">Lịch hẹn tiếp theo: {userData.nextAppointment}</small>
               </div>
             </div>
           </div>
