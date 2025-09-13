@@ -7,85 +7,25 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Custom CSS cho DatePicker
+// Custom CSS cho DatePicker - Đơn giản hơn
 const customDatePickerStyles = `
   .custom-datepicker-popper {
     z-index: 9999 !important;
   }
   
   .custom-datepicker-calendar {
-    border: none !important;
-    border-radius: 12px !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-    font-family: inherit !important;
-  }
-  
-  .react-datepicker__header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border: none !important;
-    border-radius: 12px 12px 0 0 !important;
-    padding: 15px !important;
-  }
-  
-  .react-datepicker__current-month {
-    color: white !important;
-    font-weight: 600 !important;
-    font-size: 16px !important;
-  }
-  
-  .react-datepicker__day-name {
-    color: rgba(255,255,255,0.8) !important;
-    font-weight: 500 !important;
-  }
-  
-  .react-datepicker__navigation {
-    top: 15px !important;
-  }
-  
-  .react-datepicker__navigation--previous {
-    left: 15px !important;
-  }
-  
-  .react-datepicker__navigation--next {
-    right: 15px !important;
-  }
-  
-  .react-datepicker__navigation-icon::before {
-    border-color: white !important;
-    border-width: 2px 2px 0 0 !important;
-  }
-  
-  .react-datepicker__day {
     border-radius: 8px !important;
-    margin: 2px !important;
-    transition: all 0.2s ease !important;
-  }
-  
-  .react-datepicker__day:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    transform: scale(1.1) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
   }
   
   .react-datepicker__day--selected {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    background: #0d6efd !important;
     color: white !important;
-    font-weight: 600 !important;
   }
   
-  .react-datepicker__day--today {
-    background: rgba(102, 126, 234, 0.1) !important;
-    color: #667eea !important;
-    font-weight: 600 !important;
-  }
-  
-  .react-datepicker__day--disabled {
-    color: #ccc !important;
-    background: #f8f9fa !important;
-  }
-  
-  .react-datepicker__day--outside-month {
-    color: #ccc !important;
+  .react-datepicker__day:hover {
+    background: #0d6efd !important;
+    color: white !important;
   }
 `;
 
