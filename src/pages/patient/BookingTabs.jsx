@@ -7,34 +7,22 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Custom CSS cho DatePicker - Đơn giản hơn
-const customDatePickerStyles = `
-  .custom-datepicker-popper {
-    z-index: 9999 !important;
-  }
-  
-  .custom-datepicker-calendar {
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
-  }
-  
-  .react-datepicker__day--selected {
-    background: #0d6efd !important;
+// CSS cho phân trang
+const paginationStyles = `
+  .pagination-btn:hover {
+    background-color: #0d6efd !important;
     color: white !important;
-  }
-  
-  .react-datepicker__day:hover {
-    background: #0d6efd !important;
-    color: white !important;
+    border-color: #0d6efd !important;
   }
 `;
 
 // Inject CSS
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
-  style.textContent = customDatePickerStyles;
+  style.textContent = paginationStyles;
   document.head.appendChild(style);
 }
+
 
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
   const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
@@ -344,90 +332,6 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
 
           {!loading && !error && currentAppointment && (
             <>
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <button
-                  className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
-                  onClick={handlePrev}
-                  disabled={appointments.length <= 1}
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    borderColor: "#0ea5e9",
-                    color: "#0ea5e9",
-                    transition: "all 0.3s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (appointments.length > 1) {
-                      e.target.style.backgroundColor = "#0ea5e9";
-                      e.target.style.color = "white";
-                      e.target.style.transform = "translateX(-2px)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (appointments.length > 1) {
-                      e.target.style.backgroundColor = "transparent";
-                      e.target.style.color = "#0ea5e9";
-                      e.target.style.transform = "translateX(0)";
-                    }
-                  }}
-                >
-                  <span className="me-1">←</span> Trước
-                </button>
-
-                <div className="d-flex align-items-center">
-                  <div className="bg-primary rounded-pill px-3 py-2 text-white fw-semibold" style={{ fontSize: "14px" }}>
-                    {currentIndex + 1} / {appointments.length}
-                  </div>
-                  {appointments.length > 1 && (
-                    <div className="ms-3">
-                      <div className="d-flex gap-1">
-                        {appointments.map((_, index) => (
-                          <div
-                            key={index}
-                            className={`rounded-circle ${index === currentIndex ? 'bg-primary' : 'bg-light'}`}
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              cursor: "pointer",
-                              transition: "all 0.3s ease"
-                            }}
-                            onClick={() => setCurrentIndex(index)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  className="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center"
-                  onClick={handleNext}
-                  disabled={appointments.length <= 1}
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    borderColor: "#0ea5e9",
-                    color: "#0ea5e9",
-                    transition: "all 0.3s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (appointments.length > 1) {
-                      e.target.style.backgroundColor = "#0ea5e9";
-                      e.target.style.color = "white";
-                      e.target.style.transform = "translateX(2px)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (appointments.length > 1) {
-                      e.target.style.backgroundColor = "transparent";
-                      e.target.style.color = "#0ea5e9";
-                      e.target.style.transform = "translateX(0)";
-                    }
-                  }}
-                >
-                  Sau <span className="ms-1">→</span>
-                </button>
-              </div>
               <div
                 key={currentAppointment._id}
                 className="card shadow-sm mb-4"
@@ -582,6 +486,35 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             </div>
           </div>
         </div>
+
+        {/* Phân trang lịch hẹn sắp tới */}
+        {!loading && !error && appointments.length > 1 && (
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <button
+              className="btn btn-outline-primary btn-sm px-3 py-2 d-flex align-items-center pagination-btn"
+              onClick={handlePrev}
+              disabled={appointments.length <= 1}
+            >
+              <span className="me-1">←</span> Trước
+            </button>
+
+            <div className="d-flex align-items-center">
+              <div className="bg-primary px-3 py-2 text-white fw-semibold" style={{ fontSize: "14px", borderRadius: "5px" }}>
+                {currentIndex + 1} / {appointments.length}
+              </div>
+            </div>
+
+            <button
+              className="btn btn-outline-primary btn-sm px-3 py-2 d-flex align-items-center pagination-btn"
+              onClick={handleNext}
+              disabled={appointments.length <= 1}
+              style={{ borderRadius: "5px" }}
+            >
+              Sau <span className="ms-1">→</span>
+            </button>
+          </div>
+        )}
+
         {/* Chatbot Popup */}
         {showChatbot && (
           <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
@@ -947,8 +880,6 @@ const BookingNew = ({ handleSubmit }) => {
                   className="form-control"
                   placeholderText="DD/MM/YYYY"
                   showPopperArrow={false}
-                  popperClassName="custom-datepicker-popper"
-                  calendarClassName="custom-datepicker-calendar"
                   autoComplete="off"
                   style={{ fontSize: "18px", height: "40px" }}
                 />
