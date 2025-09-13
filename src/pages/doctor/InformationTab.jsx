@@ -1,26 +1,17 @@
-import { useState } from "react";
-import { Card, Button, Row, Col, Image } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Card, Button, Row, Col, Image, Spinner } from "react-bootstrap";
 import { Edit } from "lucide-react";
+import ApiDoctor from "../../apis/ApiDoctor";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { vi } from "date-fns/locale";
 
-// Mock initial doctor data
-const initialDoctorData = {
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-  name: "BS. Nguyễn Văn An",
-  specialty: "Bác sĩ chuyên khoa Tim mạch",
-  hospital: "Bệnh viện Đa khoa Trung ương",
-  basicInfo: {
-    fullName: "BS. Nguyễn Văn An",
-    email: "nguyenvanan@healthcare.vn",
-    phone: "0912345678",
-    dob: "15/08/1980",
-  },
-  professionalInfo: {
-    specialty: "Tim mạch",
-    hospital: "Bệnh viện Đa khoa Trung ương",
-    experienceYears: "15 năm",
-    license: "00123456/BYT-CCHN",
-  },
+const formatDate = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  return d.toLocaleDateString("vi-VN"); // luôn DD/MM/YYYY
 };
+
 
 // Simplified ProfileHeader component
 const ProfileHeader = ({ doctor }) => (
@@ -95,14 +86,15 @@ const InfoSection = ({ doctor, isEditing, onSave, onCancel }) => {
             </div>
             <div className="mb-3">
               <label className="form-label">Ngày sinh</label>
-              <input
-                type="text"
+              <DatePicker
+                selected={new Date(formData.dob.split("/").reverse().join("-"))}
+                onChange={(date) => setFormData({ ...formData, dob: formatDate(date) })}
+                dateFormat="dd/MM/yyyy"
                 className="form-control"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
+                locale={vi}
               />
             </div>
+
           </Col>
           <Col md={6}>
             <div className="mb-3">
@@ -201,36 +193,108 @@ const SummaryCards = ({ doctor }) => (
 );
 
 export default function DoctorProfile() {
-  const [doctorData, setDoctorData] = useState(initialDoctorData);
+  const [doctorData, setDoctorData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = (updatedData) => {
-    setDoctorData((prevData) => ({
-      ...prevData,
-      basicInfo: {
-        ...prevData.basicInfo,
-        fullName: updatedData.fullName,
+  useEffect(() => {
+    const fetchDoctorInfo = async () => {
+      try {
+        const res = await ApiDoctor.getDoctorInfo();
+        const data = res;
+
+        console.log("Fetched doctor data:", data);
+        const mappedData = {
+          avatar: data.userId.avatar,
+          name: data.userId.username,
+          specialty: `Bác sĩ chuyên khoa ${data.specialty || "Nội tiết"}`,
+          hospital: data.hospital,
+          basicInfo: {
+            fullName: data.userId.username,
+            email: data.userId.email,
+            phone: data.userId.phone,
+            dob: formatDate(data.userId.dob),
+          },
+          professionalInfo: {
+            specialty: data.specialty || "Nội tiết",
+            hospital: data.hospital,
+            experienceYears: `${data.exp} năm`,
+            license: data.giay_phep,
+          },
+        };
+
+
+        setDoctorData(mappedData);
+      } catch (error) {
+        console.error("Lỗi khi fetch doctor info:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctorInfo();
+  }, []);
+
+  const handleSave = async (updatedData) => {
+    try {
+      // Gửi request lên BE
+      await ApiDoctor.updateDoctor({
+        username: updatedData.fullName,
         email: updatedData.email,
         phone: updatedData.phone,
-        dob: updatedData.dob,
-      },
-      professionalInfo: {
-        ...prevData.professionalInfo,
-        specialty: updatedData.specialty,
+        dob: updatedData.dob.split("/").reverse().join("-"),
+
         hospital: updatedData.hospital,
-        experienceYears: updatedData.experienceYears,
-        license: updatedData.license,
-      },
-      name: updatedData.fullName,
-      specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
-      hospital: updatedData.hospital,
-    }));
-    setIsEditing(false);
+        exp: parseInt(updatedData.experienceYears, 10),
+        giay_phep: updatedData.license,
+        // specialty: updatedData.specialty, // nếu có trong BE thì map
+      });
+
+      // Update lại state FE để hiển thị ngay
+      setDoctorData((prevData) => ({
+        ...prevData,
+        basicInfo: {
+          ...prevData.basicInfo,
+          fullName: updatedData.fullName,
+          email: updatedData.email,
+          phone: updatedData.phone,
+          dob: updatedData.dob,
+        },
+        professionalInfo: {
+          ...prevData.professionalInfo,
+          specialty: updatedData.specialty,
+          hospital: updatedData.hospital,
+          experienceYears: updatedData.experienceYears,
+          license: updatedData.license,
+        },
+        name: updatedData.fullName,
+        specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
+        hospital: updatedData.hospital,
+      }));
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật doctor info:", error);
+      alert("Cập nhật thông tin thất bại!");
+    }
   };
+
 
   const handleCancel = () => {
     setIsEditing(false);
   };
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center mt-5">
+        <Spinner animation="border" />
+      </div>
+    );
+  }
+
+  if (!doctorData) {
+    return <div className="text-center mt-5">Không có dữ liệu bác sĩ.</div>;
+  }
 
   return (
     <div className="container mt-4">
@@ -238,10 +302,19 @@ export default function DoctorProfile() {
       <ProfileHeader doctor={doctorData} />
       <Card className="shadow-sm mb-4">
         <Card.Body>
-          <InfoSection doctor={doctorData} isEditing={isEditing} onSave={handleSave} onCancel={handleCancel} />
+          <InfoSection
+            doctor={doctorData}
+            isEditing={isEditing}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
           {!isEditing && (
             <div className="d-flex justify-content-end mt-4">
-              <Button variant="primary" className="d-flex align-items-center gap-2" onClick={() => setIsEditing(true)}>
+              <Button
+                variant="primary"
+                className="d-flex align-items-center gap-2"
+                onClick={() => setIsEditing(true)}
+              >
                 <Edit size={16} />
                 Chỉnh sửa thông tin
               </Button>
