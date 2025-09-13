@@ -7,8 +7,9 @@ import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../r
 import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
+import ApiBooking from '../../apis/ApiBooking'
 
-const Following = ({ user }) => {
+const Following = ({ user, nearestAppointment }) => {
   const latestReading = 7.2;
 
   const readingStatus = {
@@ -82,17 +83,34 @@ const Following = ({ user }) => {
             </div>
             <h5 className="fw-semibold mb-0">Lịch hẹn tiếp theo</h5>
           </div>
-          <div className="fs-4 fw-bold text-dark mb-1">
-            {new Date(user.nextAppointment).toLocaleDateString('vi-VN')}
-          </div>
-          <div className="text-muted mb-3">
-            {new Date(user.nextAppointment).toLocaleDateString('vi-VN', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-            })}
-          </div>
-          <div className="d-flex justify-content-center align-items-center gap-1 text-muted small">
-            <Clock size={14} className="text-danger" /> <span className="text-danger">Nhớ chuẩn bị trước 30 phút</span>
-          </div>
+          {nearestAppointment ? (
+            <>
+              <div className="fs-4 fw-bold text-dark mb-1">
+                {new Date(nearestAppointment.date).toLocaleDateString('vi-VN')}
+              </div>
+              <div className="text-muted mb-2">
+                {nearestAppointment.time}
+              </div>
+              <div className="text-muted mb-2">
+                <strong>Bác sĩ:</strong> {nearestAppointment.doctorId.userId.username}
+              </div>
+              <div className="text-muted mb-2">
+                <strong>Địa điểm:</strong> {nearestAppointment.type === 'onsite' ? 'Tại phòng khám' : 'Trực tuyến'}
+              </div>
+              {nearestAppointment.reason && (
+                <div className="text-muted mb-2">
+                  <strong>Lý do:</strong> {nearestAppointment.reason}
+                </div>
+              )}
+              <div className="d-flex justify-content-center align-items-center gap-1 text-muted small">
+                <Clock size={14} className="text-danger" /> <span className="text-danger">Nhớ chuẩn bị trước 30 phút</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-muted">
+              <p>Chưa có lịch hẹn sắp tới</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -396,7 +414,8 @@ const HealthTabs = () => {
   const [aiPlan, setAiPlan] = useState({});
   let user = useSelector((state) => state.auth.userInfo);
   const [measurementType, setMeasurementType] = useState("before");
-  const [bloodSugar, setBloodSugar] = useState([])
+  const [bloodSugar, setBloodSugar] = useState([]);
+  const [nearestAppointment, setNearestAppointment] = useState(null);
 
   // get bloodSugar
   useEffect(() => {
@@ -465,6 +484,37 @@ const HealthTabs = () => {
 
     fetchBloodSugarData()
   }, [dispatch, user?.userId])
+
+  // Lấy lịch hẹn gần nhất
+  useEffect(() => {
+    const fetchNearestAppointment = async () => {
+      try {
+        const appointments = await ApiBooking.getUpcomingAppointments();
+        
+        if (appointments && appointments.length > 0) {
+          // Sắp xếp theo thời gian: kết hợp date và time
+          const sortedAppointments = appointments.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            
+            // Nếu cùng ngày, so sánh theo giờ
+            if (dateA.getTime() === dateB.getTime()) {
+              return a.time.localeCompare(b.time);
+            }
+            
+            return dateA - dateB;
+          });
+          
+          // Lấy lịch hẹn gần nhất (phần tử đầu tiên)
+          setNearestAppointment(sortedAppointments[0]);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy lịch hẹn:', error);
+      }
+    };
+    
+    fetchNearestAppointment();
+  }, []);
 
   const handleAiAgent = async () => {
     if (messageInput.trim() === "") return;
@@ -546,7 +596,7 @@ const HealthTabs = () => {
   return (
     <div className="d-flex flex-column gap-4">
       {/* tiêu đề */}
-      <Following user={user} />
+      <Following user={user} nearestAppointment={nearestAppointment} />
 
       {/* Biểu đồ */}
       <Chart bloodSugar={bloodSugar} />
