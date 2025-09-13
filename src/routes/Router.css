@@ -5,6 +5,12 @@
   transition: background 0.3s ease;
 }
 
+.navbar-parent {
+  position: relative;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
 .navbar-item::before {
   content: '';
   position: absolute;
@@ -44,6 +50,15 @@
   background: linear-gradient(135deg, #5f2c82, #3f55e0) !important; /* tím + xanh */
   box-shadow: 0 4px 20px rgba(95, 44, 130, 0.5); /* tím đậm hơn */
   color: white !important;
+}
+
+/* Mục cha không highlight */
+.navbar-parent:focus,
+.navbar-parent:active,
+.navbar-parent:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
 }
 
 /* Only highlight active item when sidebar is open */

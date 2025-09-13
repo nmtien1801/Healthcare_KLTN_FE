@@ -329,7 +329,11 @@ const getYesterdayAvg = ({ dailyBloodSugar }) => {
 const Plan = ({ aiPlan, user, bloodSugar }) => {
   const [food, setFood] = useState([]);
   const [showAllFood, setShowAllFood] = useState(false);
-  // const medicines = useSelector((state) => state.foodAi.medicines);
+  const [medicines, setMedicines] = useState({
+    sang: [],
+    trua: [],
+    toi: [],
+  });
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -373,6 +377,50 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
           — {aiPlan.assistant_name || "AI Assistant"}
         </small>
       </div >
+
+      {/* KẾ HOẠCH THUỐC */}
+      <div className={`rounded-4 shadow-sm p-3 mt-3 bg-success bg-opacity-10 border border-success`}      >
+        <h6 className={`fw-semibold mb-2 text-success`}        >
+          📋 Kế hoạch dùng thuốc
+        </h6>
+
+        {(!medicines || (medicines.sang?.length === 0 && medicines.trua?.length === 0 && medicines.toi?.length === 0)) && (
+          <p className="text-muted small mb-2">
+            Chưa có đơn thuốc. Vui lòng khởi tạo để có thể áp dụng theo dõi.
+          </p>
+        )}
+
+        <ul className="list-unstyled small mb-2" style={{ paddingLeft: "1rem", fontSize: "0.95rem" }}>
+          <li>
+            <strong>Sáng:</strong>{" "}
+            {medicines?.sang?.length > 0 ? medicines.sang.join(", ") : "Không dùng"}
+          </li>
+          <li>
+            <strong>Trưa:</strong>{" "}
+            {medicines?.trua?.length > 0 ? medicines.trua.join(", ") : "Không dùng"}
+          </li>
+          <li>
+            <strong>Tối:</strong>{" "}
+            {medicines?.toi?.length > 0 ? medicines.toi.join(", ") : "Không dùng"}
+          </li>
+        </ul>
+
+        <div className="d-flex justify-content-end gap-2">
+          {(!medicines || (medicines.sang?.length === 0 && medicines.trua?.length === 0 && medicines.toi?.length === 0)) && (
+            <button className="btn btn-sm btn-success" style={{ textTransform: "none", borderRadius: "8px" }} onClick={() => navigate('/assitant')}>
+              Chuẩn đoán
+            </button>
+          )}
+          {medicines && (medicines.sang?.length > 0 || medicines.trua?.length > 0 || medicines.toi?.length > 0) && (
+            <button
+              className="btn btn-success btn-sm rounded-pill px-3"
+              disabled
+            >
+              Đã áp dụng
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
@@ -491,21 +539,21 @@ const HealthTabs = () => {
     const fetchNearestAppointment = async () => {
       try {
         const appointments = await ApiBooking.getUpcomingAppointments();
-        
+
         if (appointments && appointments.length > 0) {
           // Sắp xếp theo thời gian: kết hợp date và time
           const sortedAppointments = appointments.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            
+
             // Nếu cùng ngày, so sánh theo giờ
             if (dateA.getTime() === dateB.getTime()) {
               return a.time.localeCompare(b.time);
             }
-            
+
             return dateA - dateB;
           });
-          
+
           // Lấy lịch hẹn gần nhất (phần tử đầu tiên)
           setNearestAppointment(sortedAppointments[0]);
         }
@@ -513,7 +561,7 @@ const HealthTabs = () => {
         console.error('Lỗi khi lấy lịch hẹn:', error);
       }
     };
-    
+
     fetchNearestAppointment();
   }, []);
 
