@@ -1,11 +1,100 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send } from 'lucide-react';
+import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send, Trash2, CheckCircle2 } from 'lucide-react';
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSelector } from "react-redux";
 import { db } from "../../../firebase";
 import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+
+// Custom CSS cho DatePicker
+const customDatePickerStyles = `
+  .custom-datepicker-popper {
+    z-index: 9999 !important;
+  }
+  
+  .custom-datepicker-calendar {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    font-family: inherit !important;
+  }
+  
+  .react-datepicker__header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 15px !important;
+  }
+  
+  .react-datepicker__current-month {
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+  }
+  
+  .react-datepicker__day-name {
+    color: rgba(255,255,255,0.8) !important;
+    font-weight: 500 !important;
+  }
+  
+  .react-datepicker__navigation {
+    top: 15px !important;
+  }
+  
+  .react-datepicker__navigation--previous {
+    left: 15px !important;
+  }
+  
+  .react-datepicker__navigation--next {
+    right: 15px !important;
+  }
+  
+  .react-datepicker__navigation-icon::before {
+    border-color: white !important;
+    border-width: 2px 2px 0 0 !important;
+  }
+  
+  .react-datepicker__day {
+    border-radius: 8px !important;
+    margin: 2px !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .react-datepicker__day:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    transform: scale(1.1) !important;
+  }
+  
+  .react-datepicker__day--selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+  }
+  
+  .react-datepicker__day--today {
+    background: rgba(102, 126, 234, 0.1) !important;
+    color: #667eea !important;
+    font-weight: 600 !important;
+  }
+  
+  .react-datepicker__day--disabled {
+    color: #ccc !important;
+    background: #f8f9fa !important;
+  }
+  
+  .react-datepicker__day--outside-month {
+    color: #ccc !important;
+  }
+`;
+
+// Inject CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = customDatePickerStyles;
+  document.head.appendChild(style);
+}
 
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
   const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
@@ -40,6 +129,45 @@ const Button = ({ children, className = "", variant = "primary", size = "md", on
   );
 };
 
+// Modal Component
+const Modal = ({ show, onClose, title, children, type = "info" }) => {
+  if (!show) return null;
+
+  const getIcon = () => {
+    switch (type) {
+      case "success":
+        return <CheckCircle2 size={48} className="text-success mb-3" />;
+      case "danger":
+        return <Trash2 size={48} className="text-danger mb-3" />;
+      case "warning":
+        return <Clock size={48} className="text-warning mb-3" />;
+      default:
+        return <Calendar size={48} className="text-primary mb-3" />;
+    }
+  };
+
+  return (
+    <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content">
+          <div className="modal-header border-0 pb-0">
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
+          </div>
+          <div className="modal-body text-center py-4">
+            {getIcon()}
+            <h4 className="modal-title mb-3">{title}</h4>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment }) => {
   const [isConfirmed, setIsConfirmed] = useState(true);
   const [appointments, setAppointments] = useState([]);
@@ -48,6 +176,12 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [cancelling, setCancelling] = useState(false);
   const user = useSelector((state) => state.auth.userInfo);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCancelErrorModal, setShowCancelErrorModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [cancelErrorMessage, setCancelErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Fetch appointments từ API
   useEffect(() => {
@@ -66,7 +200,8 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
         setAppointments(data);
       } catch (err) {
         console.error("Error fetching appointments:", err);
-        setError("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
+        setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
+        setShowErrorModal(true);
       } finally {
         setLoading(false);
       }
@@ -103,23 +238,34 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const currentAppointment = appointments[currentIndex];
 
   // Hủy lịch hẹn
-  const handleCancelBooking = async (appointmentId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn hủy lịch hẹn này không?")) return;
+  const handleCancelBooking = (appointmentId) => {
+    setAppointmentToCancel(appointmentId);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelBooking = async () => {
+    if (!appointmentToCancel) return;
+
     try {
       setCancelling(true);
-      await ApiBooking.cancelBooking(appointmentId);
+      await ApiBooking.cancelBooking(appointmentToCancel);
 
       setAppointments((prev) =>
-        prev.filter((appt) => appt._id !== appointmentId)
+        prev.filter((appt) => appt._id !== appointmentToCancel)
       );
 
       // Reset index
       setCurrentIndex((prev) =>
         prev >= appointments.length - 1 ? 0 : prev
       );
+
+      setShowCancelModal(false);
+      setAppointmentToCancel(null);
     } catch (err) {
       console.error("Lỗi khi hủy lịch:", err);
-      alert("Không thể hủy lịch. Vui lòng thử lại sau.");
+      const errorMsg = err.response?.data?.message || err.message || "Không thể hủy lịch. Vui lòng thử lại sau.";
+      setCancelErrorMessage(errorMsg);
+      setShowCancelErrorModal(true);
     } finally {
       setCancelling(false);
     }
@@ -249,11 +395,6 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             </div>
           )}
 
-          {error && (
-            <div className="alert alert-danger" role="alert">
-              {error}
-            </div>
-          )}
 
           {!loading && !error && appointments.length === 0 && (
             <div className="text-center text-muted">
@@ -400,7 +541,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                             handleStartCall(
                               user,
                               {
-                                uid: currentAppointment.doctorId?._id || "weHP9TWfdrZo5L9rmY81BRYxNXr2",
+                                uid:  "weHP9TWfdrZo5L9rmY81BRYxNXr2",
                                 name: currentAppointment.doctorId?.name || "Bác sĩ Trần Thị B",
                                 role: "doctor",
                               },
@@ -559,6 +700,73 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             </div>
           </div>
         )}
+
+        {/* Cancel Confirmation Modal */}
+        <Modal
+          show={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          title="Xác nhận hủy lịch hẹn"
+          type="danger"
+        >
+          <p className="mb-4">Bạn có chắc chắn muốn hủy lịch hẹn này không?</p>
+          <div className="d-flex gap-2 justify-content-center">
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => setShowCancelModal(false)}
+              disabled={cancelling}
+            >
+              Hủy
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={confirmCancelBooking}
+              disabled={cancelling}
+            >
+              {cancelling ? (
+                <>
+                  <div className="spinner-border spinner-border-sm me-2" role="status">
+                    <span className="visually-hidden">Đang hủy...</span>
+                  </div>
+                  Đang hủy...
+                </>
+              ) : (
+                "Xác nhận hủy"
+              )}
+            </button>
+          </div>
+        </Modal>
+
+        {/* Cancel Error Modal */}
+        <Modal
+          show={showCancelErrorModal}
+          onClose={() => setShowCancelErrorModal(false)}
+          title="Lỗi hủy lịch hẹn"
+          type="danger"
+        >
+          <p className="mb-4">{cancelErrorMessage}</p>
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowCancelErrorModal(false)}
+          >
+            Đóng
+          </button>
+        </Modal>
+
+        {/* General Error Modal */}
+        <Modal
+          show={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          title="Lỗi"
+          type="danger"
+        >
+          <p className="mb-4">{errorMessage}</p>
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowErrorModal(false)}
+          >
+            Đóng
+          </button>
+        </Modal>
       </div>
     </div>
   );
@@ -576,6 +784,10 @@ const BookingNew = ({ handleSubmit }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const user = useSelector((state) => state.auth.userInfo);
 
 
@@ -605,7 +817,8 @@ const BookingNew = ({ handleSubmit }) => {
       } catch (err) {
         console.error("Lỗi khi tải danh sách bác sĩ:", err);
         setDoctors([]);
-        setError("Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.");
+        setErrorMessage("Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.");
+        setShowErrorModal(true);
       } finally {
         setLoadingDoctors(false);
       }
@@ -620,7 +833,8 @@ const BookingNew = ({ handleSubmit }) => {
     // Kiểm tra các trường bắt buộc
     if (!user?.uid) {
       console.log("Error: User not logged in", user); // Log thông tin user
-      setError("Vui lòng đăng nhập để đặt lịch.");
+      setErrorMessage("Vui lòng đăng nhập để đặt lịch.");
+      setShowErrorModal(true);
       return;
     }
     if (!selectedDoctor || !selectedDate || !selectedTime) {
@@ -630,7 +844,8 @@ const BookingNew = ({ handleSubmit }) => {
         selectedTime,
         reason
       }); // Log các trường bắt buộc
-      setError("Vui lòng chọn bác sĩ, ngày, giờ khám và nhập lý do khám.");
+      setErrorMessage("Vui lòng chọn bác sĩ, ngày, giờ khám và nhập lý do khám.");
+      setShowErrorModal(true);
       return;
     }
 
@@ -640,7 +855,8 @@ const BookingNew = ({ handleSubmit }) => {
     const selected = new Date(selectedDate);
     if (selected < today) {
       console.log("Error: Invalid date", { selectedDate, today }); // Log ngày
-      setError("Không thể chọn ngày trong quá khứ.");
+      setErrorMessage("Không thể chọn ngày trong quá khứ.");
+      setShowErrorModal(true);
       return;
     }
 
@@ -648,14 +864,16 @@ const BookingNew = ({ handleSubmit }) => {
     const selectedDoctorData = doctors.find(d => (d.id || d._id || d.doctorId) === selectedDoctor);
     if (!selectedDoctorData) {
       console.log("Error: Invalid doctor", { selectedDoctor, doctors }); // Log bác sĩ
-      setError("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
+      setErrorMessage("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
+      setShowErrorModal(true);
       return;
     }
     const doctorStartTime = selectedDoctorData?.shift?.start || "08:00";
     const doctorEndTime = selectedDoctorData?.shift?.end || "17:00";
     if (selectedTime < doctorStartTime || selectedTime > doctorEndTime) {
       console.log("Error: Invalid time", { selectedTime, doctorStartTime, doctorEndTime }); // Log thời gian
-      setError("Thời gian chọn không nằm trong khung giờ làm việc của bác sĩ.");
+      setErrorMessage("Thời gian chọn không nằm trong khung giờ làm việc của bác sĩ.");
+      setShowErrorModal(true);
       return;
     }
 
@@ -696,11 +914,13 @@ const BookingNew = ({ handleSubmit }) => {
         status: response.status || "pending" // Mặc định là pending nếu API không trả về status
       };
 
-      setSuccess(`Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`);
+      const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
+      setSuccessMessage(successMsg);
+      setShowSuccessModal(true);
 
-      // Reset form
+      // Reset form (giữ nguyên ngày đã chọn)
       setSelectedDoctor(null);
-      setSelectedDate("");
+      // setSelectedDate(""); // Giữ nguyên ngày đã chọn
       setSelectedTime("");
       setReason("");
       setNotes("");
@@ -711,8 +931,10 @@ const BookingNew = ({ handleSubmit }) => {
 
     } catch (err) {
       console.error("Lỗi khi đặt lịch:", err);
-      // SỬA: Thông báo lỗi chi tiết hơn
-      setError(err.response?.data?.message || err.message || "Không thể đặt lịch. Vui lòng kiểm tra kết nối và thử lại.");
+      // SỬA: Thông báo lỗi chi tiết hơn bằng modal
+      const errorMsg = err.response?.data?.message || err.message || "Không thể đặt lịch. Vui lòng kiểm tra kết nối và thử lại.";
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
     } finally {
       setLoadingSubmit(false);
     }
@@ -729,18 +951,6 @@ const BookingNew = ({ handleSubmit }) => {
         </div>
 
         {/* Hiển thị thông báo lỗi hoặc thành công */}
-        {error && (
-          <div className="alert alert-danger alert-dismissible fade show" role="alert">
-            {error}
-            <button type="button" className="btn-close" onClick={() => setError(null)}></button>
-          </div>
-        )}
-        {success && (
-          <div className="alert alert-success alert-dismissible fade show" role="alert">
-            {success}
-            <button type="button" className="btn-close" onClick={() => setSuccess(null)}></button>
-          </div>
-        )}
         {/* Appointment Type */}
         <div className="mb-4">
           <label className="form-label fw-bold mb-3">
@@ -770,17 +980,42 @@ const BookingNew = ({ handleSubmit }) => {
 
         {/* Date */}
         <div className="mb-4">
-          <label className="form-label fw-bold mb-2">
-            Chọn ngày khám
-          </label>
-          <DatePicker
-            selected={selectedDate ? new Date(selectedDate + 'T00:00:00') : null}
-            onChange={(date) => setSelectedDate(date.toISOString().split("T")[0])}
-            minDate={new Date()}
-            dateFormat="dd/MM/yyyy"
-            className="form-control"
-            placeholderText="Chọn ngày khám"
-          />
+          <div className="row align-items-center">
+            <div className="col-md-auto pe-2">
+              <label className="form-label fw-bold mb-0 d-flex align-items-center">
+                <Calendar size={20} className="me-2 text-primary" />
+                Chọn ngày khám
+              </label>
+            </div>
+            <div className="col-md ps-2">
+              <div className="position-relative">
+                <DatePicker
+                  selected={selectedDate ? new Date(selectedDate + 'T00:00:00') : null}
+                  onChange={(date) => {
+                    if (date) {
+                      // Format trực tiếp để tránh timezone issues
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      setSelectedDate(`${year}-${month}-${day}`);
+                    } else {
+                      setSelectedDate("");
+                    }
+                  }}
+                  minDate={new Date()}
+                  dateFormat="dd/MM/yyyy"
+                  className="form-control"
+                  placeholderText="DD/MM/YYYY"
+                  showPopperArrow={false}
+                  popperClassName="custom-datepicker-popper"
+                  calendarClassName="custom-datepicker-calendar"
+                  autoComplete="off"
+                  style={{ fontSize: "18px", height: "40px" }}
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* Doctor Selection */}
@@ -918,18 +1153,6 @@ const BookingNew = ({ handleSubmit }) => {
                         opacity: canSelect ? 1 : 0.5,
                         transition: "all 0.3s ease",
                       }}
-                      onMouseOver={(e) => {
-                        if (canSelect && !isSelected) {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)";
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (canSelect && !isSelected) {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)";
-                        }
-                      }}
                     >
                       {time}
                     </button>
@@ -959,7 +1182,8 @@ const BookingNew = ({ handleSubmit }) => {
         {/* Submit */}
         <div className="text-center">
           <button
-            className="btn btn-primary btn-lg w-100"
+            className="btn btn-primary px-4"
+            style={{ fontSize: "14px", padding: "12px 24px" }}
             onClick={onSubmit}
             disabled={loadingSubmit}
           >
@@ -967,10 +1191,46 @@ const BookingNew = ({ handleSubmit }) => {
               <div className="spinner-border spinner-border-sm me-2" role="status">
                 <span className="visually-hidden">Đang xử lý...</span>
               </div>
-            ) : null}
+            ) : (
+              <CheckCircle size={16} className="me-2" />
+            )}
             {loadingSubmit ? "Đang đặt lịch..." : "Xác nhận đặt lịch khám"}
           </button>
         </div>
+
+
+
+        {/* Success Modal */}
+        <Modal
+          show={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          title="Đặt lịch thành công!"
+          type="success"
+        >
+          <p className="mb-4">{successMessage}</p>
+          <button
+            className="btn btn-success"
+            onClick={() => setShowSuccessModal(false)}
+          >
+            Đóng
+          </button>
+        </Modal>
+
+        {/* Error Modal */}
+        <Modal
+          show={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          title="Lỗi đặt lịch hẹn"
+          type="danger"
+        >
+          <p className="mb-4">{errorMessage}</p>
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowErrorModal(false)}
+          >
+            Đóng
+          </button>
+        </Modal>
       </div>
     </div>
   );
