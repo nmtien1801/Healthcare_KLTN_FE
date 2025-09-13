@@ -225,29 +225,49 @@ export default function DoctorProfile() {
     fetchDoctorInfo();
   }, []);
 
-  const handleSave = (updatedData) => {
-    setDoctorData((prevData) => ({
-      ...prevData,
-      basicInfo: {
-        ...prevData.basicInfo,
-        fullName: updatedData.fullName,
+  const handleSave = async (updatedData) => {
+    try {
+      // Gửi request lên BE
+      await ApiDoctor.updateDoctor({
+        username: updatedData.fullName,
         email: updatedData.email,
         phone: updatedData.phone,
         dob: updatedData.dob,
-      },
-      professionalInfo: {
-        ...prevData.professionalInfo,
-        specialty: updatedData.specialty,
         hospital: updatedData.hospital,
-        experienceYears: updatedData.experienceYears,
-        license: updatedData.license,
-      },
-      name: updatedData.fullName,
-      specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
-      hospital: updatedData.hospital,
-    }));
-    setIsEditing(false);
+        exp: parseInt(updatedData.experienceYears, 10),
+        giay_phep: updatedData.license,
+        // specialty: updatedData.specialty, // nếu có trong BE thì map
+      });
+
+      // Update lại state FE để hiển thị ngay
+      setDoctorData((prevData) => ({
+        ...prevData,
+        basicInfo: {
+          ...prevData.basicInfo,
+          fullName: updatedData.fullName,
+          email: updatedData.email,
+          phone: updatedData.phone,
+          dob: updatedData.dob,
+        },
+        professionalInfo: {
+          ...prevData.professionalInfo,
+          specialty: updatedData.specialty,
+          hospital: updatedData.hospital,
+          experienceYears: updatedData.experienceYears,
+          license: updatedData.license,
+        },
+        name: updatedData.fullName,
+        specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
+        hospital: updatedData.hospital,
+      }));
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật doctor info:", error);
+      alert("Cập nhật thông tin thất bại!");
+    }
   };
+
 
   const handleCancel = () => {
     setIsEditing(false);
