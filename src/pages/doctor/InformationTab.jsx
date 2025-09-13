@@ -2,6 +2,15 @@ import { useState, useEffect } from "react";
 import { Card, Button, Row, Col, Image, Spinner } from "react-bootstrap";
 import { Edit } from "lucide-react";
 import ApiDoctor from "../../apis/ApiDoctor";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { vi } from "date-fns/locale";
+
+const formatDate = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  return d.toLocaleDateString("vi-VN"); // luôn DD/MM/YYYY
+};
 
 
 // Simplified ProfileHeader component
@@ -77,14 +86,15 @@ const InfoSection = ({ doctor, isEditing, onSave, onCancel }) => {
             </div>
             <div className="mb-3">
               <label className="form-label">Ngày sinh</label>
-              <input
-                type="text"
+              <DatePicker
+                selected={new Date(formData.dob.split("/").reverse().join("-"))}
+                onChange={(date) => setFormData({ ...formData, dob: formatDate(date) })}
+                dateFormat="dd/MM/yyyy"
                 className="form-control"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
+                locale={vi}
               />
             </div>
+
           </Col>
           <Col md={6}>
             <div className="mb-3">
@@ -203,7 +213,7 @@ export default function DoctorProfile() {
             fullName: data.userId.username,
             email: data.userId.email,
             phone: data.userId.phone,
-            dob: new Date(data.userId.dob).toLocaleDateString("vi-VN"),
+            dob: formatDate(data.userId.dob),
           },
           professionalInfo: {
             specialty: data.specialty || "Nội tiết",
@@ -232,7 +242,8 @@ export default function DoctorProfile() {
         username: updatedData.fullName,
         email: updatedData.email,
         phone: updatedData.phone,
-        dob: updatedData.dob,
+        dob: updatedData.dob.split("/").reverse().join("-"),
+
         hospital: updatedData.hospital,
         exp: parseInt(updatedData.experienceYears, 10),
         giay_phep: updatedData.license,
