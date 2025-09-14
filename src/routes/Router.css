@@ -5,6 +5,12 @@
   transition: background 0.3s ease;
 }
 
+.navbar-parent {
+  position: relative;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
 .navbar-item::before {
   content: '';
   position: absolute;
@@ -12,10 +18,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s;
 }
 
@@ -25,23 +33,32 @@
 
 /* Enhanced gradient background */
 .navbar-gradient {
-  background: linear-gradient(180deg,
-      #ffffff 0%,
-      #f8fafd 20%,
-      #eef2ff 40%,
-      #e0e7ff 60%,
-      #c4b5fd 80%,
-      #9333ea 100%);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f8fafd 20%,
+    #eef2ff 40%,
+    #e0e7ff 60%,
+    #c4b5fd 80%,
+    #9333ea 100%
+  );
   color: white;
 }
 
 .navbar-item:focus,
 .navbar-item:active {
-  background: linear-gradient(135deg, #5f2c82, #3f55e0) !important;
-  /* tím + xanh */
-  box-shadow: 0 4px 20px rgba(95, 44, 130, 0.5);
-  /* tím đậm hơn */
+  background: linear-gradient(135deg, #5f2c82, #3f55e0) !important; /* tím + xanh */
+  box-shadow: 0 4px 20px rgba(95, 44, 130, 0.5); /* tím đậm hơn */
   color: white !important;
+}
+
+/* Mục cha không highlight */
+.navbar-parent:focus,
+.navbar-parent:active,
+.navbar-parent:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
 }
 
 /* Only highlight active item when sidebar is open */
@@ -68,8 +85,7 @@
   z-index: 40;
   transition: transform 0.3s ease-in-out;
   width: 250px;
-  overflow-y: auto;
-  /* Thêm dòng này để cho phép cuộn dọc */
+  overflow-y: auto; /* Thêm dòng này để cho phép cuộn dọc */
 }
 
 .navbar-show {
@@ -90,15 +106,13 @@
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease-in-out;
-  opacity: 0.6;
-  /* làm mờ ban đầu */
+  opacity: 0.6; /* làm mờ ban đầu */
 }
 
 .toggle-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-  opacity: 1;
-  /* đậm hơn khi hover */
+  opacity: 1; /* đậm hơn khi hover */
 }
 
 .transition-sidebar {
@@ -107,7 +121,7 @@
 
 /* Ẩn nút toggle khi sidebar mở */
 .hidden {
-  opacity: 0;
+ opacity: 0;
   pointer-events: none;
   transition: opacity 1s ease;
 }
