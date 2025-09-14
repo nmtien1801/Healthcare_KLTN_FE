@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Clock, CalendarDays, User, Stethoscope, FileText } from "lucide-react"
 import { Button, Input, Select } from "../common-ui-components"
+import { TYPE_OPTIONS, STATUS_OPTIONS } from "../../../utils/appointmentConstants"
 
 const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
     const [formData, setFormData] = useState({
@@ -28,11 +29,11 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                 patientDisease: appointment.patientDisease || "",
                 date: appointment.date || "",
                 time: appointment.time || "",
-                type: appointment.type || "Tái khám",
+                type: appointment.type || "onsite",
                 reason: appointment.reason || "",
                 doctor: appointment.doctor || "",
                 notes: appointment.notes || "",
-                status: appointment.status || "Chờ xác nhận",
+                status: appointment.status || "pending",
             })
         }
     }, [appointment])
@@ -52,15 +53,29 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        if (validateForm()) {
-            onSave({ ...appointment, ...formData })
-            setErrors({})
-            onHide()
-        }
+    const parseDate = (dateStr) => {
+        if (!dateStr) return null
+        const [day, month, year] = dateStr.split("/")
+        // Convert to YYYY-MM-DD format for Date constructor
+        return new Date(`${year}-${month}-${day}`)
     }
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (validateForm()) {
+            const parsedDate = parseDate(formData.date);
 
+            const payload = {
+                ...appointment,
+                ...formData,
+                id: appointment.id,
+                date: parsedDate ? parsedDate.toISOString().split("T")[0] : null,
+            };
+
+            onSave(payload);
+            setErrors({});
+            onHide();
+        }
+    };
     const handleChange = (field, value) => {
         setFormData({ ...formData, [field]: value })
         if (errors[field]) {
@@ -152,11 +167,17 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-medium">Loại khám</label>
-                                    <Select value={formData.type} onChange={(value) => handleChange("type", value)}>
-                                        <option value="Tái khám">Tái khám</option>
-                                        <option value="Khám mới">Khám mới</option>
-                                        <option value="Tư vấn">Tư vấn</option>
+                                    <Select
+                                        value={formData.type}
+                                        onChange={(value) => handleChange("type", value)}
+                                    >
+                                        {TYPE_OPTIONS.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
                                     </Select>
+
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-medium d-flex align-items-center gap-1">
@@ -200,12 +221,17 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                                 </div>
                                 <div className="col-12">
                                     <label className="form-label fw-medium">Tình trạng</label>
-                                    <Select value={formData.status} onChange={(value) => handleChange("status", value)}>
-                                        <option value="Chờ xác nhận">Chờ xác nhận</option>
-                                        <option value="Đã xác nhận">Đã xác nhận</option>
-                                        <option value="Đã hủy">Đã hủy</option>
-                                        <option value="Hoàn thành">Hoàn thành</option>
+                                    <Select
+                                        value={formData.status}
+                                        onChange={(value) => handleChange("status", value)}
+                                    >
+                                        {STATUS_OPTIONS.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
                                     </Select>
+
                                 </div>
                             </div>
                         </div>

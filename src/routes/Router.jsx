@@ -103,11 +103,11 @@ const Router = (props) => {
                 </Nav.Link>
 
                 <Nav.Link
-                  className="d-flex align-items-center justify-content-between gap-2 nav-link ms-3"
+                  className="d-flex align-items-center justify-content-between gap-2 nav-link ms-3 navbar-item"
                   onClick={() => setShowNutrition(!showNutrition)}
                   style={{ cursor: "pointer" }}
                 >
-                  <div className="d-flex align-items-center gap-2">
+                  <div className="d-flex align-items-center gap-2 navbar-item">
                     <Utensils size={20} />
                     <span>Dinh dưỡng</span>
                   </div>

@@ -18,6 +18,8 @@ import ApiDoctor from "../../apis/ApiDoctor";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
+import { getLabelFromOptions } from "../../utils/apppointmentHelper";
+import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
 
 export default function AppointmentTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,11 +60,11 @@ export default function AppointmentTab() {
       "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
     date: new Date(item.date).toLocaleDateString("vi-VN"),
     time: item.time,
-    type: item.type === "onsite" ? "Tại phòng khám" : "Khám trực tuyến",
+    type: item.type,
     reason: item.reason || "Tạm thời chưa có",
     doctor: item.doctorId?.userId?.username || "Tạm thời chưa có",
     notes: item.notes || "Tạm thời chưa có",
-    status: item.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận",
+    status: item.status,
   });
 
   const getStatusColors = (status) => {
@@ -121,26 +123,56 @@ export default function AppointmentTab() {
     setShowAddModal(false);
   };
 
-  const handleViewAppointment = (appointment) => {
-    setSelectedAppointment(appointment);
-    setShowViewModal(true);
+  const handleViewAppointment = async (appointment) => {
+    try {
+      const data = await ApiDoctor.getAppointmentById(appointment.id);
+      const mapped = mapAppointment(data);
+      setSelectedAppointment(mapped);
+      setShowViewModal(true);
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết lịch hẹn:", err);
+      alert("Không thể tải chi tiết lịch hẹn.");
+    }
   };
 
-  const handleEditAppointment = (appointment) => {
-    setSelectedAppointment(appointment);
-    setShowViewModal(false);
-    setShowEditModal(true);
+  const handleEditAppointment = async (appointment) => {
+    try {
+      const data = await ApiDoctor.getAppointmentById(appointment.id);
+      const mapped = mapAppointment(data);
+      setSelectedAppointment(mapped);
+      setShowViewModal(false);
+      setShowEditModal(true);
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết lịch hẹn để chỉnh sửa:", err);
+      alert("Không thể tải chi tiết lịch hẹn.");
+    }
   };
 
-  const handleUpdateAppointment = (updatedAppointment) => {
-    setUpcomingAppointments((prev) =>
-      prev.map((app) => (app.id === updatedAppointment.id ? updatedAppointment : app))
-    );
-    setShowEditModal(false);
-    setSelectedAppointment(updatedAppointment);
-    setShowViewModal(true);
-  };
 
+  const handleUpdateAppointment = async (updatedAppointment) => {
+    try {
+      const payload = {
+        ...updatedAppointment,
+        date: new Date(updatedAppointment.date).toISOString().split("T")[0],
+      }
+
+      await ApiDoctor.updateAppointment(updatedAppointment.id, payload)
+
+      setUpcomingAppointments((prev) =>
+        prev.map((app) => (app.id === updatedAppointment.id ? updatedAppointment : app))
+      )
+      setTodayAppointments((prev) =>
+        prev.map((app) => (app.id === updatedAppointment.id ? updatedAppointment : app))
+      )
+
+      setShowEditModal(false)
+      setSelectedAppointment(updatedAppointment)
+      // setShowViewModal(true)
+    } catch (error) {
+      console.error("Lỗi khi cập nhật lịch hẹn:", error)
+      alert("Cập nhật lịch hẹn thất bại. Vui lòng thử lại.")
+    }
+  }
   const handleDeleteAppointment = (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa lịch hẹn này?")) {
       setUpcomingAppointments((prev) => prev.filter((app) => app.id !== id));
@@ -207,10 +239,12 @@ export default function AppointmentTab() {
                       <span className="ms-2"><CalendarDays size={12} /> {appointment.date}</span>
                     </div>
                   </td>
-                  <td>{appointment.type}</td>
+                  <td>{getLabelFromOptions(TYPE_OPTIONS, appointment.type)}</td>
                   <td>
-                    <span className={`badge bg-${getStatusColors(appointment.status).bg} text-${getStatusColors(appointment.status).text}`}>
-                      {appointment.status}
+                    <span
+                      className={`badge bg-${STATUS_COLORS[appointment.status]?.bg} text-${STATUS_COLORS[appointment.status]?.text}`}
+                    >
+                      {getLabelFromOptions(STATUS_OPTIONS, appointment.status)}
                     </span>
                   </td>
                   <td>
@@ -284,8 +318,19 @@ export default function AppointmentTab() {
 
       {/* Modals */}
       <AddAppointmentModal show={showAddModal} onHide={() => setShowAddModal(false)} onSave={handleAddAppointment} />
-      <ViewAppointmentModal show={showViewModal} onHide={() => setShowViewModal(false)} appointment={selectedAppointment} onEdit={handleEditAppointment} />
-      <EditAppointmentModal show={showEditModal} onHide={() => setShowEditModal(false)} appointment={selectedAppointment} onSave={handleUpdateAppointment} />
+      <ViewAppointmentModal
+        show={showViewModal}
+        onHide={() => setShowViewModal(false)}
+        appointment={selectedAppointment}
+        onEdit={handleEditAppointment}
+      />
+
+      <EditAppointmentModal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        appointment={selectedAppointment}
+        onSave={handleUpdateAppointment}
+      />
     </div>
   );
 }
