@@ -66,7 +66,7 @@ function App() {
           console.error('Error parsing userInfo from localStorage:', error);
           userInfo = null;
         }
- 
+
         if (userInfo && userInfo.userId) {
           // Có đầy đủ thông tin từ MongoDB
           dispatch(setUser({
@@ -81,7 +81,7 @@ function App() {
             dob: userInfo.dob || '',
             gender: userInfo.gender || '',
           }));
-          
+
           if (firebaseUser.accessToken !== localStorage.getItem('access_Token')) {
             localStorage.setItem("access_Token", firebaseUser.accessToken);
           }
@@ -232,7 +232,6 @@ function App() {
           <Header />
         </div>}
 
-
         {/* NavbarLeft */}
         <div className="d-flex flex-grow-1 overflow-hidden"
           style={{ marginTop: user ? "80px" : "0px" }}>
@@ -256,7 +255,7 @@ function App() {
                   {user.role === "doctor" ? (
                     <>
                       <Route path="/overviewTab" element={<OverviewTab />} />
-                      <Route path="/patientTab" element={<PatientTab handleStartCall={handleStartCall}/>} />
+                      <Route path="/patientTab" element={<PatientTab handleStartCall={handleStartCall} />} />
                       <Route path="/appointmentTab" element={<AppointmentTab />} />
                       <Route path="/settingTabs" element={<SettingTabs />} />
                       <Route path="/informationTab" element={<InformationTab />} />
@@ -270,7 +269,7 @@ function App() {
                       <Route path="/healthTabs" element={<HealthTabs />} />
                       <Route path="/nutrition" element={<FoodTrackerApp />} />
                       <Route path="/suggestedFood" element={<SuggestedFood />} />
-                      <Route path="/bookingTabs" element={<BookingTabs handleStartCall={handleStartCall}/>} />
+                      <Route path="/bookingTabs" element={<BookingTabs handleStartCall={handleStartCall} />} />
                       <Route path="/personalTabs" element={<PersonalTabs />} />
                       <Route path="/assitant" element={<FormPatient />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /home */}
@@ -313,19 +312,20 @@ function App() {
       )}
 
       {/* <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      /> */}
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      /> */}
     </Router>
   );
 }
 
 export default App;
+

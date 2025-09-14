@@ -133,7 +133,6 @@ const Router = (props) => {
                   </Nav>
                 )}
 
-
                 <Nav.Link as={NavLink} to="/bookingTabs" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
                   <CalendarPlus size={20} />
                   <span>Đặt khám</span>
@@ -152,3 +151,4 @@ const Router = (props) => {
 };
 
 export default Router;
+

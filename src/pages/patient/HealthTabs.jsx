@@ -3,14 +3,15 @@ import * as echarts from "echarts";
 import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { suggestFoodsByAi, setMedicine, getMedicine, GetCaloFood } from '../../redux/foodAiSlice'
+import { suggestFoodsByAi, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
 
 const Following = ({ user, nearestAppointment }) => {
-  const latestReading = 7.2;
+  let bloodSugar = useSelector((state) => state.patient.bloodSugar);
+  const latestReading = bloodSugar?.DT?.bloodSugarData[0].value;
 
   const readingStatus = {
     status: latestReading < 6 ? 'normal' : latestReading < 7 ? 'prediabetes' : 'danger',
@@ -361,7 +362,6 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
     fetchFood();
   }, [bloodSugar, user.userId]);
 
-
   return (
     <>
       {/* Lời khuyên */}
@@ -490,21 +490,21 @@ const HealthTabs = () => {
     const fetchNearestAppointment = async () => {
       try {
         const appointments = await ApiBooking.getUpcomingAppointments();
-        
+
         if (appointments && appointments.length > 0) {
           // Sắp xếp theo thời gian: kết hợp date và time
           const sortedAppointments = appointments.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            
+
             // Nếu cùng ngày, so sánh theo giờ
             if (dateA.getTime() === dateB.getTime()) {
               return a.time.localeCompare(b.time);
             }
-            
+
             return dateA - dateB;
           });
-          
+
           // Lấy lịch hẹn gần nhất (phần tử đầu tiên)
           setNearestAppointment(sortedAppointments[0]);
         }
@@ -512,7 +512,7 @@ const HealthTabs = () => {
         console.error('Lỗi khi lấy lịch hẹn:', error);
       }
     };
-    
+
     fetchNearestAppointment();
   }, []);
 
@@ -645,7 +645,6 @@ const HealthTabs = () => {
           {aiPlan && <Plan aiPlan={aiPlan} user={user} bloodSugar={bloodSugar} />}
         </div>
 
-
         {/* Thông tin thêm */}
         <div className="bg-white rounded shadow-sm p-4 flex-fill">
           <h3 className="fw-semibold mb-3 fs-6">Thông tin thêm</h3>
@@ -675,3 +674,4 @@ const HealthTabs = () => {
 };
 
 export default HealthTabs;
+
