@@ -18,6 +18,8 @@ import ApiDoctor from "../../apis/ApiDoctor";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
+import { getLabelFromOptions } from "../../utils/apppointmentHelper";
+import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
 
 export default function AppointmentTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,9 +34,6 @@ export default function AppointmentTab() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
-
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -61,11 +60,11 @@ export default function AppointmentTab() {
       "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
     date: new Date(item.date).toLocaleDateString("vi-VN"),
     time: item.time,
-    type: item.type === "onsite" ? "Tại phòng khám" : "Khám trực tuyến",
+    type: item.type,
     reason: item.reason || "Tạm thời chưa có",
     doctor: item.doctorId?.userId?.username || "Tạm thời chưa có",
     notes: item.notes || "Tạm thời chưa có",
-    status: item.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận",
+    status: item.status,
   });
 
   const getStatusColors = (status) => {
@@ -124,16 +123,31 @@ export default function AppointmentTab() {
     setShowAddModal(false);
   };
 
-  const handleViewAppointment = (appointment) => {
-    setSelectedAppointment(appointment);
-    setShowViewModal(true);
+  const handleViewAppointment = async (appointment) => {
+    try {
+      const data = await ApiDoctor.getAppointmentById(appointment.id);
+      const mapped = mapAppointment(data);
+      setSelectedAppointment(mapped);
+      setShowViewModal(true);
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết lịch hẹn:", err);
+      alert("Không thể tải chi tiết lịch hẹn.");
+    }
   };
 
-  const handleEditAppointment = (appointment) => {
-    setSelectedAppointment(appointment);
-    setShowViewModal(false);
-    setShowEditModal(true);
+  const handleEditAppointment = async (appointment) => {
+    try {
+      const data = await ApiDoctor.getAppointmentById(appointment.id);
+      const mapped = mapAppointment(data);
+      setSelectedAppointment(mapped);
+      setShowViewModal(false);
+      setShowEditModal(true);
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết lịch hẹn để chỉnh sửa:", err);
+      alert("Không thể tải chi tiết lịch hẹn.");
+    }
   };
+
 
   const handleUpdateAppointment = async (updatedAppointment) => {
     try {
@@ -159,29 +173,12 @@ export default function AppointmentTab() {
       alert("Cập nhật lịch hẹn thất bại. Vui lòng thử lại.")
     }
   }
-  const handleDeleteAppointment = (appointment) => {
-    setAppointmentToDelete(appointment);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteAppointment = async () => {
-    try {
-      if (!appointmentToDelete) return;
-
-      await ApiDoctor.deleteAppointment(appointmentToDelete.id);
-
-      setUpcomingAppointments((prev) =>
-        prev.filter((app) => app.id !== appointmentToDelete.id)
-      );
-      setTodayAppointments((prev) =>
-        prev.filter((app) => app.id !== appointmentToDelete.id)
-      );
-
-      setShowDeleteModal(false);
-      setAppointmentToDelete(null);
-    } catch (error) {
-      console.error("Lỗi khi xóa lịch hẹn:", error);
-      alert("Xóa lịch hẹn thất bại. Vui lòng thử lại.");
+  const handleDeleteAppointment = (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa lịch hẹn này?")) {
+      setUpcomingAppointments((prev) => prev.filter((app) => app.id !== id));
+      setTodayAppointments((prev) => prev.filter((app) => app.id !== id));
+      setShowViewModal(false);
+      setShowEditModal(false);
     }
   };
 
@@ -242,10 +239,12 @@ export default function AppointmentTab() {
                       <span className="ms-2"><CalendarDays size={12} /> {appointment.date}</span>
                     </div>
                   </td>
-                  <td>{appointment.type}</td>
+                  <td>{getLabelFromOptions(TYPE_OPTIONS, appointment.type)}</td>
                   <td>
-                    <span className={`badge bg-${getStatusColors(appointment.status).bg} text-${getStatusColors(appointment.status).text}`}>
-                      {appointment.status}
+                    <span
+                      className={`badge bg-${STATUS_COLORS[appointment.status]?.bg} text-${STATUS_COLORS[appointment.status]?.text}`}
+                    >
+                      {getLabelFromOptions(STATUS_OPTIONS, appointment.status)}
                     </span>
                   </td>
                   <td>
@@ -255,14 +254,9 @@ export default function AppointmentTab() {
                     <Button variant="link" className="p-0 me-2" onClick={() => handleEditAppointment(appointment)}>
                       <Edit size={16} />
                     </Button>
-                    <Button
-                      variant="link"
-                      className="p-0 text-danger"
-                      onClick={() => handleDeleteAppointment(appointment)}
-                    >
+                    <Button variant="link" className="p-0 text-danger" onClick={() => handleDeleteAppointment(appointment.id)}>
                       <Trash2 size={16} />
                     </Button>
-
                   </td>
                 </tr>
               ))
@@ -337,36 +331,6 @@ export default function AppointmentTab() {
         appointment={selectedAppointment}
         onSave={handleUpdateAppointment}
       />
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Xác nhận xóa</h5>
-                <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <p>
-                  Bạn có chắc chắn muốn xóa lịch hẹn của{" "}
-                  <strong>{appointmentToDelete?.patientName}</strong> vào ngày{" "}
-                  <strong>{appointmentToDelete?.date}</strong> lúc{" "}
-                  <strong>{appointmentToDelete?.time}</strong> không?
-                </p>
-              </div>
-              <div className="modal-footer">
-                <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-                  Hủy
-                </Button>
-                <Button variant="danger" onClick={confirmDeleteAppointment}>
-                  Xóa
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
