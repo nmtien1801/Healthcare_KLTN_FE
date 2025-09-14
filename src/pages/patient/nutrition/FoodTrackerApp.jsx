@@ -205,7 +205,7 @@ export default function FoodTrackerApp() {
                     `${food.chat_beo}g`
                 ],
                 colors: ['success', 'warning', 'danger'],
-                checked: true,
+                checked: false,
                 meal: 'sáng'
             }));
 

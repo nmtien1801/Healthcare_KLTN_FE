@@ -1,12 +1,12 @@
 import React, { useState, forwardRef } from "react";
 import { Container, Row, Col, Badge, Image, Dropdown } from "react-bootstrap";
 import { FaHeartbeat, FaBell } from "react-icons/fa";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 
-const CustomToggle = forwardRef(({ onClick }, ref) => (
+const CustomToggle = forwardRef(({ onClick, user }, ref) => (
   <div
     ref={ref}
     onClick={(e) => {
@@ -17,12 +17,17 @@ const CustomToggle = forwardRef(({ onClick }, ref) => (
   >
     <div className="position-relative">
       <Image
-        src="https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=50&height=50&seq=doctor1&orientation=squarish"
+        src={
+          user?.photoURL
+            ? user.photoURL
+            : "https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=50&height=50&seq=doctor1&orientation=squarish"
+        }
         roundedCircle
         width={40}
         height={40}
         className="border border-primary object-fit-cover"
       />
+
       <span
         className="position-absolute bottom-0 end-0 translate-middle p-1 bg-success border border-white rounded-circle"
         style={{ width: "12px", height: "12px" }}
@@ -36,6 +41,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState(5);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  let user = useSelector((state) => state.auth.userInfo);
 
   const handleLogout = async () => {
     try {
@@ -93,13 +99,13 @@ const Header = () => {
             </div>
 
             <div className="me-4 text-end">
-              <div className="fw-medium">BS. Nguyễn Văn An</div>
-              <div className="text-muted small">Khoa Tim mạch</div>
+              <div className="fw-medium">{user.role === 'doctor' ? "BS. " + user.username : user.username}</div>
+              <div className="text-muted small">{user.role === 'doctor' ? 'Bác sĩ tiểu đường' : ''}</div>
             </div>
 
             {/* Avatar Dropdown */}
             <Dropdown align="end">
-              <Dropdown.Toggle as={CustomToggle} id="dropdown-avatar" />
+              <Dropdown.Toggle as={CustomToggle} id="dropdown-avatar" user={user} />
 
               <Dropdown.Menu>
                 <Dropdown.Item onClick={handleInfo}>

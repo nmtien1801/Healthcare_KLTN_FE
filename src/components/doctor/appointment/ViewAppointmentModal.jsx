@@ -2,27 +2,11 @@
 
 import { Clock, CalendarDays, Stethoscope, FileText, MessageSquare, Phone } from "lucide-react"
 import { Button, Badge, Avatar } from "../common-ui-components" // Import from common-ui-components
+import { getLabelFromOptions } from "../../../utils/apppointmentHelper"
+import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../../utils/appointmentConstants"
 
 const ViewAppointmentModal = ({ show, onHide, appointment, onEdit }) => {
     if (!show || !appointment) return null
-
-    const getStatusColors = (status) => {
-        switch (status) {
-            case "Đã xác nhận":
-                return { color: "bg-success", textColor: "text-white" }
-            case "Chờ xác nhận":
-                return { color: "bg-warning", textColor: "text-dark" }
-            case "Đã hủy":
-                return { color: "bg-danger", textColor: "text-white" }
-            case "Hoàn thành":
-                return { color: "bg-primary", textColor: "text-white" }
-            default:
-                return { color: "bg-secondary", textColor: "text-white" }
-        }
-    }
-
-    const { color, textColor } = getStatusColors(appointment.status)
-
     return (
         <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
             <div className="modal-dialog modal-md" style={{ marginTop: "5rem" }}>
@@ -48,7 +32,13 @@ const ViewAppointmentModal = ({ show, onHide, appointment, onEdit }) => {
                                 <p className="text-muted mb-2">
                                     {appointment.patientAge} tuổi • {appointment.patientDisease}
                                 </p>
-                                <Badge className={`${color} ${textColor}`}>{appointment.status}</Badge>
+                                <Badge
+                                    className={`bg-${STATUS_COLORS[appointment.status]?.bg} text-${STATUS_COLORS[appointment.status]?.text}`}
+                                >
+                                    {getLabelFromOptions(STATUS_OPTIONS, appointment.status)}
+                                </Badge>
+
+
                             </div>
                         </div>
 
@@ -72,7 +62,10 @@ const ViewAppointmentModal = ({ show, onHide, appointment, onEdit }) => {
                             </div>
                             <div className="col-md-6">
                                 <label className="small fw-medium text-muted">Loại khám:</label>
-                                <div className="fw-medium">{appointment.type}</div>
+                                <div className="fw-medium">
+                                    {getLabelFromOptions(TYPE_OPTIONS, appointment.type)}
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label className="small fw-medium text-muted d-flex align-items-center gap-1">
