@@ -35,6 +35,10 @@ export default function AppointmentTab() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
+
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -173,12 +177,29 @@ export default function AppointmentTab() {
       alert("Cập nhật lịch hẹn thất bại. Vui lòng thử lại.")
     }
   }
-  const handleDeleteAppointment = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lịch hẹn này?")) {
-      setUpcomingAppointments((prev) => prev.filter((app) => app.id !== id));
-      setTodayAppointments((prev) => prev.filter((app) => app.id !== id));
-      setShowViewModal(false);
-      setShowEditModal(false);
+  const handleDeleteAppointment = (appointment) => {
+    setAppointmentToDelete(appointment);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAppointment = async () => {
+    try {
+      if (!appointmentToDelete) return;
+
+      await ApiDoctor.deleteAppointment(appointmentToDelete.id);
+
+      setUpcomingAppointments((prev) =>
+        prev.filter((app) => app.id !== appointmentToDelete.id)
+      );
+      setTodayAppointments((prev) =>
+        prev.filter((app) => app.id !== appointmentToDelete.id)
+      );
+
+      setShowDeleteModal(false);
+      setAppointmentToDelete(null);
+    } catch (error) {
+      console.error("Lỗi khi xóa lịch hẹn:", error);
+      alert("Xóa lịch hẹn thất bại. Vui lòng thử lại.");
     }
   };
 
@@ -254,9 +275,14 @@ export default function AppointmentTab() {
                     <Button variant="link" className="p-0 me-2" onClick={() => handleEditAppointment(appointment)}>
                       <Edit size={16} />
                     </Button>
-                    <Button variant="link" className="p-0 text-danger" onClick={() => handleDeleteAppointment(appointment.id)}>
+                    <Button
+                      variant="link"
+                      className="p-0 text-danger"
+                      onClick={() => handleDeleteAppointment(appointment)}
+                    >
                       <Trash2 size={16} />
                     </Button>
+
                   </td>
                 </tr>
               ))
@@ -331,6 +357,36 @@ export default function AppointmentTab() {
         appointment={selectedAppointment}
         onSave={handleUpdateAppointment}
       />
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Xác nhận xóa</h5>
+                <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  Bạn có chắc chắn muốn xóa lịch hẹn của{" "}
+                  <strong>{appointmentToDelete?.patientName}</strong> vào ngày{" "}
+                  <strong>{appointmentToDelete?.date}</strong> lúc{" "}
+                  <strong>{appointmentToDelete?.time}</strong> không?
+                </p>
+              </div>
+              <div className="modal-footer">
+                <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                  Hủy
+                </Button>
+                <Button variant="danger" onClick={confirmDeleteAppointment}>
+                  Xóa
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
