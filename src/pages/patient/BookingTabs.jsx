@@ -846,7 +846,7 @@ const BookingNew = ({ handleSubmit }) => {
           <div className="row g-2">
             <div className="col-6">
               <button
-                className={`btn w-100 py-3 border fs-6 ${appointmentType === "onsite" ? "btn-primary" : "btn-outline-primary"}`}
+                className={`btn w-100 py-2 border fs-6 ${appointmentType === "onsite" ? "btn-primary" : "btn-outline-primary"}`}
                 onClick={() => setAppointmentType("onsite")}
               >
                 <MapPin size={16} className="me-2" />
@@ -855,7 +855,7 @@ const BookingNew = ({ handleSubmit }) => {
             </div>
             <div className="col-6">
               <button
-                className={`btn w-100 py-3 border fs-6 ${appointmentType === "online" ? "btn-primary" : "btn-outline-primary"}`}
+                className={`btn w-100 py-2 border fs-6 ${appointmentType === "online" ? "btn-primary" : "btn-outline-primary"}`}
                 onClick={() => setAppointmentType("online")}
               >
                 <Video size={16} className="me-2" />
