@@ -274,7 +274,7 @@ function App() {
                       <Route path="/personalTabs" element={<PersonalTabs />} />
                       <Route path="/assitant" element={<FormPatient />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /home */}
-                      <Route path="*" element={<Navigate to="/healthTabs" replace />} />
+                      <Route path="*" element={<Navigate to="/home" replace />} />
                     </>
                   )}
                 </>
