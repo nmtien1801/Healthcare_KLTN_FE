@@ -71,21 +71,6 @@ export default function AppointmentTab() {
     status: item.status,
   });
 
-  const getStatusColors = (status) => {
-    switch (status) {
-      case "Đã xác nhận":
-        return { bg: "success", text: "white" };
-      case "Chờ xác nhận":
-        return { bg: "warning", text: "dark" };
-      case "Đã hủy":
-        return { bg: "danger", text: "white" };
-      case "Hoàn thành":
-        return { bg: "primary", text: "white" };
-      default:
-        return { bg: "secondary", text: "white" };
-    }
-  };
-
   // Filter + Search
   const filteredToday = useMemo(() => {
     return todayAppointments.filter((a) => {
