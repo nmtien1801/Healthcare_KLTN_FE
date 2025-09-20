@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import {
     Calendar,
     Clock,
@@ -13,12 +14,19 @@ import {
     Clock as Clock24,
     LogOut,
 } from "lucide-react";
+import ApiWorkShift from "../../apis/ApiWorkShift";
+
+const formatDate = (d) => {
+    if (!d) return "";
+    const [year, month, day] = d.split("-");
+    return `${day}/${month}/${year}`;
+};
 
 // Shift options
 const shiftOptions = [
-    { key: "morning", label: "Sáng (08:00 - 12:00)" },
-    { key: "afternoon", label: "Chiều (13:00 - 17:00)" },
-    { key: "evening", label: "Tối (18:00 - 21:00)" },
+    { key: "morning", label: "Sáng (08:00 - 12:00)", start: "08:00", end: "12:00" },
+    { key: "afternoon", label: "Chiều (13:00 - 17:00)", start: "13:00", end: "17:00" },
+    { key: "evening", label: "Tối (18:00 - 21:00)", start: "18:00", end: "21:00" },
 ];
 
 // Work type options
@@ -46,7 +54,7 @@ const ConfirmationModal = ({ show, title, message, onConfirm, onCancel }) => (
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
         <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content" style={{ borderRadius: '12px', border: 'none' }}>
+            <div className="modal-content" style={{ borderRadius: "12px", border: "none" }}>
                 <div className="modal-header border-0">
                     <h5 className="modal-title fw-bold text-danger d-flex align-items-center">
                         <Trash2 size={20} className="me-2" />
@@ -60,11 +68,11 @@ const ConfirmationModal = ({ show, title, message, onConfirm, onCancel }) => (
                     <button
                         className="btn px-3 py-2 fw-medium"
                         style={{
-                            background: '#7d6c6cff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            color: 'white',
-                            fontSize: '14px'
+                            background: "#7d6c6cff",
+                            border: "none",
+                            borderRadius: "6px",
+                            color: "white",
+                            fontSize: "14px",
                         }}
                         onClick={onCancel}
                     >
@@ -73,11 +81,11 @@ const ConfirmationModal = ({ show, title, message, onConfirm, onCancel }) => (
                     <button
                         className="btn px-3 py-2 fw-medium"
                         style={{
-                            background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
-                            border: 'none',
-                            borderRadius: '6px',
-                            color: 'white',
-                            fontSize: '14px'
+                            background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
+                            border: "none",
+                            borderRadius: "6px",
+                            color: "white",
+                            fontSize: "14px",
                         }}
                         onClick={onConfirm}
                     >
@@ -97,7 +105,7 @@ const InfoModal = ({ show, title, message, onClose }) => (
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
         <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content" style={{ borderRadius: '12px', border: 'none' }}>
+            <div className="modal-content" style={{ borderRadius: "12px", border: "none" }}>
                 <div className="modal-header border-0">
                     <h5 className="modal-title fw-bold text-primary d-flex align-items-center">
                         <Info size={20} className="me-2" />
@@ -112,10 +120,10 @@ const InfoModal = ({ show, title, message, onClose }) => (
                         className="btn px-3 py-2 fw-medium"
                         style={{
                             background: "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)",
-                            border: 'none',
-                            borderRadius: '6px',
-                            color: 'white',
-                            fontSize: '14px'
+                            border: "none",
+                            borderRadius: "6px",
+                            color: "white",
+                            fontSize: "14px",
                         }}
                         onClick={onClose}
                     >
@@ -127,7 +135,6 @@ const InfoModal = ({ show, title, message, onClose }) => (
     </div>
 );
 
-// Schedule Form Modal
 // Schedule Form Modal
 const ScheduleFormModal = ({
     show,
@@ -150,18 +157,18 @@ const ScheduleFormModal = ({
         tabIndex="-1"
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
-        <div className="modal-dialog modal-dialog-centered modal-xl" style={{ marginTop: '70px' }}> {/* Hạ modal xuống 70px và tăng kích thước thành modal-xl */}
-            <div className="modal-content" style={{ maxWidth: "900px", marginLeft: 'auto', marginRight: 'auto' }}> {/* Tăng maxWidth để modal dài hơn */}
+        <div className="modal-dialog modal-dialog-centered modal-xl" style={{ marginTop: "70px" }}>
+            <div className="modal-content" style={{ maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
                 <div className="modal-header">
                     <h5 className="modal-title d-flex align-items-center gap-2">
-                        <Edit size={20} />{" "}
+                        <Edit size={20} />
                         {editingScheduleId ? "Cập nhật lịch làm việc" : "Đăng ký lịch làm việc"}
                     </h5>
                     <button
                         type="button"
                         className="btn-close"
                         onClick={onClose}
-                        style={{ fontSize: '14px' }}
+                        style={{ fontSize: "14px" }}
                     ></button>
                 </div>
                 <div className="modal-body">
@@ -179,10 +186,10 @@ const ScheduleFormModal = ({
                                 className="btn px-3 py-2 fw-medium"
                                 style={{
                                     background: "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)",
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    color: 'white',
-                                    fontSize: '14px'
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    color: "white",
+                                    fontSize: "14px",
                                 }}
                                 onClick={handleSelectCurrentWeek}
                             >
@@ -197,12 +204,12 @@ const ScheduleFormModal = ({
                             {workTypeOptions.map((type) => (
                                 <div key={type.key} className="col-md-6">
                                     <div
-                                        className={`card h-100 cursor-pointer ${workType === type.key ? 'border-primary' : ''}`}
+                                        className={`card h-100 cursor-pointer ${workType === type.key ? "border-primary" : ""}`}
                                         style={{
-                                            cursor: 'pointer',
-                                            border: workType === type.key ? '2px solid #007bff' : '1px solid #dee2e6',
-                                            borderRadius: '8px',
-                                            transition: 'all 0.2s ease'
+                                            cursor: "pointer",
+                                            border: workType === type.key ? "2px solid #007bff" : "1px solid #dee2e6",
+                                            borderRadius: "8px",
+                                            transition: "all 0.2s ease",
                                         }}
                                         onClick={() => handleWorkTypeChange(type.key)}
                                     >
@@ -224,7 +231,9 @@ const ScheduleFormModal = ({
                                     <tr>
                                         <th>Ngày</th>
                                         {shiftOptions.map((shift) => (
-                                            <th key={shift.key} className="text-center">{shift.label}</th>
+                                            <th key={shift.key} className="text-center">
+                                                {shift.label}
+                                            </th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -255,10 +264,10 @@ const ScheduleFormModal = ({
                         className="btn px-3 py-2 fw-medium"
                         style={{
                             background: "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)",
-                            border: 'none',
-                            borderRadius: '6px',
-                            color: 'white',
-                            fontSize: '14px'
+                            border: "none",
+                            borderRadius: "6px",
+                            color: "white",
+                            fontSize: "14px",
                         }}
                         onClick={() => {
                             resetScheduleForm();
@@ -270,11 +279,11 @@ const ScheduleFormModal = ({
                     <button
                         className="btn px-3 py-2 fw-medium"
                         style={{
-                            background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
-                            border: 'none',
-                            borderRadius: '6px',
-                            color: 'white',
-                            fontSize: '14px'
+                            background: "linear-gradient(135deg, #007bff 0%, #0056b3 100%)",
+                            border: "none",
+                            borderRadius: "6px",
+                            color: "white",
+                            fontSize: "14px",
                         }}
                         onClick={() => {
                             handleSaveOrUpdateSchedule();
@@ -290,20 +299,13 @@ const ScheduleFormModal = ({
 );
 
 // Saved Schedules Modal
-const SavedSchedulesModal = ({
-    show,
-    onClose,
-    savedSchedules,
-    formatDate,
-    handleEditSchedule,
-    handleDeleteSchedule,
-}) => (
+const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handleEditSchedule, handleDeleteSchedule }) => (
     <div
         className={`modal ${show ? "d-block" : "d-none"}`}
         tabIndex="-1"
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
-        <div className="modal-dialog modal-dialog-centered modal-lg" style={{ marginTop: '50px' }}> {/* Hạ modal xuống 50px để tránh che header */}
+        <div className="modal-dialog modal-dialog-centered modal-lg" style={{ marginTop: "50px" }}>
             <div className="modal-content" style={{ maxWidth: "700px" }}>
                 <div className="modal-header">
                     <h5 className="modal-title d-flex align-items-center gap-2">
@@ -313,7 +315,7 @@ const SavedSchedulesModal = ({
                         type="button"
                         className="btn-close"
                         onClick={onClose}
-                        style={{ fontSize: '14px' }}
+                        style={{ fontSize: "14px" }}
                     ></button>
                 </div>
                 <div className="modal-body">
@@ -325,6 +327,7 @@ const SavedSchedulesModal = ({
                                 <tr>
                                     <th>Tuần bắt đầu</th>
                                     <th>Lịch làm</th>
+                                    <th className="text-center">Loại hình</th>
                                     <th className="text-center">Hành động</th>
                                 </tr>
                             </thead>
@@ -349,14 +352,19 @@ const SavedSchedulesModal = ({
                                             ))}
                                         </td>
                                         <td className="text-center">
+                                            <span className="badge bg-primary text-white">
+                                                {workTypeOptions.find((wt) => wt.key === item.workType)?.label || "-"}
+                                            </span>
+                                        </td>
+                                        <td className="text-center">
                                             <button
                                                 className="btn me-2 px-2 py-1 fw-medium"
                                                 style={{
-                                                    background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    color: 'white',
-                                                    fontSize: '12px'
+                                                    background: "linear-gradient(135deg, #007bff 0%, #0056b3 100%)",
+                                                    border: "none",
+                                                    borderRadius: "4px",
+                                                    color: "white",
+                                                    fontSize: "12px",
                                                 }}
                                                 onClick={() => {
                                                     onClose();
@@ -369,11 +377,11 @@ const SavedSchedulesModal = ({
                                             <button
                                                 className="btn px-2 py-1 fw-medium"
                                                 style={{
-                                                    background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    color: 'white',
-                                                    fontSize: '12px'
+                                                    background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
+                                                    border: "none",
+                                                    borderRadius: "4px",
+                                                    color: "white",
+                                                    fontSize: "12px",
                                                 }}
                                                 onClick={() => handleDeleteSchedule(item.id)}
                                             >
@@ -397,8 +405,8 @@ const SavedSchedulesModal = ({
     </div>
 );
 
-// CurrentSchedule component (tương tự upcomingAppointment)
-const CurrentSchedule = () => {
+// CurrentSchedule component
+const CurrentSchedule = ({ currentShift }) => {
     return (
         <div className="container my-3">
             <div className="bg-white rounded shadow border p-4">
@@ -442,15 +450,17 @@ const CurrentSchedule = () => {
                             <div className="mb-3">
                                 <div className="d-flex align-items-center mb-2">
                                     <Calendar className="text-primary me-2" size={18} />
-                                    <span className="text-dark">Tuần từ 28/7/2025</span>
+                                    <span className="text-dark">
+                                        {currentShift ? formatDate(currentShift.date) : "Không có ca làm việc hôm nay"}
+                                    </span>
                                 </div>
-                                <div className="d-flex align-items-center mb-3">
-                                    <Clock className="text-primary me-2" size={18} />
-                                    <span className="text-dark">Sáng (08:00 - 12:00), Thứ 2 - Thứ 6</span>
-                                </div>
+                                {currentShift && (
+                                    <div className="d-flex align-items-center mb-3">
+                                        <Clock className="text-primary me-2" size={18} />
+                                        <span className="text-dark">{`${currentShift.start} - ${currentShift.end}`}</span>
+                                    </div>
+                                )}
                             </div>
-
-
                         </div>
                     </div>
 
@@ -505,34 +515,117 @@ const CurrentSchedule = () => {
 // AttendanceTab component (main component)
 const AttendanceTab = () => {
     const [savedSchedules, setSavedSchedules] = useState([]);
+    const [currentShift, setCurrentShift] = useState(null);
     const [checkInTime, setCheckInTime] = useState(null);
     const [checkOutTime, setCheckOutTime] = useState(null);
-    const [attendanceHistory, setAttendanceHistory] = useState([
-        { date: "2025-07-26", checkIn: "08:00", checkOut: "17:00", status: "Đúng giờ" },
-        { date: "2025-07-27", checkIn: "08:15", checkOut: "17:00", status: "Đi trễ" },
-        { date: "2025-07-28", checkIn: "07:55", checkOut: "17:05", status: "Đúng giờ" },
-    ]);
+    const [attendanceHistory, setAttendanceHistory] = useState([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [infoModalMessage, setInfoModalMessage] = useState("");
     const [infoModalTitle, setInfoModalTitle] = useState("");
     const [showScheduleFormModal, setShowScheduleFormModal] = useState(false);
     const [showSavedSchedulesModal, setShowSavedSchedulesModal] = useState(false);
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [filterType, setFilterType] = useState("week");
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
     const [weekStartDate, setWeekStartDate] = useState("");
     const [weeklySchedule, setWeeklySchedule] = useState({});
     const [editingScheduleId, setEditingScheduleId] = useState(null);
-    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-    const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [workType, setWorkType] = useState("custom");
+    const user = useSelector((state) => state.auth.userInfo);
+
+    const firebaseUid = user?.uid || "doctor-firebase-uid";
 
     useEffect(() => {
+        const fetchShifts = async () => {
+            try {
+                const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
+                console.log("Shifts from API:", shifts);
+
+                const groupedSchedules = {};
+                shifts.forEach((shift) => {
+                    const date = new Date(shift.date);
+                    if (isNaN(date.getTime())) return;
+
+                    const weekStart = new Date(date);
+                    const day = date.getDay();
+                    const offset = day === 0 ? -6 : 1 - day;
+                    weekStart.setDate(date.getDate() + offset);
+                    const weekStartStr = weekStart.toISOString().split("T")[0];
+
+                    if (!groupedSchedules[weekStartStr]) {
+                        groupedSchedules[weekStartStr] = {
+                            id: shift._id,
+                            weekStartDate: weekStartStr,
+                            schedule: {},
+                            workType: shift.workType || "custom",
+                        };
+                    }
+
+                    const weekday = weekdays[day === 0 ? 6 : day - 1].key;
+                    const shiftKey = shiftOptions.find(
+                        (option) => option.start === shift.start && option.end === shift.end
+                    )?.key || "custom";
+
+                    if (!groupedSchedules[weekStartStr].schedule[weekday]) {
+                        groupedSchedules[weekStartStr].schedule[weekday] = [];
+                    }
+                    groupedSchedules[weekStartStr].schedule[weekday].push(shiftKey);
+                });
+
+                setSavedSchedules(Object.values(groupedSchedules));
+
+                const todayShifts = await ApiWorkShift.getTodayWorkShifts();
+                console.log("Today Shifts:", todayShifts);
+                const current = todayShifts.find(
+                    (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
+                );
+                setCurrentShift(current || null);
+
+                const history = shifts
+                    .filter((shift) => shift.attendance?.checkedIn)
+                    .map((shift) => {
+                        const checkInTime = shift.attendance.checkInTime || "-";
+                        const checkOutTime = shift.attendance.checkOutTime || "-";
+                        let status = "-";
+                        if (checkInTime !== "-") {
+                            const [inHour, inMinute] = checkInTime.split(":").map(Number);
+                            status = inHour < 8 || (inHour === 8 && inMinute === 0) ? "Đúng giờ" : "Đi trễ";
+                            if (shift.attendance.checkedOut) {
+                                status = checkOutTime !== "-" ? status : "Đang làm việc";
+                            }
+                        }
+                        return {
+                            date: shift.date,
+                            checkIn: checkInTime,
+                            checkOut: checkOutTime,
+                            status,
+                        };
+                    });
+                setAttendanceHistory(history);
+            } catch (error) {
+                console.error("Error fetching shifts:", error);
+                setInfoModalTitle("Lỗi");
+                setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.message}`);
+                setShowInfoModal(true);
+            }
+        };
+
+        if (!firebaseUid) {
+            setInfoModalTitle("Lỗi");
+            setInfoModalMessage("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
+            setShowInfoModal(true);
+            return;
+        }
+
+        fetchShifts();
+
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
+    }, [firebaseUid]);
 
     const handleWeekStartChange = (e) => {
         const selectedDate = new Date(e.target.value);
@@ -569,19 +662,17 @@ const AttendanceTab = () => {
     const handleWorkTypeChange = (type) => {
         setWorkType(type);
         if (type === "fulltime") {
-            // Full time: tất cả ngày, tất cả ca
             const fullTimeSchedule = {};
-            weekdays.forEach(day => {
-                fullTimeSchedule[day.key] = shiftOptions.map(shift => shift.key);
+            weekdays.forEach((day) => {
+                fullTimeSchedule[day.key] = shiftOptions.map((shift) => shift.key);
             });
             setWeeklySchedule(fullTimeSchedule);
         } else {
-            // Part time (custom): reset về empty để người dùng tự chọn
             setWeeklySchedule({});
         }
     };
 
-    const handleSaveOrUpdateSchedule = () => {
+    const handleSaveOrUpdateSchedule = async () => {
         if (!weekStartDate) {
             setInfoModalTitle("Lỗi");
             setInfoModalMessage("Vui lòng chọn ngày bắt đầu tuần.");
@@ -589,40 +680,92 @@ const AttendanceTab = () => {
             return;
         }
 
-        const isDuplicateWeek = savedSchedules.some(
-            (s) => s.weekStartDate === weekStartDate && s.id !== editingScheduleId
-        );
+        try {
+            const shiftsData = [];
+            Object.entries(weeklySchedule).forEach(([dayKey, shifts]) => {
+                const dayIndex = weekdays.findIndex((d) => d.key === dayKey);
+                if (dayIndex === -1 || !shifts.length) return;
 
-        if (isDuplicateWeek) {
-            setInfoModalTitle("Lỗi");
-            setInfoModalMessage("Lịch làm việc cho tuần này đã tồn tại. Vui lòng chọn tuần khác hoặc chỉnh sửa lịch đã có.");
+                const date = new Date(weekStartDate);
+                date.setDate(date.getDate() + dayIndex);
+
+                shifts.forEach((shiftKey) => {
+                    const shiftOption = shiftOptions.find((s) => s.key === shiftKey);
+                    if (shiftOption) {
+                        shiftsData.push({
+                            date: date.toISOString().split("T")[0],
+                            start: shiftOption.start,
+                            end: shiftOption.end,
+                            workType,
+                        });
+                    }
+                });
+            });
+
+            if (shiftsData.length === 0) {
+                setInfoModalTitle("Lỗi");
+                setInfoModalMessage("Vui lòng chọn ít nhất một ca làm việc.");
+                setShowInfoModal(true);
+                return;
+            }
+
+            if (editingScheduleId) {
+                const updates = shiftsData.map((shift) => ({
+                    shiftId: editingScheduleId,
+                    date: shift.date,
+                    start: shift.start,
+                    end: shift.end,
+                    workType,
+                }));
+                await ApiWorkShift.updateWorkShifts({ shifts: updates });
+                setInfoModalTitle("Thành công");
+                setInfoModalMessage("Lịch làm việc đã được cập nhật!");
+            } else {
+                await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
+                setInfoModalTitle("Thành công");
+                setInfoModalMessage("Lịch làm việc đã được lưu!");
+            }
+
+            const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
+            const groupedSchedules = {};
+            shifts.forEach((shift) => {
+                const date = new Date(shift.date);
+                if (isNaN(date.getTime())) return;
+
+                const weekStart = new Date(date);
+                const day = date.getDay();
+                const offset = day === 0 ? -6 : 1 - day;
+                weekStart.setDate(date.getDate() + offset);
+                const weekStartStr = weekStart.toISOString().split("T")[0];
+
+                if (!groupedSchedules[weekStartStr]) {
+                    groupedSchedules[weekStartStr] = {
+                        id: shift._id,
+                        weekStartDate: weekStartStr,
+                        schedule: {},
+                        workType: shift.workType || "custom",
+                    };
+                }
+
+                const weekday = weekdays[day === 0 ? 6 : day - 1].key;
+                const shiftKey = shiftOptions.find(
+                    (option) => option.start === shift.start && option.end === shift.end
+                )?.key || "custom";
+
+                if (!groupedSchedules[weekStartStr].schedule[weekday]) {
+                    groupedSchedules[weekStartStr].schedule[weekday] = [];
+                }
+                groupedSchedules[weekStartStr].schedule[weekday].push(shiftKey);
+            });
+
+            setSavedSchedules(Object.values(groupedSchedules));
             setShowInfoModal(true);
-            return;
+            resetScheduleForm();
+        } catch (error) {
+            setInfoModalTitle("Lỗi");
+            setInfoModalMessage(`Lỗi khi lưu/cập nhật lịch làm việc: ${error.message}`);
+            setShowInfoModal(true);
         }
-
-        if (editingScheduleId) {
-            setSavedSchedules((prev) =>
-                prev.map((s) =>
-                    s.id === editingScheduleId
-                        ? { ...s, weekStartDate, schedule: weeklySchedule }
-                        : s
-                )
-            );
-            setInfoModalTitle("Thành công");
-            setInfoModalMessage("Lịch làm việc đã được cập nhật!");
-        } else {
-            const newSchedule = {
-                id: Date.now(),
-                weekStartDate,
-                schedule: weeklySchedule,
-            };
-            setSavedSchedules((prev) => [...prev, newSchedule]);
-            setInfoModalTitle("Thành công");
-            setInfoModalMessage("Lịch làm việc đã được lưu!");
-        }
-
-        setShowInfoModal(true);
-        resetScheduleForm();
     };
 
     const resetScheduleForm = () => {
@@ -636,20 +779,28 @@ const AttendanceTab = () => {
         setEditingScheduleId(schedule.id);
         setWeekStartDate(schedule.weekStartDate);
         setWeeklySchedule(schedule.schedule);
+        setWorkType(schedule.workType || "custom");
         setShowScheduleFormModal(true);
     };
 
-    const handleDeleteSchedule = (id) => {
+    const handleDeleteSchedule = async (id) => {
         setScheduleToDelete(id);
         setShowDeleteConfirmModal(true);
     };
 
-    const confirmDeleteSchedule = () => {
+    const confirmDeleteSchedule = async () => {
         if (scheduleToDelete) {
-            setSavedSchedules((prev) => prev.filter((s) => s.id !== scheduleToDelete));
-            setInfoModalTitle("Thành công");
-            setInfoModalMessage("Lịch làm việc đã được xóa!");
-            setShowInfoModal(true);
+            try {
+                await ApiWorkShift.deleteWorkShift(scheduleToDelete);
+                setSavedSchedules((prev) => prev.filter((s) => s.id !== scheduleToDelete));
+                setInfoModalTitle("Thành công");
+                setInfoModalMessage("Lịch làm việc đã được xóa!");
+                setShowInfoModal(true);
+            } catch (error) {
+                setInfoModalTitle("Lỗi");
+                setInfoModalMessage(`Lỗi khi xóa lịch làm việc: ${error.message}`);
+                setShowInfoModal(true);
+            }
         }
         setShowDeleteConfirmModal(false);
         setScheduleToDelete(null);
@@ -660,40 +811,57 @@ const AttendanceTab = () => {
         setScheduleToDelete(null);
     };
 
-    const handleCheckIn = () => {
-        const now = new Date();
-        const checkInTimeStr = now.toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-        const todayDate = now.toISOString().split("T")[0];
+    const handleCheckIn = async () => {
+        console.log("Firebase UID:", firebaseUid);
+        console.log("Current Shift:", currentShift);
+        try {
+            const now = new Date();
+            const checkInTimeStr = now.toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+            const shift = await ApiWorkShift.checkInWorkShift("webcam");
 
-        setCheckInTime(checkInTimeStr);
-        setAttendanceHistory((prev) => {
-            const existingEntryIndex = prev.findIndex((entry) => entry.date === todayDate);
-            if (existingEntryIndex > -1) {
-                const updatedHistory = [...prev];
-                updatedHistory[existingEntryIndex] = {
-                    ...updatedHistory[existingEntryIndex],
-                    checkIn: checkInTimeStr,
-                    checkOut: null,
-                    status: "Đang làm việc",
-                };
-                return updatedHistory;
-            }
-            return [
-                ...prev,
-                { date: todayDate, checkIn: checkInTimeStr, checkOut: null, status: "Đang làm việc" },
-            ];
-        });
+            setCheckInTime(checkInTimeStr);
+            setAttendanceHistory((prev) => {
+                const todayDate = now.toISOString().split("T")[0];
+                const existingEntryIndex = prev.findIndex((entry) => entry.date === todayDate);
+                if (existingEntryIndex > -1) {
+                    const updatedHistory = [...prev];
+                    updatedHistory[existingEntryIndex] = {
+                        ...updatedHistory[existingEntryIndex],
+                        checkIn: checkInTimeStr,
+                        checkOut: null,
+                        status: "Đang làm việc",
+                    };
+                    return updatedHistory;
+                }
+                return [
+                    ...prev,
+                    { date: todayDate, checkIn: checkInTimeStr, checkOut: null, status: "Đang làm việc" },
+                ];
+            });
 
-        setInfoModalTitle("Chấm công");
-        setInfoModalMessage(`Bạn đã chấm công vào lúc: ${checkInTimeStr}`);
-        setShowInfoModal(true);
-        setCheckOutTime(null);
+            setInfoModalTitle("Chấm công");
+            setInfoModalMessage(`Bạn đã chấm công vào lúc: ${checkInTimeStr}`);
+            setShowInfoModal(true);
+            setCheckOutTime(null);
+
+            // Cập nhật currentShift
+            const updatedShifts = await ApiWorkShift.getTodayWorkShifts();
+            const current = updatedShifts.find(
+                (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
+            );
+            setCurrentShift(current || null);
+        } catch (error) {
+            console.error("Check-in error:", error);
+            setInfoModalTitle("Lỗi");
+            setInfoModalMessage(`Lỗi khi check-in: ${error.message}`);
+            setShowInfoModal(true);
+        }
     };
 
-    const handleCheckOut = () => {
+    const handleCheckOut = async () => {
         if (!checkInTime) {
             setInfoModalTitle("Lỗi");
             setInfoModalMessage("Bạn phải chấm công vào trước khi chấm công ra.");
@@ -701,50 +869,61 @@ const AttendanceTab = () => {
             return;
         }
 
-        const now = new Date();
-        const checkOutTimeStr = now.toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-        const todayDate = now.toISOString().split("T")[0];
+        try {
+            const now = new Date();
+            const checkOutTimeStr = now.toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+            const shift = await ApiWorkShift.checkOutWorkShift("webcam");
 
-        setCheckOutTime(checkOutTimeStr);
-        setAttendanceHistory((prev) => {
-            const existingEntryIndex = prev.findIndex((entry) => entry.date === todayDate);
-            const existingCheckIn = prev[existingEntryIndex]?.checkIn;
-            let status = "N/A";
-            if (existingCheckIn) {
-                const [inHour, inMinute] = existingCheckIn.split(":").map(Number);
-                status = inHour < 8 || (inHour === 8 && inMinute === 0) ? "Đúng giờ" : "Đi trễ";
-            }
+            setCheckOutTime(checkOutTimeStr);
+            setAttendanceHistory((prev) => {
+                const todayDate = now.toISOString().split("T")[0];
+                const existingEntryIndex = prev.findIndex((entry) => entry.date === todayDate);
+                const existingCheckIn = prev[existingEntryIndex]?.checkIn;
+                let status = "-";
+                if (existingCheckIn) {
+                    const [inHour, inMinute] = existingCheckIn.split(":").map(Number);
+                    status = inHour < 8 || (inHour === 8 && inMinute === 0) ? "Đúng giờ" : "Đi trễ";
+                }
 
-            if (existingEntryIndex > -1) {
-                const updatedHistory = [...prev];
-                updatedHistory[existingEntryIndex] = {
-                    ...updatedHistory[existingEntryIndex],
-                    checkOut: checkOutTimeStr,
-                    status,
-                };
-                return updatedHistory;
-            }
-            return [
-                ...prev,
-                { date: todayDate, checkIn: checkInTime, checkOut: checkOutTimeStr, status },
-            ];
-        });
+                if (existingEntryIndex > -1) {
+                    const updatedHistory = [...prev];
+                    updatedHistory[existingEntryIndex] = {
+                        ...updatedHistory[existingEntryIndex],
+                        checkOut: checkOutTimeStr,
+                        status,
+                    };
+                    return updatedHistory;
+                }
+                return [
+                    ...prev,
+                    { date: todayDate, checkIn: checkInTime, checkOut: checkOutTimeStr, status },
+                ];
+            });
 
-        setInfoModalTitle("Chấm công");
-        setInfoModalMessage(`Bạn đã chấm công ra lúc: ${checkOutTimeStr}`);
-        setShowInfoModal(true);
-        setCheckInTime(null);
-        setCheckOutTime(null);
+            setInfoModalTitle("Chấm công");
+            setInfoModalMessage(`Bạn đã chấm công ra lúc: ${checkOutTimeStr}`);
+            setShowInfoModal(true);
+            setCheckInTime(null);
+            setCheckOutTime(null);
+
+            // Cập nhật currentShift
+            const updatedShifts = await ApiWorkShift.getTodayWorkShifts();
+            const current = updatedShifts.find(
+                (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
+            );
+            setCurrentShift(current || null);
+        } catch (error) {
+            console.error("Check-out error:", error);
+            setInfoModalTitle("Lỗi");
+            setInfoModalMessage(`Lỗi khi check-out: ${error.message}`);
+            setShowInfoModal(true);
+        }
     };
 
-    const formatDate = (d) => {
-        if (!d) return "";
-        const [year, month, day] = d.split("-");
-        return `${day}/${month}/${year}`;
-    };
+
 
     // Filter attendance history by week or month
     const getFilteredHistory = () => {
@@ -774,7 +953,7 @@ const AttendanceTab = () => {
 
     return (
         <div>
-            <CurrentSchedule />
+            <CurrentSchedule currentShift={currentShift} />
             <div className="container my-4">
                 <div className="bg-white rounded shadow border p-4">
                     <h2 className="h5 mb-2">Chấm công</h2>
@@ -797,25 +976,25 @@ const AttendanceTab = () => {
                         <button
                             className="btn px-3 py-2 text-white fw-medium"
                             style={{
-                                background: '#3A3DF7',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)',
-                                transition: 'all 0.2s ease',
-                                minWidth: '120px'
+                                background: "#3A3DF7",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                boxShadow: "0 2px 8px rgba(40, 167, 69, 0.3)",
+                                transition: "all 0.2s ease",
+                                minWidth: "120px",
                             }}
                             onClick={handleCheckIn}
                             disabled={checkInTime && !checkOutTime}
                             onMouseEnter={(e) => {
                                 if (!e.target.disabled) {
-                                    e.target.style.transform = 'translateY(-1px)';
-                                    e.target.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.4)';
+                                    e.target.style.transform = "translateY(-1px)";
+                                    e.target.style.boxShadow = "0 4px 12px rgba(40, 167, 69, 0.4)";
                                 }
                             }}
                             onMouseLeave={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
+                                e.target.style.transform = "translateY(0)";
+                                e.target.style.boxShadow = "0 2px 8px rgba(40, 167, 69, 0.3)";
                             }}
                         >
                             <CheckCircle size={16} className="me-1" /> Chấm vào
@@ -823,25 +1002,25 @@ const AttendanceTab = () => {
                         <button
                             className="btn px-3 py-2 text-white fw-medium"
                             style={{
-                                background: '#ff0019ff',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)',
-                                transition: 'all 0.2s ease',
-                                minWidth: '120px'
+                                background: "#ff0019ff",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                boxShadow: "0 2px 8px rgba(220, 53, 69, 0.3)",
+                                transition: "all 0.2s ease",
+                                minWidth: "120px",
                             }}
                             onClick={handleCheckOut}
                             disabled={!checkInTime || checkOutTime}
                             onMouseEnter={(e) => {
                                 if (!e.target.disabled) {
-                                    e.target.style.transform = 'translateY(-1px)';
-                                    e.target.style.boxShadow = '0 4px 12px rgba(249, 8, 32, 0.4)';
+                                    e.target.style.transform = "translateY(-1px)";
+                                    e.target.style.boxShadow = "0 4px 12px rgba(249, 8, 32, 0.4)";
                                 }
                             }}
                             onMouseLeave={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = '0 2px 8px rgba(227, 23, 43, 0.3)';
+                                e.target.style.transform = "translateY(0)";
+                                e.target.style.boxShadow = "0 2px 8px rgba(227, 23, 43, 0.3)";
                             }}
                         >
                             <LogOut size={16} className="me-1" /> Chấm ra
@@ -853,21 +1032,21 @@ const AttendanceTab = () => {
                         <button
                             className="btn px-3 py-2 text-white fw-medium d-flex align-items-center"
                             style={{
-                                background: 'linear-gradient(135deg, #007bff 0%, #6610f2 100%)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                boxShadow: '0 2px 8px rgba(0, 123, 255, 0.3)',
-                                transition: 'all 0.2s ease'
+                                background: "linear-gradient(135deg, #007bff 0%, #6610f2 100%)",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                boxShadow: "0 2px 8px rgba(0, 123, 255, 0.3)",
+                                transition: "all 0.2s ease",
                             }}
                             onClick={() => setShowScheduleFormModal(true)}
                             onMouseEnter={(e) => {
-                                e.target.style.transform = 'translateY(-1px)';
-                                e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.4)';
+                                e.target.style.transform = "translateY(-1px)";
+                                e.target.style.boxShadow = "0 4px 12px rgba(0, 123, 255, 0.4)";
                             }}
                             onMouseLeave={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = '0 2px 8px rgba(0, 123, 255, 0.3)';
+                                e.target.style.transform = "translateY(0)";
+                                e.target.style.boxShadow = "0 2px 8px rgba(0, 123, 255, 0.3)";
                             }}
                         >
                             <PlusCircle size={16} className="me-1" /> Đăng ký lịch
@@ -875,21 +1054,21 @@ const AttendanceTab = () => {
                         <button
                             className="btn px-3 py-2 text-white fw-medium d-flex align-items-center"
                             style={{
-                                background: 'linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                boxShadow: '0 2px 8px rgba(23, 162, 184, 0.3)',
-                                transition: 'all 0.2s ease'
+                                background: "linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%)",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                boxShadow: "0 2px 8px rgba(23, 162, 184, 0.3)",
+                                transition: "all 0.2s ease",
                             }}
                             onClick={() => setShowSavedSchedulesModal(true)}
                             onMouseEnter={(e) => {
-                                e.target.style.transform = 'translateY(-1px)';
-                                e.target.style.boxShadow = '0 4px 12px hsla(190, 93%, 53%, 0.45)';
+                                e.target.style.transform = "translateY(-1px)";
+                                e.target.style.boxShadow = "0 4px 12px hsla(190, 93%, 53%, 0.45)";
                             }}
                             onMouseLeave={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = ' 0 2px 8px rgba(14, 219, 251, 0.37)';
+                                e.target.style.transform = "translateY(0)";
+                                e.target.style.boxShadow = "0 2px 8px rgba(14, 219, 251, 0.37)";
                             }}
                         >
                             <List size={16} className="me-1" /> Lịch đã lưu
@@ -916,7 +1095,9 @@ const AttendanceTab = () => {
                             />
                         </div>
                         {filteredHistory.length === 0 ? (
-                            <div className="alert alert-info text-center">Chưa có lịch sử chấm công trong khoảng thời gian này.</div>
+                            <div className="alert alert-info text-center">
+                                Chưa có lịch sử chấm công trong khoảng thời gian này.
+                            </div>
                         ) : (
                             <div className="table-responsive">
                                 <table className="table table-bordered table-hover">
@@ -931,9 +1112,9 @@ const AttendanceTab = () => {
                                     <tbody>
                                         {filteredHistory.map((entry, idx) => (
                                             <tr key={idx}>
-                                                <td>{entry.date}</td>
-                                                <td>{entry.checkIn || "N/A"}</td>
-                                                <td>{entry.checkOut || "N/A"}</td>
+                                                <td>{formatDate(entry.date)}</td>
+                                                <td>{entry.checkIn || "-"}</td>
+                                                <td>{entry.checkOut || "-"}</td>
                                                 <td>
                                                     <span
                                                         className={`badge rounded-pill ${entry.status === "Đúng giờ"
