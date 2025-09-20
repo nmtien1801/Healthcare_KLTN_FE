@@ -15,12 +15,8 @@ import {
     LogOut,
 } from "lucide-react";
 import ApiWorkShift from "../../apis/ApiWorkShift";
+import { formatDate } from "../../utils/formatDate";
 
-const formatDate = (d) => {
-    if (!d) return "";
-    const [year, month, day] = d.split("-");
-    return `${day}/${month}/${year}`;
-};
 
 // Shift options
 const shiftOptions = [
@@ -406,7 +402,7 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
 );
 
 // CurrentSchedule component
-const CurrentSchedule = ({ currentShift }) => {
+const CurrentSchedule = ({ currentShift, user }) => {
     return (
         <div className="container my-3">
             <div className="bg-white rounded shadow border p-4">
@@ -435,7 +431,7 @@ const CurrentSchedule = ({ currentShift }) => {
                                         />
                                     </div>
                                     <div>
-                                        <h5 className="mb-1 fw-bold text-dark">Bác sĩ Trần Thị B</h5>
+                                        <h5 className="mb-1 fw-bold text-dark">{user?.username || "Bác sĩ Trần Thị B"}</h5>
                                         <p className="mb-0 text-muted">Chuyên khoa Nội tiết</p>
                                     </div>
                                 </div>
@@ -854,13 +850,20 @@ const AttendanceTab = () => {
             );
             setCurrentShift(current || null);
         } catch (error) {
-            console.error("Check-in error:", error);
+            let errorMsg = "Có lỗi xảy ra khi check-in.";
+            if (error.response?.data?.message) {
+                errorMsg = error.response.data.message; // lấy từ backend
+            } else if (error.message) {
+                errorMsg = error.message; // fallback
+            }
+
+            console.error("Check-in error:", errorMsg);
+            // Nếu bạn có modal hiển thị lỗi:
             setInfoModalTitle("Lỗi");
-            setInfoModalMessage(`Lỗi khi check-in: ${error.message}`);
+            setInfoModalMessage(errorMsg);
             setShowInfoModal(true);
         }
     };
-
     const handleCheckOut = async () => {
         if (!checkInTime) {
             setInfoModalTitle("Lỗi");
@@ -916,13 +919,20 @@ const AttendanceTab = () => {
             );
             setCurrentShift(current || null);
         } catch (error) {
-            console.error("Check-out error:", error);
+            let errorMsg = "Có lỗi xảy ra khi check-in.";
+            if (error.response?.data?.message) {
+                errorMsg = error.response.data.message; // lấy từ backend
+            } else if (error.message) {
+                errorMsg = error.message; // fallback
+            }
+
+            console.error("Check-in error:", errorMsg);
+            // Nếu bạn có modal hiển thị lỗi:
             setInfoModalTitle("Lỗi");
-            setInfoModalMessage(`Lỗi khi check-out: ${error.message}`);
+            setInfoModalMessage(errorMsg);
             setShowInfoModal(true);
         }
     };
-
 
 
     // Filter attendance history by week or month
@@ -1090,7 +1100,7 @@ const AttendanceTab = () => {
                             <input
                                 type="date"
                                 className="form-control w-auto"
-                                value={filterDate}
+                                value={formatDate(filterDate)}
                                 onChange={(e) => setFilterDate(e.target.value)}
                             />
                         </div>

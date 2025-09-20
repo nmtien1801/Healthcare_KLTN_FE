@@ -5,14 +5,7 @@ import ApiDoctor from "../../apis/ApiDoctor";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
-
-const formatDate = (date) => {
-  if (!date) return "";
-  const d = new Date(date);
-  return d.toLocaleDateString("vi-VN"); // luôn DD/MM/YYYY
-};
-
-
+import { formatDate } from "../../utils/formatDate";
 // Simplified ProfileHeader component
 const ProfileHeader = ({ doctor }) => (
   <Card className="shadow-sm mb-4">
