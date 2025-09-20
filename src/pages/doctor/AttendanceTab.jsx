@@ -11,6 +11,7 @@ import {
     Shield,
     Award,
     Clock as Clock24,
+    LogOut,
 } from "lucide-react";
 
 // Shift options
@@ -18,6 +19,12 @@ const shiftOptions = [
     { key: "morning", label: "Sáng (08:00 - 12:00)" },
     { key: "afternoon", label: "Chiều (13:00 - 17:00)" },
     { key: "evening", label: "Tối (18:00 - 21:00)" },
+];
+
+// Work type options
+const workTypeOptions = [
+    { key: "fulltime", label: "Full Time", description: "Làm việc toàn thời gian" },
+    { key: "custom", label: "Part Time", description: "Làm việc bán thời gian" },
 ];
 
 // Weekday options
@@ -39,17 +46,42 @@ const ConfirmationModal = ({ show, title, message, onConfirm, onCancel }) => (
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
         <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h5 className="modal-title">{title}</h5>
+            <div className="modal-content" style={{ borderRadius: '12px', border: 'none' }}>
+                <div className="modal-header border-0">
+                    <h5 className="modal-title fw-bold text-danger d-flex align-items-center">
+                        <Trash2 size={20} className="me-2" />
+                        {title}
+                    </h5>
                 </div>
-                <div className="modal-body">{message}</div>
-                <div className="modal-footer">
-                    <button className="btn btn-outline-secondary" onClick={onCancel}>
+                <div className="modal-body py-3">
+                    <p className="mb-0">{message}</p>
+                </div>
+                <div className="modal-footer border-0 d-flex justify-content-end gap-2">
+                    <button
+                        className="btn px-3 py-2 fw-medium"
+                        style={{
+                            background: '#7d6c6cff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: 'white',
+                            fontSize: '14px'
+                        }}
+                        onClick={onCancel}
+                    >
                         Hủy
                     </button>
-                    <button className="btn btn-danger" onClick={onConfirm}>
-                        Xác nhận
+                    <button
+                        className="btn px-3 py-2 fw-medium"
+                        style={{
+                            background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: 'white',
+                            fontSize: '14px'
+                        }}
+                        onClick={onConfirm}
+                    >
+                        Xác nhận xóa
                     </button>
                 </div>
             </div>
@@ -65,15 +97,28 @@ const InfoModal = ({ show, title, message, onClose }) => (
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
         <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h5 className="modal-title d-flex align-items-center gap-2">
-                        <Info size={20} /> {title}
+            <div className="modal-content" style={{ borderRadius: '12px', border: 'none' }}>
+                <div className="modal-header border-0">
+                    <h5 className="modal-title fw-bold text-primary d-flex align-items-center">
+                        <Info size={20} className="me-2" />
+                        {title}
                     </h5>
                 </div>
-                <div className="modal-body">{message}</div>
-                <div className="modal-footer">
-                    <button className="btn btn-primary" onClick={onClose}>
+                <div className="modal-body py-3">
+                    <p className="mb-0">{message}</p>
+                </div>
+                <div className="modal-footer border-0 d-flex justify-content-end">
+                    <button
+                        className="btn px-3 py-2 fw-medium"
+                        style={{
+                            background: "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)",
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: 'white',
+                            fontSize: '14px'
+                        }}
+                        onClick={onClose}
+                    >
                         Đóng
                     </button>
                 </div>
@@ -82,6 +127,7 @@ const InfoModal = ({ show, title, message, onClose }) => (
     </div>
 );
 
+// Schedule Form Modal
 // Schedule Form Modal
 const ScheduleFormModal = ({
     show,
@@ -95,19 +141,28 @@ const ScheduleFormModal = ({
     editingScheduleId,
     resetScheduleForm,
     handleSaveOrUpdateSchedule,
+    workType,
+    setWorkType,
+    handleWorkTypeChange,
 }) => (
     <div
         className={`modal ${show ? "d-block" : "d-none"}`}
         tabIndex="-1"
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
-        <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content" style={{ maxWidth: "700px" }}>
+        <div className="modal-dialog modal-dialog-centered modal-xl" style={{ marginTop: '70px' }}> {/* Hạ modal xuống 70px và tăng kích thước thành modal-xl */}
+            <div className="modal-content" style={{ maxWidth: "900px", marginLeft: 'auto', marginRight: 'auto' }}> {/* Tăng maxWidth để modal dài hơn */}
                 <div className="modal-header">
                     <h5 className="modal-title d-flex align-items-center gap-2">
                         <Edit size={20} />{" "}
                         {editingScheduleId ? "Cập nhật lịch làm việc" : "Đăng ký lịch làm việc"}
                     </h5>
+                    <button
+                        type="button"
+                        className="btn-close"
+                        onClick={onClose}
+                        style={{ fontSize: '14px' }}
+                    ></button>
                 </div>
                 <div className="modal-body">
                     <div className="mb-4">
@@ -120,48 +175,107 @@ const ScheduleFormModal = ({
                                 onChange={handleWeekStartChange}
                                 min={new Date().toISOString().split("T")[0]}
                             />
-                            <button className="btn btn-outline-primary" onClick={handleSelectCurrentWeek}>
-                                <Calendar size={18} className="me-1" /> Tuần hiện tại
+                            <button
+                                className="btn px-3 py-2 fw-medium"
+                                style={{
+                                    background: "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)",
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    fontSize: '14px'
+                                }}
+                                onClick={handleSelectCurrentWeek}
+                            >
+                                <Calendar size={16} className="me-1" /> Tuần hiện tại
                             </button>
                         </div>
                     </div>
+
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold">Loại hình làm việc</label>
+                        <div className="row g-3 justify-content-center">
+                            {workTypeOptions.map((type) => (
+                                <div key={type.key} className="col-md-6">
+                                    <div
+                                        className={`card h-100 cursor-pointer ${workType === type.key ? 'border-primary' : ''}`}
+                                        style={{
+                                            cursor: 'pointer',
+                                            border: workType === type.key ? '2px solid #007bff' : '1px solid #dee2e6',
+                                            borderRadius: '8px',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onClick={() => handleWorkTypeChange(type.key)}
+                                    >
+                                        <div className="card-body text-center p-3">
+                                            <h6 className="card-title mb-2">{type.label}</h6>
+                                            <p className="card-text small text-muted mb-0">{type.description}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="mb-4">
                         <label className="form-label fw-semibold text-center d-block">Chọn ca làm việc</label>
-                        <div className="d-flex justify-content-center">
-                            <div style={{ maxWidth: "600px", width: "100%" }}>
-                                {weekdays.map((day) => (
-                                    <div key={day.key} className="border-bottom pb-3 mb-3">
-                                        <strong className="text-dark d-block text-center">{day.label}</strong>
-                                        <div className="d-flex justify-content-center gap-4 mt-2">
+                        <div className="table-responsive">
+                            <table className="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        {shiftOptions.map((shift) => (
+                                            <th key={shift.key} className="text-center">{shift.label}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {weekdays.map((day) => (
+                                        <tr key={day.key}>
+                                            <td className="fw-semibold">{day.label}</td>
                                             {shiftOptions.map((shift) => (
-                                                <div key={shift.key} className="d-flex align-items-center">
+                                                <td key={shift.key} className="text-center">
                                                     <input
                                                         type="checkbox"
                                                         id={`${day.key}-${shift.key}`}
-                                                        className="form-check-input me-2"
+                                                        className="form-check-input"
                                                         checked={weeklySchedule[day.key]?.includes(shift.key) || false}
                                                         onChange={() => handleShiftToggle(day.key, shift.key)}
                                                     />
-                                                    <label htmlFor={`${day.key}-${shift.key}`} className="form-check-label">
-                                                        {shift.label}
-                                                    </label>
-                                                </div>
+                                                </td>
                                             ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                <div className="modal-footer">
-                    {editingScheduleId && (
-                        <button className="btn btn-outline-secondary" onClick={resetScheduleForm}>
-                            Hủy
-                        </button>
-                    )}
+                <div className="modal-footer border-0 d-flex justify-content-end gap-2">
                     <button
-                        className="btn btn-primary"
+                        className="btn px-3 py-2 fw-medium"
+                        style={{
+                            background: "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)",
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: 'white',
+                            fontSize: '14px'
+                        }}
+                        onClick={() => {
+                            resetScheduleForm();
+                            onClose();
+                        }}
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        className="btn px-3 py-2 fw-medium"
+                        style={{
+                            background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: 'white',
+                            fontSize: '14px'
+                        }}
                         onClick={() => {
                             handleSaveOrUpdateSchedule();
                             onClose();
@@ -189,12 +303,18 @@ const SavedSchedulesModal = ({
         tabIndex="-1"
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
-        <div className="modal-dialog modal-dialog-centered modal-lg">
+        <div className="modal-dialog modal-dialog-centered modal-lg" style={{ marginTop: '50px' }}> {/* Hạ modal xuống 50px để tránh che header */}
             <div className="modal-content" style={{ maxWidth: "700px" }}>
                 <div className="modal-header">
                     <h5 className="modal-title d-flex align-items-center gap-2">
                         <List size={20} /> Lịch làm việc đã lưu
                     </h5>
+                    <button
+                        type="button"
+                        className="btn-close"
+                        onClick={onClose}
+                        style={{ fontSize: '14px' }}
+                    ></button>
                 </div>
                 <div className="modal-body">
                     {savedSchedules.length === 0 ? (
@@ -230,19 +350,35 @@ const SavedSchedulesModal = ({
                                         </td>
                                         <td className="text-center">
                                             <button
-                                                className="btn btn-outline-primary me-2"
+                                                className="btn me-2 px-2 py-1 fw-medium"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    fontSize: '12px'
+                                                }}
                                                 onClick={() => {
                                                     onClose();
                                                     handleEditSchedule(item);
                                                 }}
                                             >
-                                                <Edit size={16} />
+                                                <Edit size={14} className="me-1" />
+                                                Sửa
                                             </button>
                                             <button
-                                                className="btn btn-outline-danger"
+                                                className="btn px-2 py-1 fw-medium"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    fontSize: '12px'
+                                                }}
                                                 onClick={() => handleDeleteSchedule(item.id)}
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={14} className="me-1" />
+                                                Xóa
                                             </button>
                                         </td>
                                     </tr>
@@ -387,6 +523,9 @@ const AttendanceTab = () => {
     const [weekStartDate, setWeekStartDate] = useState("");
     const [weeklySchedule, setWeeklySchedule] = useState({});
     const [editingScheduleId, setEditingScheduleId] = useState(null);
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [scheduleToDelete, setScheduleToDelete] = useState(null);
+    const [workType, setWorkType] = useState("custom");
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -425,6 +564,21 @@ const AttendanceTab = () => {
                 : [...current, shiftKey];
             return { ...prev, [dayKey]: updated };
         });
+    };
+
+    const handleWorkTypeChange = (type) => {
+        setWorkType(type);
+        if (type === "fulltime") {
+            // Full time: tất cả ngày, tất cả ca
+            const fullTimeSchedule = {};
+            weekdays.forEach(day => {
+                fullTimeSchedule[day.key] = shiftOptions.map(shift => shift.key);
+            });
+            setWeeklySchedule(fullTimeSchedule);
+        } else {
+            // Part time (custom): reset về empty để người dùng tự chọn
+            setWeeklySchedule({});
+        }
     };
 
     const handleSaveOrUpdateSchedule = () => {
@@ -475,6 +629,7 @@ const AttendanceTab = () => {
         setWeekStartDate("");
         setWeeklySchedule({});
         setEditingScheduleId(null);
+        setWorkType("custom");
     };
 
     const handleEditSchedule = (schedule) => {
@@ -485,10 +640,24 @@ const AttendanceTab = () => {
     };
 
     const handleDeleteSchedule = (id) => {
-        setSavedSchedules((prev) => prev.filter((s) => s.id !== id));
-        setInfoModalTitle("Thành công");
-        setInfoModalMessage("Lịch làm việc đã được xóa!");
-        setShowInfoModal(true);
+        setScheduleToDelete(id);
+        setShowDeleteConfirmModal(true);
+    };
+
+    const confirmDeleteSchedule = () => {
+        if (scheduleToDelete) {
+            setSavedSchedules((prev) => prev.filter((s) => s.id !== scheduleToDelete));
+            setInfoModalTitle("Thành công");
+            setInfoModalMessage("Lịch làm việc đã được xóa!");
+            setShowInfoModal(true);
+        }
+        setShowDeleteConfirmModal(false);
+        setScheduleToDelete(null);
+    };
+
+    const cancelDeleteSchedule = () => {
+        setShowDeleteConfirmModal(false);
+        setScheduleToDelete(null);
     };
 
     const handleCheckIn = () => {
@@ -626,34 +795,104 @@ const AttendanceTab = () => {
                     {/* Check-in/Check-out Buttons */}
                     <div className="d-flex justify-content-center gap-3 mb-4">
                         <button
-                            className="btn btn-success px-4 py-2 rounded-pill"
+                            className="btn px-3 py-2 text-white fw-medium"
+                            style={{
+                                background: '#3A3DF7',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)',
+                                transition: 'all 0.2s ease',
+                                minWidth: '120px'
+                            }}
                             onClick={handleCheckIn}
                             disabled={checkInTime && !checkOutTime}
+                            onMouseEnter={(e) => {
+                                if (!e.target.disabled) {
+                                    e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.4)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
+                            }}
                         >
-                            <Clock size={18} className="me-1" /> Going
+                            <CheckCircle size={16} className="me-1" /> Chấm vào
                         </button>
                         <button
-                            className="btn btn-danger px-4 py-2 rounded-pill"
+                            className="btn px-3 py-2 text-white fw-medium"
+                            style={{
+                                background: '#ff0019ff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)',
+                                transition: 'all 0.2s ease',
+                                minWidth: '120px'
+                            }}
                             onClick={handleCheckOut}
                             disabled={!checkInTime || checkOutTime}
+                            onMouseEnter={(e) => {
+                                if (!e.target.disabled) {
+                                    e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(249, 8, 32, 0.4)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 2px 8px rgba(227, 23, 43, 0.3)';
+                            }}
                         >
-                            <Clock size={18} className="me-1" /> Leaving
+                            <LogOut size={16} className="me-1" /> Chấm ra
                         </button>
                     </div>
 
                     {/* Action Buttons (Aligned Left) */}
                     <div className="d-flex justify-content-start gap-3 mb-4">
                         <button
-                            className="btn btn-primary px-4 py-2 d-flex align-items-center"
+                            className="btn px-3 py-2 text-white fw-medium d-flex align-items-center"
+                            style={{
+                                background: 'linear-gradient(135deg, #007bff 0%, #6610f2 100%)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                boxShadow: '0 2px 8px rgba(0, 123, 255, 0.3)',
+                                transition: 'all 0.2s ease'
+                            }}
                             onClick={() => setShowScheduleFormModal(true)}
+                            onMouseEnter={(e) => {
+                                e.target.style.transform = 'translateY(-1px)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 2px 8px rgba(0, 123, 255, 0.3)';
+                            }}
                         >
-                            <PlusCircle size={18} className="me-1" /> Đăng ký lịch làm việc
+                            <PlusCircle size={16} className="me-1" /> Đăng ký lịch
                         </button>
                         <button
-                            className="btn btn-info px-4 py-2 d-flex align-items-center"
+                            className="btn px-3 py-2 text-white fw-medium d-flex align-items-center"
+                            style={{
+                                background: 'linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                boxShadow: '0 2px 8px rgba(23, 162, 184, 0.3)',
+                                transition: 'all 0.2s ease'
+                            }}
                             onClick={() => setShowSavedSchedulesModal(true)}
+                            onMouseEnter={(e) => {
+                                e.target.style.transform = 'translateY(-1px)';
+                                e.target.style.boxShadow = '0 4px 12px hsla(190, 93%, 53%, 0.45)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = ' 0 2px 8px rgba(14, 219, 251, 0.37)';
+                            }}
                         >
-                            <List size={18} className="me-1" /> Lịch làm việc đã lưu
+                            <List size={16} className="me-1" /> Lịch đã lưu
                         </button>
                     </div>
 
@@ -733,6 +972,9 @@ const AttendanceTab = () => {
                 editingScheduleId={editingScheduleId}
                 resetScheduleForm={resetScheduleForm}
                 handleSaveOrUpdateSchedule={handleSaveOrUpdateSchedule}
+                workType={workType}
+                setWorkType={setWorkType}
+                handleWorkTypeChange={handleWorkTypeChange}
             />
             <SavedSchedulesModal
                 show={showSavedSchedulesModal}
@@ -747,6 +989,13 @@ const AttendanceTab = () => {
                 title={infoModalTitle}
                 message={infoModalMessage}
                 onClose={() => setShowInfoModal(false)}
+            />
+            <ConfirmationModal
+                show={showDeleteConfirmModal}
+                title="Xác nhận xóa"
+                message="Bạn có chắc chắn muốn xóa lịch làm việc này không? Hành động này không thể hoàn tác."
+                onConfirm={confirmDeleteSchedule}
+                onCancel={cancelDeleteSchedule}
             />
         </div>
     );

@@ -142,26 +142,35 @@ export default function AppointmentTab() {
     try {
       const payload = {
         ...updatedAppointment,
-        date: new Date(updatedAppointment.date).toISOString().split("T")[0],
-      }
+        date: new Date(updatedAppointment.date).toISOString().split("T")[0], // Gửi YYYY-MM-DD cho API
+      };
 
-      await ApiDoctor.updateAppointment(updatedAppointment.id, payload)
+      await ApiDoctor.updateAppointment(updatedAppointment.id, payload);
+
+      // Chuyển đổi lại date sang DD/MM/YYYY khi cập nhật state
+      const updatedAppointmentWithFormattedDate = {
+        ...updatedAppointment,
+        date: new Date(updatedAppointment.date).toLocaleDateString("vi-VN"),
+      };
 
       setUpcomingAppointments((prev) =>
-        prev.map((app) => (app.id === updatedAppointment.id ? updatedAppointment : app))
-      )
+        prev.map((app) =>
+          app.id === updatedAppointment.id ? updatedAppointmentWithFormattedDate : app
+        )
+      );
       setTodayAppointments((prev) =>
-        prev.map((app) => (app.id === updatedAppointment.id ? updatedAppointment : app))
-      )
+        prev.map((app) =>
+          app.id === updatedAppointment.id ? updatedAppointmentWithFormattedDate : app
+        )
+      );
 
-      setShowEditModal(false)
-      setSelectedAppointment(updatedAppointment)
-      // setShowViewModal(true)
+      setShowEditModal(false);
+      setSelectedAppointment(updatedAppointmentWithFormattedDate);
     } catch (error) {
-      console.error("Lỗi khi cập nhật lịch hẹn:", error)
-      alert("Cập nhật lịch hẹn thất bại. Vui lòng thử lại.")
+      console.error("Lỗi khi cập nhật lịch hẹn:", error);
+      alert("Cập nhật lịch hẹn thất bại. Vui lòng thử lại.");
     }
-  }
+  };
   const handleDeleteAppointment = (appointment) => {
     setAppointmentToDelete(appointment);
     setShowDeleteModal(true);

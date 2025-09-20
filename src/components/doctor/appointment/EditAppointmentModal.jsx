@@ -1,9 +1,10 @@
-
-
-import { useState, useEffect } from "react"
-import { Clock, CalendarDays, User, Stethoscope, FileText } from "lucide-react"
-import { Button, Input, Select } from "../common-ui-components"
-import { TYPE_OPTIONS, STATUS_OPTIONS } from "../../../utils/appointmentConstants"
+import { useState, useEffect } from "react";
+import { Clock, CalendarDays, User, Stethoscope, FileText } from "lucide-react";
+import { Button, Input, Select } from "../common-ui-components";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { vi } from "date-fns/locale";
+import { TYPE_OPTIONS, STATUS_OPTIONS } from "../../../utils/appointmentConstants";
 
 const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
     const [formData, setFormData] = useState({
@@ -17,9 +18,9 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
         doctor: "",
         notes: "",
         status: "",
-    })
+    });
 
-    const [errors, setErrors] = useState({})
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (appointment) {
@@ -27,38 +28,38 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                 patientName: appointment.patientName || "",
                 patientAge: appointment.patientAge || "",
                 patientDisease: appointment.patientDisease || "",
-                date: appointment.date || "",
+                date: appointment.date || "", // Đã ở định dạng DD/MM/YYYY
                 time: appointment.time || "",
                 type: appointment.type || "onsite",
                 reason: appointment.reason || "",
                 doctor: appointment.doctor || "",
                 notes: appointment.notes || "",
                 status: appointment.status || "pending",
-            })
+            });
         }
-    }, [appointment])
+    }, [appointment]);
 
     const validateForm = () => {
-        const newErrors = {}
-        if (!formData.patientName.trim()) newErrors.patientName = "Tên bệnh nhân là bắt buộc"
+        const newErrors = {};
+        if (!formData.patientName.trim()) newErrors.patientName = "Tên bệnh nhân là bắt buộc";
         if (!formData.patientAge || formData.patientAge < 1 || formData.patientAge > 120)
-            newErrors.patientAge = "Tuổi phải từ 1-120"
-        if (!formData.patientDisease.trim()) newErrors.patientDisease = "Bệnh là bắt buộc"
-        if (!formData.date.trim()) newErrors.date = "Ngày hẹn là bắt buộc"
-        if (!formData.time.trim()) newErrors.time = "Giờ hẹn là bắt buộc"
-        if (!formData.reason.trim()) newErrors.reason = "Lý do khám là bắt buộc"
-        if (!formData.doctor.trim()) newErrors.doctor = "Bác sĩ là bắt buộc"
+            newErrors.patientAge = "Tuổi phải từ 1-120";
+        if (!formData.patientDisease.trim()) newErrors.patientDisease = "Bệnh là bắt buộc";
+        if (!formData.date.trim()) newErrors.date = "Ngày hẹn là bắt buộc";
+        if (!formData.time.trim()) newErrors.time = "Giờ hẹn là bắt buộc";
+        if (!formData.reason.trim()) newErrors.reason = "Lý do khám là bắt buộc";
+        if (!formData.doctor.trim()) newErrors.doctor = "Bác sĩ là bắt buộc";
 
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const parseDate = (dateStr) => {
-        if (!dateStr) return null
-        const [day, month, year] = dateStr.split("/")
-        // Convert to YYYY-MM-DD format for Date constructor
-        return new Date(`${year}-${month}-${day}`)
-    }
+        if (!dateStr) return null;
+        const [day, month, year] = dateStr.split("/");
+        return new Date(`${year}-${month}-${day}`);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (validateForm()) {
@@ -68,7 +69,7 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                 ...appointment,
                 ...formData,
                 id: appointment.id,
-                date: parsedDate ? parsedDate.toISOString().split("T")[0] : null,
+                date: parsedDate ? parsedDate.toISOString().split("T")[0] : "", // Gửi YYYY-MM-DD cho API
             };
 
             onSave(payload);
@@ -76,14 +77,15 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
             onHide();
         }
     };
-    const handleChange = (field, value) => {
-        setFormData({ ...formData, [field]: value })
-        if (errors[field]) {
-            setErrors({ ...errors, [field]: "" })
-        }
-    }
 
-    if (!show || !appointment) return null
+    const handleChange = (field, value) => {
+        setFormData({ ...formData, [field]: value });
+        if (errors[field]) {
+            setErrors({ ...errors, [field]: "" });
+        }
+    };
+
+    if (!show || !appointment) return null;
 
     return (
         <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
@@ -144,11 +146,15 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                                         <CalendarDays size={14} />
                                         Ngày hẹn *
                                     </label>
-                                    <Input
-                                        type="date"
-                                        value={formData.date}
-                                        onChange={(e) => handleChange("date", e.target.value)}
-                                        className={errors.date ? "is-invalid" : ""}
+                                    <DatePicker
+                                        selected={formData.date ? parseDate(formData.date) : null}
+                                        onChange={(date) =>
+                                            handleChange("date", date ? date.toLocaleDateString("vi-VN") : "")
+                                        }
+                                        dateFormat="dd/MM/yyyy"
+                                        className={`form-control ${errors.date ? "is-invalid" : ""}`}
+                                        placeholderText="Chọn ngày"
+                                        locale={vi}
                                     />
                                     {errors.date && <div className="invalid-feedback">{errors.date}</div>}
                                 </div>
@@ -177,7 +183,6 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                                             </option>
                                         ))}
                                     </Select>
-
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-medium d-flex align-items-center gap-1">
@@ -231,7 +236,6 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                                             </option>
                                         ))}
                                     </Select>
-
                                 </div>
                             </div>
                         </div>
@@ -247,7 +251,7 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default EditAppointmentModal
+export default EditAppointmentModal;
