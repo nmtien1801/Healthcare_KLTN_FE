@@ -380,7 +380,7 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
                                                     color: "white",
                                                     fontSize: "12px",
                                                 }}
-                                                onClick={() => handleDeleteSchedule(item.id)}
+                                                onClick={() => handleDeleteSchedule(item.weekStartDate)}
                                             >
                                                 <Trash2 size={14} className="me-1" />
                                                 Xóa
@@ -535,7 +535,7 @@ const AttendanceTab = () => {
     const [showScheduleFormModal, setShowScheduleFormModal] = useState(false);
     const [showSavedSchedulesModal, setShowSavedSchedulesModal] = useState(false);
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-    const [scheduleToDelete, setScheduleToDelete] = useState(null);
+    const [scheduleToDelete, setScheduleToDelete] = useState([]);
     const [filterType, setFilterType] = useState("week");
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
     const [weekStartDate, setWeekStartDate] = useState("");
@@ -605,12 +605,14 @@ const AttendanceTab = () => {
 
                     if (!groupedSchedules[weekStartStr]) {
                         groupedSchedules[weekStartStr] = {
-                            id: shift._id,
+                            shiftIds: [], // Lưu danh sách shiftIds
                             weekStartDate: weekStartStr,
                             schedule: {},
                             workType: shift.workType || "parttime",
                         };
                     }
+
+                    groupedSchedules[weekStartStr].shiftIds.push(shift._id); // Thêm shiftId vào danh sách
 
                     const weekday = weekdays[day === 0 ? 6 : day - 1].key;
                     const shiftKey = shiftOptions.find(
@@ -842,27 +844,79 @@ const AttendanceTab = () => {
         setShowScheduleFormModal(true);
     };
 
-    const handleDeleteSchedule = async (id) => {
-        setScheduleToDelete(id);
-        setShowDeleteConfirmModal(true);
+    const handleDeleteSchedule = async (weekStartDate) => {
+        try {
+            // Lấy tất cả shiftId của tuần đó từ savedSchedules hoặc API
+            const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
+            const weekShifts = shifts.filter((shift) => {
+                const date = new Date(shift.date);
+                const weekStart = new Date(weekStartDate);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                return date >= weekStart && date <= weekEnd;
+            });
+            const shiftIds = weekShifts.map((shift) => shift._id);
+            setScheduleToDelete(shiftIds); // Lưu mảng shiftIds
+            setShowDeleteConfirmModal(true);
+        } catch (error) {
+            setInfoModalTitle("Thông báo");
+            setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.response?.data?.message}`);
+            setShowInfoModal(true);
+        }
     };
 
     const confirmDeleteSchedule = async () => {
-        if (scheduleToDelete) {
+        if (scheduleToDelete && scheduleToDelete.length > 0) {
             try {
-                await ApiWorkShift.deleteWorkShift(scheduleToDelete);
-                setSavedSchedules((prev) => prev.filter((s) => s.id !== scheduleToDelete));
+                const response = await ApiWorkShift.deleteManyWorkShifts(scheduleToDelete);
+
+                // Gọi lại API để lấy danh sách ca làm việc mới nhất
+                const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
+                const groupedSchedules = {};
+                shifts.forEach((shift) => {
+                    const date = new Date(shift.date);
+                    if (isNaN(date.getTime())) return;
+
+                    const weekStart = new Date(date);
+                    const day = date.getDay();
+                    const offset = day === 0 ? -6 : 1 - day;
+                    weekStart.setDate(date.getDate() + offset);
+                    const weekStartStr = weekStart.toISOString().split("T")[0];
+
+                    if (!groupedSchedules[weekStartStr]) {
+                        groupedSchedules[weekStartStr] = {
+                            shiftIds: [], // Lưu danh sách shiftIds
+                            weekStartDate: weekStartStr,
+                            schedule: {},
+                            workType: shift.workType || "parttime",
+                        };
+                    }
+
+                    groupedSchedules[weekStartStr].shiftIds.push(shift._id); // Thêm shiftId vào danh sách
+
+                    const weekday = weekdays[day === 0 ? 6 : day - 1].key;
+                    const shiftKey = shiftOptions.find(
+                        (option) => option.start === shift.start && option.end === shift.end
+                    )?.key || "parttime";
+
+                    if (!groupedSchedules[weekStartStr].schedule[weekday]) {
+                        groupedSchedules[weekStartStr].schedule[weekday] = [];
+                    }
+                    groupedSchedules[weekStartStr].schedule[weekday].push(shiftKey);
+                });
+
+                setSavedSchedules(Object.values(groupedSchedules));
                 setInfoModalTitle("Thành công");
-                setInfoModalMessage("Lịch làm việc đã được xóa!");
+                setInfoModalMessage(`Đã xóa ${response.deletedCount} ca làm việc!`);
                 setShowInfoModal(true);
             } catch (error) {
                 setInfoModalTitle("Thông báo");
-                setInfoModalMessage(`Lỗi khi xóa lịch làm việc: ${error.message}`);
+                setInfoModalMessage(`Lỗi khi xóa lịch làm việc: ${error.response?.data?.message || error.message}`);
                 setShowInfoModal(true);
             }
         }
         setShowDeleteConfirmModal(false);
-        setScheduleToDelete(null);
+        setScheduleToDelete([]);
     };
 
     const cancelDeleteSchedule = () => {
