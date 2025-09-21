@@ -311,8 +311,8 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
         tabIndex="-1"
         style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
-        <div className="modal-dialog modal-dialog-centered modal-lg" style={{ marginTop: "50px" }}>
-            <div className="modal-content" style={{ maxWidth: "700px" }}>
+        <div className="modal-dialog modal-dialog-centered modal-xl" style={{ marginTop: "70px" }}>
+            <div className="modal-content" style={{ maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
                 <div className="modal-header">
                     <h5 className="modal-title d-flex align-items-center gap-2">
                         <List size={20} /> Lịch làm việc đã lưu
@@ -343,19 +343,24 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
                                         <td>{formatDate(item.weekStartDate)}</td>
                                         <td>
                                             {Object.entries(item.schedule).map(([dayKey, shifts]) => (
-                                                <div key={dayKey} className="mb-1">
-                                                    <strong>{weekdays.find((d) => d.key === dayKey)?.label}:</strong>{" "}
-                                                    {shifts.length === 0 ? (
-                                                        <span className="text-muted">Không có ca</span>
-                                                    ) : (
-                                                        shifts.map((shift) => (
-                                                            <span key={shift} className="badge bg-info text-white me-1">
-                                                                {shiftOptions.find((s) => s.key === shift)?.label}
-                                                            </span>
-                                                        ))
-                                                    )}
+                                                <div key={dayKey} className="d-flex mb-1">
+                                                    <div style={{ width: "80px", fontWeight: "bold" }}>
+                                                        {weekdays.find((d) => d.key === dayKey)?.label}:
+                                                    </div>
+                                                    <div>
+                                                        {shifts.length === 0 ? (
+                                                            <span className="text-muted">Không có ca</span>
+                                                        ) : (
+                                                            shifts.map((shift) => (
+                                                                <span key={shift} className="badge bg-info text-white me-2">
+                                                                    {shiftOptions.find((s) => s.key === shift)?.label}
+                                                                </span>
+                                                            ))
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))}
+
                                         </td>
                                         <td className="text-center">
                                             <span className="badge bg-primary text-white">
@@ -576,7 +581,7 @@ const AttendanceTab = () => {
             } catch (error) {
                 console.error("Error fetching doctor info:", error);
                 setInfoModalTitle("Thông báo");
-                setInfoModalMessage(`Lỗi khi lấy thông tin bác sĩ: ${error.message}`);
+                setInfoModalMessage(`${error.message}`);
                 setShowInfoModal(true);
                 setDoctorInfo({
                     username: user?.username || "Bác sĩ không xác định",
@@ -645,11 +650,21 @@ const AttendanceTab = () => {
                         let status = "-";
                         if (checkInTime !== "-") {
                             const [inHour, inMinute] = checkInTime.split(":").map(Number);
-                            status = inHour < 8 || (inHour === 8 && inMinute === 0) ? "Đúng giờ" : "Đi trễ";
+                            const [startHour, startMinute] = shift.start.split(":").map(Number);
+
+                            // So sánh với giờ bắt đầu ca làm
+                            if (inHour < startHour || (inHour === startHour && inMinute <= startMinute)) {
+                                status = "Đúng giờ";
+                            } else {
+                                status = "Đi trễ";
+                            }
+
+                            // Xét thêm trạng thái check-out
                             if (shift.attendance.checkedOut) {
                                 status = checkOutTime !== "-" ? status : "Đang làm việc";
                             }
                         }
+
                         return {
                             date: shift.date,
                             checkIn: checkInTime,
@@ -661,7 +676,7 @@ const AttendanceTab = () => {
             } catch (error) {
                 console.error("Error fetching shifts:", error);
                 setInfoModalTitle("Thông báo");
-                setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.message}`);
+                setInfoModalMessage(`${error.message}`);
                 setShowInfoModal(true);
             }
         };
@@ -680,6 +695,22 @@ const AttendanceTab = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, [firebaseUid]);
+
+    // Thêm useEffect để tự động load lịch làm việc đã có cho tuần được chọn khi modal mở hoặc tuần thay đổi
+    useEffect(() => {
+        if (showScheduleFormModal) {
+            const existingSchedule = savedSchedules.find((s) => s.weekStartDate === weekStartDate);
+            if (existingSchedule) {
+                setIsEditing(true);
+                setWeeklySchedule(existingSchedule.schedule || {});
+                setWorkType(existingSchedule.workType || "parttime");
+            } else {
+                setIsEditing(false);
+                setWeeklySchedule({});
+                setWorkType("parttime");
+            }
+        }
+    }, [weekStartDate, showScheduleFormModal, savedSchedules]);
 
     const handleWeekStartChange = (e) => {
         const selectedDate = new Date(e.target.value);
@@ -816,7 +847,7 @@ const AttendanceTab = () => {
             resetScheduleForm();
         } catch (error) {
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`Lỗi khi lưu lịch làm việc: ${error.response?.data?.message || error.message}`);
+            setInfoModalMessage(`${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
@@ -850,7 +881,7 @@ const AttendanceTab = () => {
             }
         } catch (error) {
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.response?.data?.message || error.message}`);
+            setInfoModalMessage(`${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
@@ -899,7 +930,7 @@ const AttendanceTab = () => {
                 setShowInfoModal(true);
             } catch (error) {
                 setInfoModalTitle("Thông báo");
-                setInfoModalMessage(`Lỗi khi xóa lịch làm việc: ${error.response?.data?.message || error.message}`);
+                setInfoModalMessage(`${error.response?.data?.message || error.message}`);
                 setShowInfoModal(true);
             }
         }
@@ -953,7 +984,7 @@ const AttendanceTab = () => {
             setCurrentShift(current || null);
         } catch (error) {
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`Lỗi khi chấm công vào: ${error.response?.data?.message || error.message}`);
+            setInfoModalMessage(`${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
@@ -1013,7 +1044,7 @@ const AttendanceTab = () => {
             setCurrentShift(current || null);
         } catch (error) {
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`Lỗi khi chấm công ra: ${error.response?.data?.message || error.message}`);
+            setInfoModalMessage(`${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
@@ -1237,7 +1268,7 @@ const AttendanceTab = () => {
                 handleSelectCurrentWeek={handleSelectCurrentWeek}
                 weeklySchedule={weeklySchedule}
                 handleShiftToggle={handleShiftToggle}
-                editingScheduleId={isEditing}
+                isEditing={isEditing}
                 resetScheduleForm={resetScheduleForm}
                 handleSaveOrUpdateSchedule={handleSaveOrUpdateSchedule}
                 workType={workType}
