@@ -110,7 +110,9 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [cancelErrorMessage, setCancelErrorMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
+  const senderId = user?.uid;
+  const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
+  
   // Fetch appointments từ API
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -209,8 +211,6 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [showChatbot, setShowChatbot] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const senderId = user?.uid;
-  const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
   const [chatMessages, setChatMessages] = useState([
     {
       id: 'welcome',
