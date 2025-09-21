@@ -6,6 +6,7 @@ import { db } from "../../../firebase";
 import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { sendStatus } from "../../utils/SetupSignFireBase";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -189,6 +190,9 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
         setCurrentPage(newTotalPages - 1);
       }
 
+      // gửi tín hiệu trạng thái hủy lịch tới bác sĩ qua Firestore
+      await sendStatus(user?.uid, receiverId, "Hủy lịch");
+
       setShowCancelModal(false);
       setAppointmentToCancel(null);
     } catch (err) {
@@ -332,124 +336,124 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             </div>
           )}
 
-            {!loading && !error && currentAppointments.length > 0 && (
-              <>
-                {currentAppointments.map((appointment, index) => (
-                  <div
-                    key={appointment._id || appointment.id || index}
-                    className="card shadow-sm mb-3"
-                    style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
-                  >
-                    <div className="card-body p-3">
-                      <div className="d-flex align-items-start justify-content-between mb-3">
-                        <div className="d-flex align-items-center">
-                          <div className="position-relative me-3">
-                            <img
-                              src={
-                                appointment.doctorId?.userId.avatar ||
-                                "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-                              }
-                              alt="Doctor Avatar"
-                              className="rounded-circle"
-                              style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                            />
-                          </div>
-                          <div>
-                            <h5 className="mb-1 fw-bold text-dark">
-                              {appointment.doctorId?.userId.username || "Bác sĩ Trần Thị B"}
-                            </h5>
-                            <p className="mb-0 text-muted" style={{ fontSize: "12px" }}>
-                              {appointment.doctorId?.hospital || "Chuyên khoa Nội tiết"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="d-flex flex-column align-items-end">
-                          <span className="badge rounded-pill bg-success mb-2 px-2 py-1 d-flex align-items-center" style={{ fontSize: "10px" }}>
-                            <span className="me-1" style={{ fontSize: "0.6rem" }}>
-                              ●
-                            </span>{" "}
-                            Online
-                          </span>
-                          <div className="d-flex gap-1">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="p-1"
-                              onClick={() => setShowChatbot(true)}
-                              title="Nhắn tin"
-                              style={{ minWidth: "32px", height: "32px" }}
-                            >
-                              <MessageSquare size={12} />
-                            </Button>
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              className="p-1"
-                              onClick={() =>
-                                handleStartCall(
-                                  user,
-                                  {
-                                    uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2",
-                                    name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
-                                    role: "doctor",
-                                  },
-                                  "patient"
-                                )
-                              }
-                              title="Gọi điện"
-                              style={{ minWidth: "32px", height: "32px" }}
-                            >
-                              <Phone size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="d-flex align-items-center mb-1">
-                          <Calendar className="text-primary me-2" size={14} />
-                          <span className="text-dark" style={{ fontSize: "13px" }}>
-                            {new Date(appointment.date).toLocaleDateString("vi-VN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        <div className="d-flex align-items-center mb-2">
-                          <Clock className="text-primary me-2" size={14} />
-                          <span className="text-dark" style={{ fontSize: "13px" }}>{appointment.time}</span>
-                        </div>
-                      </div>
-
-                      <div className="d-flex align-items-center justify-content-between">
-                        <div className="d-flex align-items-center">
-                          <CheckCircle
-                            className={appointment.status === "pending" ? "text-warning me-2" : "text-success me-2"}
-                            size={14}
-                          />
-                          <span
-                            className={
-                              appointment.status === "pending" ? "text-warning fw-medium" : "text-success fw-medium"
+          {!loading && !error && currentAppointments.length > 0 && (
+            <>
+              {currentAppointments.map((appointment, index) => (
+                <div
+                  key={appointment._id || appointment.id || index}
+                  className="card shadow-sm mb-3"
+                  style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
+                >
+                  <div className="card-body p-3">
+                    <div className="d-flex align-items-start justify-content-between mb-3">
+                      <div className="d-flex align-items-center">
+                        <div className="position-relative me-3">
+                          <img
+                            src={
+                              appointment.doctorId?.userId.avatar ||
+                              "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
                             }
-                            style={{ fontSize: "12px" }}
-                          >
-                            {appointment.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận"}
-                          </span>
+                            alt="Doctor Avatar"
+                            className="rounded-circle"
+                            style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                          />
                         </div>
-                        <button
-                          className="btn btn-sm rounded-pill px-3 py-1 btn-outline-danger"
-                          onClick={() => handleCancelBooking(appointment._id || appointment.id)}
-                          disabled={cancelling}
-                        >
-                          {cancelling ? "Đang hủy..." : "Hủy"}
-                        </button>
+                        <div>
+                          <h5 className="mb-1 fw-bold text-dark">
+                            {appointment.doctorId?.userId.username || "Bác sĩ Trần Thị B"}
+                          </h5>
+                          <p className="mb-0 text-muted" style={{ fontSize: "12px" }}>
+                            {appointment.doctorId?.hospital || "Chuyên khoa Nội tiết"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="d-flex flex-column align-items-end">
+                        <span className="badge rounded-pill bg-success mb-2 px-2 py-1 d-flex align-items-center" style={{ fontSize: "10px" }}>
+                          <span className="me-1" style={{ fontSize: "0.6rem" }}>
+                            ●
+                          </span>{" "}
+                          Online
+                        </span>
+                        <div className="d-flex gap-1">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => setShowChatbot(true)}
+                            title="Nhắn tin"
+                            style={{ minWidth: "32px", height: "32px" }}
+                          >
+                            <MessageSquare size={12} />
+                          </Button>
+                          <Button
+                            variant="warning"
+                            size="sm"
+                            className="p-1"
+                            onClick={() =>
+                              handleStartCall(
+                                user,
+                                {
+                                  uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2",
+                                  name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
+                                  role: "doctor",
+                                },
+                                "patient"
+                              )
+                            }
+                            title="Gọi điện"
+                            style={{ minWidth: "32px", height: "32px" }}
+                          >
+                            <Phone size={12} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <Calendar className="text-primary me-2" size={14} />
+                        <span className="text-dark" style={{ fontSize: "13px" }}>
+                          {new Date(appointment.date).toLocaleDateString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <div className="d-flex align-items-center mb-2">
+                        <Clock className="text-primary me-2" size={14} />
+                        <span className="text-dark" style={{ fontSize: "13px" }}>{appointment.time}</span>
+                      </div>
+                    </div>
+
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <CheckCircle
+                          className={appointment.status === "pending" ? "text-warning me-2" : "text-success me-2"}
+                          size={14}
+                        />
+                        <span
+                          className={
+                            appointment.status === "pending" ? "text-warning fw-medium" : "text-success fw-medium"
+                          }
+                          style={{ fontSize: "12px" }}
+                        >
+                          {appointment.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận"}
+                        </span>
+                      </div>
+                      <button
+                        className="btn btn-sm rounded-pill px-3 py-1 btn-outline-danger"
+                        onClick={() => handleCancelBooking(appointment._id || appointment.id)}
+                        disabled={cancelling}
+                      >
+                        {cancelling ? "Đang hủy..." : "Hủy"}
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </>
-            )}
+                </div>
+              ))}
+            </>
+          )}
 
           <div className="row g-3">
             <div className="col-4">
@@ -787,7 +791,6 @@ const BookingNew = ({ handleSubmit }) => {
 
       const response = await ApiBooking.bookAppointment(payload);
 
-      console.log("Booking response:", response);
       const newAppointment = {
         _id: response._id || response.id || Date.now().toString(), // Đảm bảo có _id
         doctorId: {
@@ -802,6 +805,8 @@ const BookingNew = ({ handleSubmit }) => {
       };
 
       const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
+       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
+       await sendStatus(user?.uid, receiverId, "Đặt lịch");
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 
