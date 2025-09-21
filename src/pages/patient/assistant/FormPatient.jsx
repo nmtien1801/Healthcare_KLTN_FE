@@ -297,11 +297,6 @@ const FormPatient = () => {
         setMessages((prev) => [...prev, { sender: "bot", text: "✅ Đã áp dụng đơn thuốc trong 1 tuần. Hãy theo dõi chỉ số thường xuyên." }]);
     };
 
-    const resetPrescription = () => {
-        setPrescriptionStatus("not_created");
-        setMessages((prev) => [...prev, { sender: "bot", text: "🔄 Đã đặt lại trạng thái đơn thuốc. Vui lòng khởi tạo lại." }]);
-    };
-
     return (
         <Box className="container" sx={{ maxWidth: "1400px", height: "85vh" }}>
             <div className="row g-3 h-100">

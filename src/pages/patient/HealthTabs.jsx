@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import { Info, LineChart, Heart, User, Calendar, Clock, Activity, CheckCircle, AlertTriangle } from "lucide-react";
-import axios from "axios";
+import { api, get_advice } from "../../apis/assistant";
 import { useSelector, useDispatch } from "react-redux";
 import { suggestFoodsByAi, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
@@ -613,8 +613,8 @@ const HealthTabs = () => {
       }));
 
       // Gọi AI để lấy lời khuyên
-      const res = await axios.post(
-        "http://localhost:5678/webhook/mess-fb-new", // Thay bằng webhook thực tế của bạn
+      const res = await get_advice.post(
+        "/mess-fb-new", // Thay bằng webhook thực tế của bạn
         {
           message: {
             input: inputValue,
