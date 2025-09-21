@@ -18,7 +18,6 @@ import ApiWorkShift from "../../apis/ApiWorkShift";
 import ApiDoctor from "../../apis/ApiDoctor";
 import { formatDate } from "../../utils/formatDate";
 
-
 // Shift options
 const shiftOptions = [
     { key: "morning", label: "Sáng (08:00 - 12:00)", start: "08:00", end: "12:00" },
@@ -42,6 +41,16 @@ const weekdays = [
     { label: "Thứ 7", key: "saturday" },
     { label: "Chủ nhật", key: "sunday" },
 ];
+
+// Hàm tính ngày thứ Hai của tuần hiện tại
+const getCurrentWeekStart = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const offset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + offset);
+    return monday.toISOString().split("T")[0];
+};
 
 // Confirmation Modal
 const ConfirmationModal = ({ show, title, message, onConfirm, onCancel }) => (
@@ -420,7 +429,6 @@ const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
                         style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
                     >
                         <div className="card-body p-4">
-                            {/* THAY ĐỔI: Doctor Info - Sử dụng doctorInfo từ props, fallback nếu null */}
                             {loadingDoctor ? (
                                 <div className="text-center py-4">
                                     <div className="spinner-border text-primary" role="status">
@@ -446,7 +454,6 @@ const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
                                             </p>
                                         </div>
                                     </div>
-                                    {/* Phần status giữ nguyên */}
                                     <div className="d-flex flex-column align-items-end">
                                         <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
                                             <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Đang làm việc
@@ -455,7 +462,6 @@ const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
                                 </div>
                             )}
 
-                            {/* Schedule Details */}
                             <div className="mb-3">
                                 <div className="d-flex align-items-center mb-2">
                                     <Calendar className="text-primary me-2" size={18} />
@@ -473,7 +479,6 @@ const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
                         </div>
                     </div>
 
-                    {/* Features Section */}
                     <div className="row g-3">
                         <div className="col-4">
                             <div className="text-center d-flex align-items-center justify-content-center gap-2">
@@ -538,14 +543,13 @@ const AttendanceTab = () => {
     const [scheduleToDelete, setScheduleToDelete] = useState([]);
     const [filterType, setFilterType] = useState("week");
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
-    const [weekStartDate, setWeekStartDate] = useState("");
+    const [weekStartDate, setWeekStartDate] = useState(getCurrentWeekStart());
     const [weeklySchedule, setWeeklySchedule] = useState({});
     const [editingScheduleId, setEditingScheduleId] = useState(null);
     const [workType, setWorkType] = useState("parttime");
     const user = useSelector((state) => state.auth.userInfo);
     const [doctorInfo, setDoctorInfo] = useState(null);
     const [loadingDoctor, setLoadingDoctor] = useState(true);
-
 
     const firebaseUid = user?.uid || "doctor-firebase-uid";
 
@@ -562,19 +566,17 @@ const AttendanceTab = () => {
             try {
                 setLoadingDoctor(true);
                 const response = await ApiDoctor.getDoctorInfo();
-                // Mapping dữ liệu từ API theo cấu trúc mới
                 setDoctorInfo({
                     username: response.userId?.username || "Bác sĩ không xác định",
                     hospital: response.hospital || "Bệnh viện không xác định",
                     avatar: response.userId?.avatar || "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
-                    experience: response.exp || 0, // Lấy kinh nghiệm nếu muốn dùng
+                    experience: response.exp || 0,
                 });
             } catch (error) {
                 console.error("Error fetching doctor info:", error);
                 setInfoModalTitle("Thông báo");
                 setInfoModalMessage(`Lỗi khi lấy thông tin bác sĩ: ${error.message}`);
                 setShowInfoModal(true);
-                // Fallback về dữ liệu từ Redux hoặc mặc định
                 setDoctorInfo({
                     username: user?.username || "Bác sĩ không xác định",
                     hospital: "Bệnh viện không xác định",
@@ -605,14 +607,14 @@ const AttendanceTab = () => {
 
                     if (!groupedSchedules[weekStartStr]) {
                         groupedSchedules[weekStartStr] = {
-                            shiftIds: [], // Lưu danh sách shiftIds
+                            shiftIds: [],
                             weekStartDate: weekStartStr,
                             schedule: {},
                             workType: shift.workType || "parttime",
                         };
                     }
 
-                    groupedSchedules[weekStartStr].shiftIds.push(shift._id); // Thêm shiftId vào danh sách
+                    groupedSchedules[weekStartStr].shiftIds.push(shift._id);
 
                     const weekday = weekdays[day === 0 ? 6 : day - 1].key;
                     const shiftKey = shiftOptions.find(
@@ -678,11 +680,10 @@ const AttendanceTab = () => {
         return () => clearInterval(timer);
     }, [firebaseUid]);
 
-
     const handleWeekStartChange = (e) => {
         const selectedDate = new Date(e.target.value);
         if (isNaN(selectedDate.getTime())) {
-            setWeekStartDate("");
+            setWeekStartDate(getCurrentWeekStart());
             return;
         }
         const day = selectedDate.getDay();
@@ -693,12 +694,7 @@ const AttendanceTab = () => {
     };
 
     const handleSelectCurrentWeek = () => {
-        const today = new Date();
-        const day = today.getDay();
-        const offset = day === 0 ? -6 : 1 - day;
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + offset);
-        setWeekStartDate(monday.toISOString().split("T")[0]);
+        setWeekStartDate(getCurrentWeekStart());
     };
 
     const handleShiftToggle = (dayKey, shiftKey) => {
@@ -792,12 +788,14 @@ const AttendanceTab = () => {
 
                 if (!groupedSchedules[weekStartStr]) {
                     groupedSchedules[weekStartStr] = {
-                        id: shift._id,
+                        shiftIds: [],
                         weekStartDate: weekStartStr,
                         schedule: {},
                         workType: shift.workType || "parttime",
                     };
                 }
+
+                groupedSchedules[weekStartStr].shiftIds.push(shift._id);
 
                 const weekday = weekdays[day === 0 ? 6 : day - 1].key;
                 const shiftKey = shiftOptions.find(
@@ -811,26 +809,19 @@ const AttendanceTab = () => {
             });
 
             setSavedSchedules(Object.values(groupedSchedules));
+            setInfoModalTitle("Thành công");
+            setInfoModalMessage("Lịch làm việc đã được lưu!");
             setShowInfoModal(true);
             resetScheduleForm();
         } catch (error) {
-            let errorMsg = "Có lỗi xảy ra khi check-in.";
-            if (error.response?.data?.message) {
-                errorMsg = error.response.data.message; // lấy từ backend
-            } else if (error.message) {
-                errorMsg = error.message; // fallback
-            }
-
-            console.error("Check-in error:", errorMsg);
-            // Nếu bạn có modal hiển thị lỗi:
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(errorMsg);
+            setInfoModalMessage(`Lỗi khi lưu lịch làm việc: ${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
 
     const resetScheduleForm = () => {
-        setWeekStartDate("");
+        setWeekStartDate(getCurrentWeekStart());
         setWeeklySchedule({});
         setEditingScheduleId(null);
         setWorkType("parttime");
@@ -846,21 +837,18 @@ const AttendanceTab = () => {
 
     const handleDeleteSchedule = async (weekStartDate) => {
         try {
-            // Lấy tất cả shiftId của tuần đó từ savedSchedules hoặc API
-            const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
-            const weekShifts = shifts.filter((shift) => {
-                const date = new Date(shift.date);
-                const weekStart = new Date(weekStartDate);
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
-                return date >= weekStart && date <= weekEnd;
-            });
-            const shiftIds = weekShifts.map((shift) => shift._id);
-            setScheduleToDelete(shiftIds); // Lưu mảng shiftIds
-            setShowDeleteConfirmModal(true);
+            const schedule = savedSchedules.find((s) => s.weekStartDate === weekStartDate);
+            if (schedule && schedule.shiftIds && schedule.shiftIds.length > 0) {
+                setScheduleToDelete(schedule.shiftIds);
+                setShowDeleteConfirmModal(true);
+            } else {
+                setInfoModalTitle("Thông báo");
+                setInfoModalMessage("Không tìm thấy ca làm việc nào trong tuần này.");
+                setShowInfoModal(true);
+            }
         } catch (error) {
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.response?.data?.message}`);
+            setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
@@ -869,8 +857,6 @@ const AttendanceTab = () => {
         if (scheduleToDelete && scheduleToDelete.length > 0) {
             try {
                 const response = await ApiWorkShift.deleteManyWorkShifts(scheduleToDelete);
-
-                // Gọi lại API để lấy danh sách ca làm việc mới nhất
                 const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
                 const groupedSchedules = {};
                 shifts.forEach((shift) => {
@@ -885,14 +871,14 @@ const AttendanceTab = () => {
 
                     if (!groupedSchedules[weekStartStr]) {
                         groupedSchedules[weekStartStr] = {
-                            shiftIds: [], // Lưu danh sách shiftIds
+                            shiftIds: [],
                             weekStartDate: weekStartStr,
                             schedule: {},
                             workType: shift.workType || "parttime",
                         };
                     }
 
-                    groupedSchedules[weekStartStr].shiftIds.push(shift._id); // Thêm shiftId vào danh sách
+                    groupedSchedules[weekStartStr].shiftIds.push(shift._id);
 
                     const weekday = weekdays[day === 0 ? 6 : day - 1].key;
                     const shiftKey = shiftOptions.find(
@@ -921,12 +907,10 @@ const AttendanceTab = () => {
 
     const cancelDeleteSchedule = () => {
         setShowDeleteConfirmModal(false);
-        setScheduleToDelete(null);
+        setScheduleToDelete([]);
     };
 
     const handleCheckIn = async () => {
-        console.log("Firebase UID:", firebaseUid);
-        console.log("Current Shift:", currentShift);
         try {
             const now = new Date();
             const checkInTimeStr = now.toLocaleTimeString("vi-VN", {
@@ -960,27 +944,18 @@ const AttendanceTab = () => {
             setShowInfoModal(true);
             setCheckOutTime(null);
 
-            // Cập nhật currentShift
             const updatedShifts = await ApiWorkShift.getTodayWorkShifts();
             const current = updatedShifts.find(
                 (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
             );
             setCurrentShift(current || null);
         } catch (error) {
-            let errorMsg = "Có lỗi xảy ra khi check-in.";
-            if (error.response?.data?.message) {
-                errorMsg = error.response.data.message; // lấy từ backend
-            } else if (error.message) {
-                errorMsg = error.message; // fallback
-            }
-
-            console.error("Check-in error:", errorMsg);
-            // Nếu bạn có modal hiển thị lỗi:
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(errorMsg);
+            setInfoModalMessage(`Lỗi khi chấm công vào: ${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
+
     const handleCheckOut = async () => {
         if (!checkInTime) {
             setInfoModalTitle("Thông báo");
@@ -1029,30 +1004,18 @@ const AttendanceTab = () => {
             setCheckInTime(null);
             setCheckOutTime(null);
 
-            // Cập nhật currentShift
             const updatedShifts = await ApiWorkShift.getTodayWorkShifts();
             const current = updatedShifts.find(
                 (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
             );
             setCurrentShift(current || null);
         } catch (error) {
-            let errorMsg = "Có lỗi xảy ra khi check-in.";
-            if (error.response?.data?.message) {
-                errorMsg = error.response.data.message; // lấy từ backend
-            } else if (error.message) {
-                errorMsg = error.message; // fallback
-            }
-
-            console.error("Check-in error:", errorMsg);
-            // Nếu bạn có modal hiển thị lỗi:
             setInfoModalTitle("Thông báo");
-            setInfoModalMessage(errorMsg);
+            setInfoModalMessage(`Lỗi khi chấm công ra: ${error.response?.data?.message || error.message}`);
             setShowInfoModal(true);
         }
     };
 
-
-    // Filter attendance history by week or month
     const getFilteredHistory = () => {
         const selectedDate = new Date(filterDate);
         if (filterType === "week") {
@@ -1086,7 +1049,6 @@ const AttendanceTab = () => {
                     <h2 className="h5 mb-2">Chấm công</h2>
                     <p className="text-muted mb-4">Quản lý thời gian làm việc của bạn</p>
 
-                    {/* Current Time */}
                     <div className="text-center mb-4">
                         <h5 className="fw-bold text-dark d-flex align-items-center justify-content-center gap-2">
                             <Clock size={20} className="text-primary" />
@@ -1098,7 +1060,6 @@ const AttendanceTab = () => {
                         </h5>
                     </div>
 
-                    {/* Check-in/Check-out Buttons */}
                     <div className="d-flex justify-content-center gap-3 mb-4">
                         <button
                             className="btn px-3 py-2 text-white fw-medium"
@@ -1154,7 +1115,6 @@ const AttendanceTab = () => {
                         </button>
                     </div>
 
-                    {/* Action Buttons (Aligned Left) */}
                     <div className="d-flex justify-content-start gap-3 mb-4">
                         <button
                             className="btn px-3 py-2 text-white fw-medium d-flex align-items-center"
@@ -1202,7 +1162,6 @@ const AttendanceTab = () => {
                         </button>
                     </div>
 
-                    {/* Attendance History */}
                     <div className="mt-4">
                         <h5 className="mb-3 fw-semibold">Lịch sử chấm công</h5>
                         <div className="d-flex gap-2 mb-3">
@@ -1217,7 +1176,7 @@ const AttendanceTab = () => {
                             <input
                                 type="date"
                                 className="form-control w-auto"
-                                value={formatDate(filterDate)}
+                                value={filterDate}
                                 onChange={(e) => setFilterDate(e.target.value)}
                             />
                         </div>
@@ -1264,7 +1223,6 @@ const AttendanceTab = () => {
                 </div>
             </div>
 
-            {/* Modals */}
             <ScheduleFormModal
                 show={showScheduleFormModal}
                 onClose={() => {
