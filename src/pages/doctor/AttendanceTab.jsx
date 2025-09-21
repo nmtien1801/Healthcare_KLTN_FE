@@ -15,6 +15,7 @@ import {
     LogOut,
 } from "lucide-react";
 import ApiWorkShift from "../../apis/ApiWorkShift";
+import ApiDoctor from "../../apis/ApiDoctor";
 import { formatDate } from "../../utils/formatDate";
 
 
@@ -28,7 +29,7 @@ const shiftOptions = [
 // Work type options
 const workTypeOptions = [
     { key: "fulltime", label: "Full Time", description: "Làm việc toàn thời gian" },
-    { key: "custom", label: "Part Time", description: "Làm việc bán thời gian" },
+    { key: "parttime", label: "Part Time", description: "Làm việc bán thời gian" },
 ];
 
 // Weekday options
@@ -402,7 +403,7 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
 );
 
 // CurrentSchedule component
-const CurrentSchedule = ({ currentShift, user }) => {
+const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
     return (
         <div className="container my-3">
             <div className="bg-white rounded shadow border p-4">
@@ -419,28 +420,40 @@ const CurrentSchedule = ({ currentShift, user }) => {
                         style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
                     >
                         <div className="card-body p-4">
-                            {/* Doctor Info */}
-                            <div className="d-flex align-items-start justify-content-between mb-3">
-                                <div className="d-flex align-items-center">
-                                    <div className="position-relative me-3">
-                                        <img
-                                            src="https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-                                            alt="Doctor Avatar"
-                                            className="rounded-circle"
-                                            style={{ width: "60px", height: "60px", objectFit: "cover" }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <h5 className="mb-1 fw-bold text-dark">{user?.username || "Bác sĩ Trần Thị B"}</h5>
-                                        <p className="mb-0 text-muted">Chuyên khoa Nội tiết</p>
+                            {/* THAY ĐỔI: Doctor Info - Sử dụng doctorInfo từ props, fallback nếu null */}
+                            {loadingDoctor ? (
+                                <div className="text-center py-4">
+                                    <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Đang tải...</span>
                                     </div>
                                 </div>
-                                <div className="d-flex flex-column align-items-end">
-                                    <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
-                                        <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Đang làm việc
-                                    </span>
+                            ) : (
+                                <div className="d-flex align-items-start justify-content-between mb-3">
+                                    <div className="d-flex align-items-center">
+                                        <div className="position-relative me-3">
+                                            <img
+                                                src={doctorInfo?.avatar || user?.avatar || "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"}
+                                                className="rounded-circle"
+                                                style={{ width: "60px", height: "60px", objectFit: "cover" }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <h5 className="mb-1 fw-bold text-dark">
+                                                {doctorInfo?.username || user?.username || "Bác sĩ không xác định"}
+                                            </h5>
+                                            <p className="mb-0 text-muted">
+                                                {doctorInfo?.specialty || "Chuyên khoa nội tiết"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {/* Phần status giữ nguyên */}
+                                    <div className="d-flex flex-column align-items-end">
+                                        <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
+                                            <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Đang làm việc
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Schedule Details */}
                             <div className="mb-3">
@@ -528,12 +541,52 @@ const AttendanceTab = () => {
     const [weekStartDate, setWeekStartDate] = useState("");
     const [weeklySchedule, setWeeklySchedule] = useState({});
     const [editingScheduleId, setEditingScheduleId] = useState(null);
-    const [workType, setWorkType] = useState("custom");
+    const [workType, setWorkType] = useState("parttime");
     const user = useSelector((state) => state.auth.userInfo);
+    const [doctorInfo, setDoctorInfo] = useState(null);
+    const [loadingDoctor, setLoadingDoctor] = useState(true);
+
 
     const firebaseUid = user?.uid || "doctor-firebase-uid";
 
     useEffect(() => {
+        const fetchDoctorInfo = async () => {
+            if (!firebaseUid) {
+                setInfoModalTitle("Thông báo");
+                setInfoModalMessage("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
+                setShowInfoModal(true);
+                setLoadingDoctor(false);
+                return;
+            }
+
+            try {
+                setLoadingDoctor(true);
+                const response = await ApiDoctor.getDoctorInfo();
+                // Mapping dữ liệu từ API theo cấu trúc mới
+                setDoctorInfo({
+                    username: response.userId?.username || "Bác sĩ không xác định",
+                    hospital: response.hospital || "Bệnh viện không xác định",
+                    avatar: response.userId?.avatar || "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
+                    experience: response.exp || 0, // Lấy kinh nghiệm nếu muốn dùng
+                });
+            } catch (error) {
+                console.error("Error fetching doctor info:", error);
+                setInfoModalTitle("Thông báo");
+                setInfoModalMessage(`Lỗi khi lấy thông tin bác sĩ: ${error.message}`);
+                setShowInfoModal(true);
+                // Fallback về dữ liệu từ Redux hoặc mặc định
+                setDoctorInfo({
+                    username: user?.username || "Bác sĩ không xác định",
+                    hospital: "Bệnh viện không xác định",
+                    avatarUrl: user?.avatar || "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
+                    experience: 0,
+                });
+            } finally {
+                setLoadingDoctor(false);
+            }
+        };
+
+        fetchDoctorInfo();
         const fetchShifts = async () => {
             try {
                 const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
@@ -555,14 +608,14 @@ const AttendanceTab = () => {
                             id: shift._id,
                             weekStartDate: weekStartStr,
                             schedule: {},
-                            workType: shift.workType || "custom",
+                            workType: shift.workType || "parttime",
                         };
                     }
 
                     const weekday = weekdays[day === 0 ? 6 : day - 1].key;
                     const shiftKey = shiftOptions.find(
                         (option) => option.start === shift.start && option.end === shift.end
-                    )?.key || "custom";
+                    )?.key || "parttime";
 
                     if (!groupedSchedules[weekStartStr].schedule[weekday]) {
                         groupedSchedules[weekStartStr].schedule[weekday] = [];
@@ -602,14 +655,14 @@ const AttendanceTab = () => {
                 setAttendanceHistory(history);
             } catch (error) {
                 console.error("Error fetching shifts:", error);
-                setInfoModalTitle("Lỗi");
+                setInfoModalTitle("Thông báo");
                 setInfoModalMessage(`Lỗi khi lấy danh sách ca làm việc: ${error.message}`);
                 setShowInfoModal(true);
             }
         };
 
         if (!firebaseUid) {
-            setInfoModalTitle("Lỗi");
+            setInfoModalTitle("Thông báo");
             setInfoModalMessage("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
             setShowInfoModal(true);
             return;
@@ -622,6 +675,7 @@ const AttendanceTab = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, [firebaseUid]);
+
 
     const handleWeekStartChange = (e) => {
         const selectedDate = new Date(e.target.value);
@@ -670,7 +724,7 @@ const AttendanceTab = () => {
 
     const handleSaveOrUpdateSchedule = async () => {
         if (!weekStartDate) {
-            setInfoModalTitle("Lỗi");
+            setInfoModalTitle("Thông báo");
             setInfoModalMessage("Vui lòng chọn ngày bắt đầu tuần.");
             setShowInfoModal(true);
             return;
@@ -699,7 +753,7 @@ const AttendanceTab = () => {
             });
 
             if (shiftsData.length === 0) {
-                setInfoModalTitle("Lỗi");
+                setInfoModalTitle("Thông báo");
                 setInfoModalMessage("Vui lòng chọn ít nhất một ca làm việc.");
                 setShowInfoModal(true);
                 return;
@@ -739,14 +793,14 @@ const AttendanceTab = () => {
                         id: shift._id,
                         weekStartDate: weekStartStr,
                         schedule: {},
-                        workType: shift.workType || "custom",
+                        workType: shift.workType || "parttime",
                     };
                 }
 
                 const weekday = weekdays[day === 0 ? 6 : day - 1].key;
                 const shiftKey = shiftOptions.find(
                     (option) => option.start === shift.start && option.end === shift.end
-                )?.key || "custom";
+                )?.key || "parttime";
 
                 if (!groupedSchedules[weekStartStr].schedule[weekday]) {
                     groupedSchedules[weekStartStr].schedule[weekday] = [];
@@ -758,8 +812,17 @@ const AttendanceTab = () => {
             setShowInfoModal(true);
             resetScheduleForm();
         } catch (error) {
-            setInfoModalTitle("Lỗi");
-            setInfoModalMessage(`Lỗi khi lưu/cập nhật lịch làm việc: ${error.message}`);
+            let errorMsg = "Có lỗi xảy ra khi check-in.";
+            if (error.response?.data?.message) {
+                errorMsg = error.response.data.message; // lấy từ backend
+            } else if (error.message) {
+                errorMsg = error.message; // fallback
+            }
+
+            console.error("Check-in error:", errorMsg);
+            // Nếu bạn có modal hiển thị lỗi:
+            setInfoModalTitle("Thông báo");
+            setInfoModalMessage(errorMsg);
             setShowInfoModal(true);
         }
     };
@@ -768,14 +831,14 @@ const AttendanceTab = () => {
         setWeekStartDate("");
         setWeeklySchedule({});
         setEditingScheduleId(null);
-        setWorkType("custom");
+        setWorkType("parttime");
     };
 
     const handleEditSchedule = (schedule) => {
         setEditingScheduleId(schedule.id);
         setWeekStartDate(schedule.weekStartDate);
         setWeeklySchedule(schedule.schedule);
-        setWorkType(schedule.workType || "custom");
+        setWorkType(schedule.workType || "parttime");
         setShowScheduleFormModal(true);
     };
 
@@ -793,7 +856,7 @@ const AttendanceTab = () => {
                 setInfoModalMessage("Lịch làm việc đã được xóa!");
                 setShowInfoModal(true);
             } catch (error) {
-                setInfoModalTitle("Lỗi");
+                setInfoModalTitle("Thông báo");
                 setInfoModalMessage(`Lỗi khi xóa lịch làm việc: ${error.message}`);
                 setShowInfoModal(true);
             }
@@ -859,14 +922,14 @@ const AttendanceTab = () => {
 
             console.error("Check-in error:", errorMsg);
             // Nếu bạn có modal hiển thị lỗi:
-            setInfoModalTitle("Lỗi");
+            setInfoModalTitle("Thông báo");
             setInfoModalMessage(errorMsg);
             setShowInfoModal(true);
         }
     };
     const handleCheckOut = async () => {
         if (!checkInTime) {
-            setInfoModalTitle("Lỗi");
+            setInfoModalTitle("Thông báo");
             setInfoModalMessage("Bạn phải chấm công vào trước khi chấm công ra.");
             setShowInfoModal(true);
             return;
@@ -928,7 +991,7 @@ const AttendanceTab = () => {
 
             console.error("Check-in error:", errorMsg);
             // Nếu bạn có modal hiển thị lỗi:
-            setInfoModalTitle("Lỗi");
+            setInfoModalTitle("Thông báo");
             setInfoModalMessage(errorMsg);
             setShowInfoModal(true);
         }
@@ -963,7 +1026,7 @@ const AttendanceTab = () => {
 
     return (
         <div>
-            <CurrentSchedule currentShift={currentShift} />
+            <CurrentSchedule currentShift={currentShift} user={doctorInfo} loadingDoctor={loadingDoctor} />
             <div className="container my-4">
                 <div className="bg-white rounded shadow border p-4">
                     <h2 className="h5 mb-2">Chấm công</h2>
