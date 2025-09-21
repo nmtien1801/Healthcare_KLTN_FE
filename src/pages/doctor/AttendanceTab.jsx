@@ -151,7 +151,7 @@ const ScheduleFormModal = ({
     handleSelectCurrentWeek,
     weeklySchedule,
     handleShiftToggle,
-    editingScheduleId,
+    isEditing,
     resetScheduleForm,
     handleSaveOrUpdateSchedule,
     workType,
@@ -168,7 +168,7 @@ const ScheduleFormModal = ({
                 <div className="modal-header">
                     <h5 className="modal-title d-flex align-items-center gap-2">
                         <Edit size={20} />
-                        {editingScheduleId ? "Cập nhật lịch làm việc" : "Đăng ký lịch làm việc"}
+                        {isEditing ? "Cập nhật lịch làm việc" : "Đăng ký lịch làm việc"}
                     </h5>
                     <button
                         type="button"
@@ -296,7 +296,7 @@ const ScheduleFormModal = ({
                             onClose();
                         }}
                     >
-                        {editingScheduleId ? "Cập nhật" : "Lưu"}
+                        {isEditing ? "Cập nhật" : "Lưu"}
                     </button>
                 </div>
             </div>
@@ -545,7 +545,8 @@ const AttendanceTab = () => {
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
     const [weekStartDate, setWeekStartDate] = useState(getCurrentWeekStart());
     const [weeklySchedule, setWeeklySchedule] = useState({});
-    const [editingScheduleId, setEditingScheduleId] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+
     const [workType, setWorkType] = useState("parttime");
     const user = useSelector((state) => state.auth.userInfo);
     const [doctorInfo, setDoctorInfo] = useState(null);
@@ -757,22 +758,22 @@ const AttendanceTab = () => {
                 return;
             }
 
-            if (editingScheduleId) {
-                const updates = shiftsData.map((shift) => ({
-                    shiftId: editingScheduleId,
-                    date: shift.date,
-                    start: shift.start,
-                    end: shift.end,
-                    workType,
-                }));
-                await ApiWorkShift.updateWorkShifts({ shifts: updates });
-                setInfoModalTitle("Thành công");
-                setInfoModalMessage("Lịch làm việc đã được cập nhật!");
-            } else {
+            let successMessage = "";
+            if (isEditing) {
+                // Edit: Xóa tất cả ca cũ của tuần, rồi tạo mới
+                const editingSchedule = savedSchedules.find((s) => s.weekStartDate === weekStartDate);
+                if (editingSchedule && editingSchedule.shiftIds.length > 0) {
+                    await ApiWorkShift.deleteManyWorkShifts(editingSchedule.shiftIds);
+                }
                 await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
-                setInfoModalTitle("Thành công");
-                setInfoModalMessage("Lịch làm việc đã được lưu!");
+                successMessage = "Lịch làm việc đã được cập nhật!";
+                setIsEditing(false); // Reset editing mode
+            } else {
+                // Create mới
+                await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
+                successMessage = "Lịch làm việc đã được lưu!";
             }
+
 
             const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
             const groupedSchedules = {};
@@ -823,17 +824,18 @@ const AttendanceTab = () => {
     const resetScheduleForm = () => {
         setWeekStartDate(getCurrentWeekStart());
         setWeeklySchedule({});
-        setEditingScheduleId(null);
+        setIsEditing(false);
         setWorkType("parttime");
     };
 
     const handleEditSchedule = (schedule) => {
-        setEditingScheduleId(schedule.id);
+        setIsEditing(true);
         setWeekStartDate(schedule.weekStartDate);
         setWeeklySchedule(schedule.schedule);
         setWorkType(schedule.workType || "parttime");
         setShowScheduleFormModal(true);
     };
+
 
     const handleDeleteSchedule = async (weekStartDate) => {
         try {
@@ -1235,7 +1237,7 @@ const AttendanceTab = () => {
                 handleSelectCurrentWeek={handleSelectCurrentWeek}
                 weeklySchedule={weeklySchedule}
                 handleShiftToggle={handleShiftToggle}
-                editingScheduleId={editingScheduleId}
+                editingScheduleId={isEditing}
                 resetScheduleForm={resetScheduleForm}
                 handleSaveOrUpdateSchedule={handleSaveOrUpdateSchedule}
                 workType={workType}
