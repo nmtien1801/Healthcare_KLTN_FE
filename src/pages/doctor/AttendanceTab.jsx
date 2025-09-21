@@ -339,7 +339,7 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
                             </thead>
                             <tbody>
                                 {savedSchedules.map((item) => (
-                                    <tr key={item.id}>
+                                    <tr key={item.weekStartDate}>
                                         <td>{formatDate(item.weekStartDate)}</td>
                                         <td>
                                             {Object.entries(item.schedule).map(([dayKey, shifts]) => (
@@ -351,8 +351,11 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
                                                         {shifts.length === 0 ? (
                                                             <span className="text-muted">Không có ca</span>
                                                         ) : (
-                                                            shifts.map((shift) => (
-                                                                <span key={shift} className="badge bg-info text-white me-2">
+                                                            shifts.map((shift, index) => (
+                                                                <span
+                                                                    key={`${dayKey}-${shift}-${index}`}
+                                                                    className="badge bg-info text-white me-2"
+                                                                >
                                                                     {shiftOptions.find((s) => s.key === shift)?.label}
                                                                 </span>
                                                             ))
@@ -360,7 +363,6 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
                                                     </div>
                                                 </div>
                                             ))}
-
                                         </td>
                                         <td className="text-center">
                                             <span className="badge bg-primary text-white">
