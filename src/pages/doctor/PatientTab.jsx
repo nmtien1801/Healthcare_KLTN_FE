@@ -18,9 +18,10 @@ import {
   generateJitsiUrl
 } from '../../components/call/functionCall';
 import ApiPatient from "../../apis/ApiPatient";
+import ApiDoctor from "../../apis/ApiDoctor";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component
-const mapPatientData = (apiPatient) => {
+const mapPatientData = (apiPatient, pastAppointments = []) => {
   const statusColors = {
     "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
     "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
@@ -29,10 +30,6 @@ const mapPatientData = (apiPatient) => {
 
   // Xử lý healthRecords an toàn
   const hasHealthRecords = apiPatient.healthRecords && Array.isArray(apiPatient.healthRecords) && apiPatient.healthRecords.length > 0;
-  const lastVisitRecord = hasHealthRecords ? apiPatient.healthRecords[0] : null;
-  const lastVisitDate = lastVisitRecord && lastVisitRecord.date ? new Date(lastVisitRecord.date) : null;
-
-  // Ánh xạ healthRecords
   const healthRecords = hasHealthRecords
     ? apiPatient.healthRecords.map(record => ({
       id: record._id || `temp-${Date.now()}`,
@@ -60,6 +57,10 @@ const mapPatientData = (apiPatient) => {
 
   // Xử lý thông tin userId
   const userId = apiPatient.userId || {};
+
+  // Lấy lịch hẹn gần nhất từ pastAppointments
+  const lastAppointment = pastAppointments.length > 0 ? pastAppointments[0] : null;
+  const lastVisitDate = lastAppointment && lastAppointment.date ? new Date(lastAppointment.date) : null;
 
   return {
     id: apiPatient._id || `temp-${Date.now()}`,
@@ -95,6 +96,7 @@ const mapPatientData = (apiPatient) => {
     healthRecords,
   };
 };
+
 // Custom Components (giữ nguyên)
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
   const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
@@ -171,6 +173,7 @@ const Badge = ({ children, className = "" }) => {
     </span>
   );
 };
+
 const Avatar = ({ src, alt, fallback, className = "", size = 50 }) => {
   const [imageError, setImageError] = useState(false);
 
@@ -213,15 +216,15 @@ export default function PatientTab({ handleStartCall }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
-  // Lấy dữ liệu bệnh nhân từ API
+  // Lấy dữ liệu bệnh nhân và lịch hẹn gần nhất từ API
   useEffect(() => {
-    const fetchPatients = async () => {
+    const fetchPatientsAndAppointments = async () => {
       setLoading(true);
       setError(null);
       try {
+        // Lấy danh sách bệnh nhân
         const response = await ApiPatient.getAllPatients();
-        console.log("Dữ liệu API thô:", response); // Debug
-        // Xử lý trường hợp response là mảng trực tiếp hoặc response.data là mảng
+        console.log("Dữ liệu API thô (bệnh nhân):", response); // Debug
         let patients;
         if (Array.isArray(response)) {
           patients = response;
@@ -229,22 +232,41 @@ export default function PatientTab({ handleStartCall }) {
           patients = response.data || [];
         }
         console.log("patients extracted:", patients); // Debug
-        if (Array.isArray(patients)) {
-          const mappedPatients = patients.map(mapPatientData);
-          setPatientList(mappedPatients);
-        } else {
+
+        if (!Array.isArray(patients)) {
           console.warn("Dữ liệu API không đúng định dạng:", response);
           setError("Dữ liệu không hợp lệ từ server. Vui lòng kiểm tra định dạng dữ liệu API.");
+          setLoading(false);
+          return;
         }
+
+        // Lấy lịch hẹn gần nhất cho từng bệnh nhân
+        const patientsWithAppointments = await Promise.all(
+          patients.map(async (patient) => {
+            try {
+              const appointmentsResponse = await ApiDoctor.getPatientPastAppointments(patient._id);
+              const appointments = Array.isArray(appointmentsResponse)
+                ? appointmentsResponse
+                : appointmentsResponse.data || [];
+              console.log(`Lịch hẹn của bệnh nhân ${patient._id}:`, appointments); // Debug
+              return mapPatientData(patient, appointments);
+            } catch (err) {
+              console.error(`Lỗi khi lấy lịch hẹn cho bệnh nhân ${patient._id}:`, err.message);
+              return mapPatientData(patient, []); // Nếu lỗi, trả về bệnh nhân với lịch hẹn rỗng
+            }
+          })
+        );
+
+        setPatientList(patientsWithAppointments);
       } catch (err) {
-        console.error("Lỗi khi gọi API:", err.message, err.response?.data);
+        console.error("Lỗi khi gọi API bệnh nhân:", err.message, err.response?.data);
         setError(err.response?.data?.message || "Không thể tải danh sách bệnh nhân. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPatients();
+    fetchPatientsAndAppointments();
   }, []);
 
   // Lọc và sắp xếp bệnh nhân
@@ -307,6 +329,7 @@ export default function PatientTab({ handleStartCall }) {
 
   // Xem chi tiết bệnh nhân
   const handleViewPatient = (patient) => {
+    console.log("Selected Patient:", patient); // Debug
     setSelectedPatient(patient);
     setShowViewModal(true);
   };
@@ -438,7 +461,8 @@ export default function PatientTab({ handleStartCall }) {
             onClick={() => {
               setLoading(true);
               setError(null);
-              fetchPatients();
+              // Gọi lại hàm fetch
+              fetchPatientsAndAppointments();
             }}
           >
             Thử lại
