@@ -11,7 +11,7 @@ import ApiBooking from '../../apis/ApiBooking'
 
 const Following = ({ user, nearestAppointment }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
-  const latestReading = bloodSugar?.DT?.bloodSugarData[0].value;
+  const latestReading = bloodSugar?.DT?.bloodSugarData[0]?.value;
 
   const readingStatus = {
     status: latestReading < 6 ? 'normal' : latestReading < 7 ? 'prediabetes' : 'danger',
