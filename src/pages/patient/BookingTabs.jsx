@@ -112,7 +112,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [errorMessage, setErrorMessage] = useState("");
   const senderId = user?.uid;
   const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
-  
+
   // Fetch appointments từ API
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -689,7 +689,7 @@ const BookingNew = ({ handleSubmit }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const user = useSelector((state) => state.auth.userInfo);
-
+  const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
 
   useEffect(() => {
     if (error || success) {
