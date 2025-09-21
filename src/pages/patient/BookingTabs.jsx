@@ -332,124 +332,124 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             </div>
           )}
 
-            {!loading && !error && currentAppointments.length > 0 && (
-              <>
-                {currentAppointments.map((appointment, index) => (
-                  <div
-                    key={appointment._id || appointment.id || index}
-                    className="card shadow-sm mb-3"
-                    style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
-                  >
-                    <div className="card-body p-3">
-                      <div className="d-flex align-items-start justify-content-between mb-3">
-                        <div className="d-flex align-items-center">
-                          <div className="position-relative me-3">
-                            <img
-                              src={
-                                appointment.doctorId?.userId.avatar ||
-                                "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
-                              }
-                              alt="Doctor Avatar"
-                              className="rounded-circle"
-                              style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                            />
-                          </div>
-                          <div>
-                            <h5 className="mb-1 fw-bold text-dark">
-                              {appointment.doctorId?.userId.username || "Bác sĩ Trần Thị B"}
-                            </h5>
-                            <p className="mb-0 text-muted" style={{ fontSize: "12px" }}>
-                              {appointment.doctorId?.hospital || "Chuyên khoa Nội tiết"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="d-flex flex-column align-items-end">
-                          <span className="badge rounded-pill bg-success mb-2 px-2 py-1 d-flex align-items-center" style={{ fontSize: "10px" }}>
-                            <span className="me-1" style={{ fontSize: "0.6rem" }}>
-                              ●
-                            </span>{" "}
-                            Online
-                          </span>
-                          <div className="d-flex gap-1">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="p-1"
-                              onClick={() => setShowChatbot(true)}
-                              title="Nhắn tin"
-                              style={{ minWidth: "32px", height: "32px" }}
-                            >
-                              <MessageSquare size={12} />
-                            </Button>
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              className="p-1"
-                              onClick={() =>
-                                handleStartCall(
-                                  user,
-                                  {
-                                    uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2",
-                                    name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
-                                    role: "doctor",
-                                  },
-                                  "patient"
-                                )
-                              }
-                              title="Gọi điện"
-                              style={{ minWidth: "32px", height: "32px" }}
-                            >
-                              <Phone size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="d-flex align-items-center mb-1">
-                          <Calendar className="text-primary me-2" size={14} />
-                          <span className="text-dark" style={{ fontSize: "13px" }}>
-                            {new Date(appointment.date).toLocaleDateString("vi-VN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        <div className="d-flex align-items-center mb-2">
-                          <Clock className="text-primary me-2" size={14} />
-                          <span className="text-dark" style={{ fontSize: "13px" }}>{appointment.time}</span>
-                        </div>
-                      </div>
-
-                      <div className="d-flex align-items-center justify-content-between">
-                        <div className="d-flex align-items-center">
-                          <CheckCircle
-                            className={appointment.status === "pending" ? "text-warning me-2" : "text-success me-2"}
-                            size={14}
-                          />
-                          <span
-                            className={
-                              appointment.status === "pending" ? "text-warning fw-medium" : "text-success fw-medium"
+          {!loading && !error && currentAppointments.length > 0 && (
+            <>
+              {currentAppointments.map((appointment, index) => (
+                <div
+                  key={appointment._id || appointment.id || index}
+                  className="card shadow-sm mb-3"
+                  style={{ backgroundColor: "#f0f2ff", border: "none", borderRadius: "16px" }}
+                >
+                  <div className="card-body p-3">
+                    <div className="d-flex align-items-start justify-content-between mb-3">
+                      <div className="d-flex align-items-center">
+                        <div className="position-relative me-3">
+                          <img
+                            src={
+                              appointment.doctorId?.userId.avatar ||
+                              "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
                             }
-                            style={{ fontSize: "12px" }}
-                          >
-                            {appointment.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận"}
-                          </span>
+                            alt="Doctor Avatar"
+                            className="rounded-circle"
+                            style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                          />
                         </div>
-                        <button
-                          className="btn btn-sm rounded-pill px-3 py-1 btn-outline-danger"
-                          onClick={() => handleCancelBooking(appointment._id || appointment.id)}
-                          disabled={cancelling}
-                        >
-                          {cancelling ? "Đang hủy..." : "Hủy"}
-                        </button>
+                        <div>
+                          <h5 className="mb-1 fw-bold text-dark">
+                            {appointment.doctorId?.userId.username || "Bác sĩ Trần Thị B"}
+                          </h5>
+                          <p className="mb-0 text-muted" style={{ fontSize: "12px" }}>
+                            {appointment.doctorId?.hospital || "Chuyên khoa Nội tiết"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="d-flex flex-column align-items-end">
+                        <span className="badge rounded-pill bg-success mb-2 px-2 py-1 d-flex align-items-center" style={{ fontSize: "10px" }}>
+                          <span className="me-1" style={{ fontSize: "0.6rem" }}>
+                            ●
+                          </span>{" "}
+                          Online
+                        </span>
+                        <div className="d-flex gap-1">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => setShowChatbot(true)}
+                            title="Nhắn tin"
+                            style={{ minWidth: "32px", height: "32px" }}
+                          >
+                            <MessageSquare size={12} />
+                          </Button>
+                          <Button
+                            variant="warning"
+                            size="sm"
+                            className="p-1"
+                            onClick={() =>
+                              handleStartCall(
+                                user,
+                                {
+                                  uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2",
+                                  name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
+                                  role: "doctor",
+                                },
+                                "patient"
+                              )
+                            }
+                            title="Gọi điện"
+                            style={{ minWidth: "32px", height: "32px" }}
+                          >
+                            <Phone size={12} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <Calendar className="text-primary me-2" size={14} />
+                        <span className="text-dark" style={{ fontSize: "13px" }}>
+                          {new Date(appointment.date).toLocaleDateString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <div className="d-flex align-items-center mb-2">
+                        <Clock className="text-primary me-2" size={14} />
+                        <span className="text-dark" style={{ fontSize: "13px" }}>{appointment.time}</span>
+                      </div>
+                    </div>
+
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <CheckCircle
+                          className={appointment.status === "pending" ? "text-warning me-2" : "text-success me-2"}
+                          size={14}
+                        />
+                        <span
+                          className={
+                            appointment.status === "pending" ? "text-warning fw-medium" : "text-success fw-medium"
+                          }
+                          style={{ fontSize: "12px" }}
+                        >
+                          {appointment.status === "pending" ? "Chờ xác nhận" : "Đã xác nhận"}
+                        </span>
+                      </div>
+                      <button
+                        className="btn btn-sm rounded-pill px-3 py-1 btn-outline-danger"
+                        onClick={() => handleCancelBooking(appointment._id || appointment.id)}
+                        disabled={cancelling}
+                      >
+                        {cancelling ? "Đang hủy..." : "Hủy"}
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </>
-            )}
+                </div>
+              ))}
+            </>
+          )}
 
           <div className="row g-3">
             <div className="col-4">
@@ -706,10 +706,13 @@ const BookingNew = ({ handleSubmit }) => {
       try {
         const response = await ApiBooking.getDoctorsByDate(selectedDate);
         // Chuẩn hóa data
-        const data = Array.isArray(response)
-          ? response
-          : response?.data || [];
-        setDoctors(data);
+        const data = Array.isArray(response) ? response : response?.data || [];
+        // Đảm bảo mỗi bác sĩ có ID duy nhất
+        const normalizedDoctors = data.map((doctor, index) => ({
+          ...doctor,
+          id: doctor.id || doctor._id || doctor.doctorId || `doctor-${index}`, // Sử dụng index làm fallback
+        }));
+        setDoctors(normalizedDoctors);
       } catch (err) {
         console.error("Lỗi khi tải danh sách bác sĩ:", err);
         setDoctors([]);
@@ -722,13 +725,11 @@ const BookingNew = ({ handleSubmit }) => {
 
     fetchDoctors();
   }, [selectedDate]);
-
   const onSubmit = useCallback(async () => {
     console.log("onSubmit called");
 
-    // Kiểm tra các trường bắt buộc
     if (!user?.uid) {
-      console.log("Error: User not logged in", user); // Log thông tin user
+      console.log("Error: User not logged in", user);
       setErrorMessage("Vui lòng đăng nhập để đặt lịch.");
       setShowErrorModal(true);
       return;
@@ -738,28 +739,26 @@ const BookingNew = ({ handleSubmit }) => {
         selectedDoctor,
         selectedDate,
         selectedTime,
-        reason
-      }); // Log các trường bắt buộc
+        reason,
+      });
       setErrorMessage("Vui lòng chọn bác sĩ, ngày, giờ khám và nhập lý do khám.");
       setShowErrorModal(true);
       return;
     }
 
-    // Kiểm tra ngày hợp lệ (cho phép chọn ngày hiện tại)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selected = new Date(selectedDate);
     if (selected < today) {
-      console.log("Error: Invalid date", { selectedDate, today }); // Log ngày
+      console.log("Error: Invalid date", { selectedDate, today });
       setErrorMessage("Không thể chọn ngày trong quá khứ.");
       setShowErrorModal(true);
       return;
     }
 
-    // Kiểm tra thời gian trong khung giờ làm việc của bác sĩ
-    const selectedDoctorData = doctors.find(d => (d.id || d._id || d.doctorId) === selectedDoctor);
+    const selectedDoctorData = doctors.find((d) => d.id === selectedDoctor);
     if (!selectedDoctorData) {
-      console.log("Error: Invalid doctor", { selectedDoctor, doctors }); // Log bác sĩ
+      console.log("Error: Invalid doctor", { selectedDoctor, doctors });
       setErrorMessage("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
       setShowErrorModal(true);
       return;
@@ -767,7 +766,7 @@ const BookingNew = ({ handleSubmit }) => {
     const doctorStartTime = selectedDoctorData?.shift?.start || "08:00";
     const doctorEndTime = selectedDoctorData?.shift?.end || "17:00";
     if (selectedTime < doctorStartTime || selectedTime > doctorEndTime) {
-      console.log("Error: Invalid time", { selectedTime, doctorStartTime, doctorEndTime }); // Log thời gian
+      console.log("Error: Invalid time", { selectedTime, doctorStartTime, doctorEndTime });
       setErrorMessage("Thời gian chọn không nằm trong khung giờ làm việc của bác sĩ.");
       setShowErrorModal(true);
       return;
@@ -776,50 +775,52 @@ const BookingNew = ({ handleSubmit }) => {
     try {
       const payload = {
         firebaseUid: user.uid,
-        doctorId: selectedDoctor,
+        doctorId: selectedDoctor, // Sử dụng selectedDoctor (đã là doctor.id)
         date: selectedDate,
         time: selectedTime,
         type: appointmentType,
         reason: reason.trim(),
         notes: notes.trim(),
-        createdAt: new Date().toISOString() // Thêm thời gian tạo để theo dõi
+        createdAt: new Date().toISOString(),
       };
 
       const response = await ApiBooking.bookAppointment(payload);
 
       console.log("Booking response:", response);
       const newAppointment = {
-        _id: response._id || response.id || Date.now().toString(), // Đảm bảo có _id
+        _id: response._id || response.id || Date.now().toString(),
         doctorId: {
           _id: selectedDoctor,
           name: selectedDoctorData.name,
           specialty: selectedDoctorData.specialty || "Chuyên khoa Nội tiết",
-          image: selectedDoctorData.avatar || "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face"
+          image:
+            selectedDoctorData.avatar ||
+            "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
         },
         date: selectedDate,
         time: selectedTime,
-        status: response.status || "pending" // Mặc định là pending nếu API không trả về status
+        status: response.status || "pending",
       };
 
-      const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
+      const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(
+        selectedDate
+      ).toLocaleDateString("vi-VN")}!`;
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 
-      // Reset form (giữ nguyên ngày hiện tại)
       setSelectedDoctor(null);
-      // Giữ nguyên ngày hiện tại, không reset
       setSelectedTime("");
       setReason("");
       setNotes("");
       setAppointmentType("onsite");
 
-      // Gọi handleSubmit từ props
       handleSubmit(newAppointment);
-
     } catch (err) {
       console.error("Lỗi khi đặt lịch:", err);
-      // SỬA: Thông báo lỗi chi tiết hơn bằng modal
-      const errorMsg = err.response?.data?.message || err.message || "Không thể đặt lịch. Vui lòng kiểm tra kết nối và thử lại.";
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Không thể đặt lịch. Vui lòng kiểm tra kết nối và thử lại.";
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
     } finally {
@@ -922,13 +923,11 @@ const BookingNew = ({ handleSubmit }) => {
           ) : (
             <div className="row g-2">
               {doctors.map((doctor) => (
-                <div className="col-md-6" key={doctor.id || doctor._id}>
+                <div className="col-md-6" key={doctor.id}>
                   <div
-                    className={`card p-3 border ${selectedDoctor === (doctor.doctorId || doctor.id || doctor._id)
-                      ? "border-primary"
-                      : ""
+                    className={`card p-3 border ${selectedDoctor === doctor.id ? "border-primary" : ""
                       }`}
-                    onClick={() => setSelectedDoctor(doctor.doctorId || doctor.id || doctor._id)}
+                    onClick={() => setSelectedDoctor(doctor.id)}
                     style={{ cursor: "pointer" }}
                   >
                     <div className="d-flex align-items-center">
@@ -942,7 +941,7 @@ const BookingNew = ({ handleSubmit }) => {
                         style={{
                           width: 50,
                           height: 50,
-                          objectFit: "cover"
+                          objectFit: "cover",
                         }}
                       />
                       <div className="flex-grow-1">
@@ -959,7 +958,7 @@ const BookingNew = ({ handleSubmit }) => {
                           <small className="text-muted">{doctor.exp || "10"} năm KN</small>
                         </div>
                       </div>
-                      {selectedDoctor === (doctor.doctorId || doctor.id || doctor._id) && (
+                      {selectedDoctor === doctor.id && (
                         <div className="text-primary">
                           <CheckCircle size={20} />
                         </div>
@@ -1001,6 +1000,7 @@ const BookingNew = ({ handleSubmit }) => {
               : null;
             const doctorStartTime = selectedDoctorData?.shift?.start || "08:00";
             const doctorEndTime = selectedDoctorData?.shift?.end || "17:00";
+
 
             // Kiểm tra giờ nào nằm trong khung làm việc của bác sĩ đã chọn
             const isTimeInWorkingHours = (time) => {
