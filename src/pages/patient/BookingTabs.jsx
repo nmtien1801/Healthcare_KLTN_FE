@@ -111,7 +111,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [cancelErrorMessage, setCancelErrorMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const senderId = user?.uid;
-  const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
+  const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
 
   // Fetch appointments từ API
   useEffect(() => {
@@ -393,7 +393,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                               handleStartCall(
                                 user,
                                 {
-                                  uid: "weHP9TWfdrZo5L9rmY81BRYxNXr2",
+                                  uid: "1HwseYsBwxby5YnsLUWYzvRtCw53",
                                   name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
                                   role: "doctor",
                                 },
@@ -689,7 +689,7 @@ const BookingNew = ({ handleSubmit }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const user = useSelector((state) => state.auth.userInfo);
-  const receiverId = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
+  const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
 
   useEffect(() => {
     if (error || success) {
@@ -806,8 +806,8 @@ const BookingNew = ({ handleSubmit }) => {
       };
 
       const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
-       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
-       await sendStatus(user?.uid, receiverId, "Đặt lịch");
+      // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
+      await sendStatus(user?.uid, receiverId, "Đặt lịch");
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 

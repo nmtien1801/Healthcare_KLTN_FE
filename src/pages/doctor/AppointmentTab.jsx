@@ -21,6 +21,28 @@ import { vi } from "date-fns/locale";
 import { getLabelFromOptions } from "../../utils/apppointmentHelper";
 import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
 import { listenStatus } from "../../utils/SetupSignFireBase";
+import Notification from "../../components/booking/Notification";
+import { useSelector } from "react-redux";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../firebase";
+
+// CSS cho container thông báo
+const notificationContainerStyles = `
+  .notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 320px;
+  }
+`;
+
+// Inject CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = notificationContainerStyles;
+  document.head.appendChild(style);
+}
 
 export default function AppointmentTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,6 +51,7 @@ export default function AppointmentTab() {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [todayPage, setTodayPage] = useState(1);
   const [upcomingPage, setUpcomingPage] = useState(1);
+  const [notifications, setNotifications] = useState([]);
   const itemsPerPage = 5;
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -38,6 +61,8 @@ export default function AppointmentTab() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
+  const user = useSelector((state) => state.auth.userInfo);
+  console.log("User Info from Redux:", user);
 
   const fetchAppointments = async () => {
     console.log("fetchAppointments chạy...");
@@ -59,17 +84,45 @@ export default function AppointmentTab() {
   }, []);
 
   // Lắng nghe tín hiệu hủy lịch qua Firestore (status message) trong chats
-  let doctorUid = "weHP9TWfdrZo5L9rmY81BRYxNXr2";
+  let doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
   let patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
   useEffect(() => {
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
-    const unsub = listenStatus(roomChats, doctorUid, (signal) => {
-      if (signal?.status === "Hủy lịch") {
+    const unsub = listenStatus(roomChats, doctorUid, async (signal) => {
+      if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
         fetchAppointments();
-      }
-      else if (signal?.status === "Đặt lịch") {
-        fetchAppointments();
+        let patientName = "";
+        let patientAvatar = signal?.patientUid?.userId?.avatar || null;
+
+        if (signal?.senderId) {
+          try {
+            const docRef = doc(db, "users", signal.senderId);
+            const docSnap = await getDoc(docRef);
+            console.log("DocSnap:", docSnap);
+            if (docSnap.exists()) {
+              patientName = docSnap.data().username;
+              patientAvatar = docSnap.data().avatar;
+            }
+          } catch (error) {
+            console.error("Lỗi lấy thông tin bệnh nhân:", error);
+          }
+        }
+        const message =
+          signal.status === "Hủy lịch"
+            ? `Bệnh nhân ${patientName} đã hủy lịch hẹn vào ${new Date().toLocaleDateString("vi-VN")}`
+            : `Bệnh nhân ${patientName} vừa đặt lịch hẹn mới vào ${new Date().toLocaleDateString("vi-VN")}`;
+        const type = signal.status === "Hủy lịch" ? "danger" : "success";
+
+        setNotifications((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            message,
+            type,
+            avatar: patientAvatar,
+          },
+        ]);
       }
     });
 
@@ -78,9 +131,9 @@ export default function AppointmentTab() {
 
   const mapAppointment = (item) => ({
     id: item._id,
-    patientName: item.patientId?.userId?.username || "N/A",
-    patientAge: item.patientId?.age || "N/A",
-    patientDisease: item.patientId?.disease || "N/A",
+    patientName: item.patientId?.userId?.username || "",
+    patientAge: item.patientId?.age || "",
+    patientDisease: item.patientId?.disease || "",
     patientAvatar:
       item.patientId?.userId?.avatar ||
       "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
@@ -313,7 +366,9 @@ export default function AppointmentTab() {
       {totalPages > 1 && renderPagination(page, totalPages, setPage)}
     </>
   );
-
+  const removeNotification = (id) => {
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
   return (
     <div className="container mt-4">
       <h3 className="mb-4">Lịch hẹn khám bệnh</h3>
@@ -357,6 +412,20 @@ export default function AppointmentTab() {
           {renderTable(upcomingAppointments, paginate(filteredUpcoming, upcomingPage), Math.ceil(filteredUpcoming.length / itemsPerPage), upcomingPage, setUpcomingPage)}
         </Card.Body>
       </Card>
+
+      {/* Container cho thông báo */}
+      <div className="notification-container">
+        {notifications.map((notif) => (
+          <Notification
+            key={notif.id}
+            message={notif.message}
+            type={notif.type}
+            avatar={notif.avatar}
+            onClose={() => removeNotification(notif.id)}
+          />
+        ))}
+      </div>
+
 
       {/* Modals */}
       <AddAppointmentModal show={showAddModal} onHide={() => setShowAddModal(false)} onSave={handleAddAppointment} />
