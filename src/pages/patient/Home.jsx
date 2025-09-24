@@ -3,9 +3,12 @@ import { Check, MessageCircleMore } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from "react-redux";
 import ApiBooking from '../../apis/ApiBooking'
+import { fetchMedicines } from '../../redux/medicineAiSlice';
+import moment from "moment";
 
 const Home = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   let user = useSelector((state) => state.auth.userInfo);
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
   const [nearestAppointment, setNearestAppointment] = useState(null);
@@ -78,6 +81,20 @@ const Home = () => {
     updated[index].taken = !updated[index].taken;
     setMedications(updated);
   };
+
+  useEffect(() => {
+    const fetchMedicine = async () => {
+      try {
+        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date().toISOString() }));
+        setMedications(res.payload.DT);
+      } catch (error) {
+        console.error('Lỗi khi lấy lịch hẹn:', error);
+      }
+
+    };
+
+    fetchMedicine();
+  }, []);
 
   return (
     <div className="bg-light min-vh-100 p-3">
@@ -154,7 +171,7 @@ const Home = () => {
                   <div key={idx} className="d-flex justify-content-between align-items-center p-2 bg-light rounded-3">
                     <div>
                       <strong>{med.name} {med.dosage}</strong>
-                      <div className="text-muted small">{med.time}</div>
+                      <div className="text-muted small">{moment(med.time).format("HH:mm:ss")}</div>
                     </div>
                     <button
                       onClick={() => handleMedicationToggle(idx)}

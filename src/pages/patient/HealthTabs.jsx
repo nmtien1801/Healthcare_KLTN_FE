@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
+import { fetchMedicines } from '../../redux/medicineAiSlice';
 
 const Following = ({ user, nearestAppointment }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
@@ -336,6 +337,39 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
   });
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Hàm phân loại thuốc theo giờ
+  const groupMedicinesByTime = (data) => {
+    const result = { sang: [], trua: [], toi: [] };
+
+    data.forEach((item) => {
+      const hour = new Date(item.time).getHours(); // lấy giờ từ time
+
+      if (hour >= 5 && hour < 11) {
+        result.sang.push(`${item.name} (${item.lieu_luong})`);
+      } else if (hour >= 11 && hour < 17) {
+        result.trua.push(`${item.name} (${item.lieu_luong})`);
+      } else {
+        result.toi.push(`${item.name} (${item.lieu_luong})`);
+      }
+    });
+
+    return result;
+  };
+
+
+  useEffect(() => {
+    const fetchMedicine = async () => {
+      try {
+        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date().toISOString() }));
+        setMedicines(groupMedicinesByTime(res.payload.DT));
+      } catch (error) {
+        console.error('Lỗi khi lấy lịch hẹn:', error);
+      }
+    };
+
+    fetchMedicine();
+  }, []);
 
   // kiểm tra calo hiện tại
   useEffect(() => {
