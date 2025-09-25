@@ -8,6 +8,7 @@ const OverviewTab = () => {
   const [healthPeriod, setHealthPeriod] = useState("week");
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patients, setPatients] = useState([]);
+  const [showAllPatients, setShowAllPatients] = useState(false); // New state for toggling patient display
   const [summary, setSummary] = useState({
     newPatients: 0,
     newPatientsChange: "",
@@ -21,12 +22,11 @@ const OverviewTab = () => {
   const revenueChartRef = useRef(null);
   const healthChartRef = useRef(null);
 
-  // Fetch summary
+  // Existing useEffect hooks for fetching data remain unchanged
   useEffect(() => {
     const fetchSummary = async () => {
       try {
         const res = await ApiDoctor.getSummary();
-        // Xử lý response trực tiếp (không bọc trong data)
         if (
           res &&
           typeof res === "object" &&
@@ -62,12 +62,10 @@ const OverviewTab = () => {
     fetchSummary();
   }, []);
 
-  // Fetch patients attention
   useEffect(() => {
     const fetchPatients = async () => {
       try {
         const res = await ApiDoctor.getPatientsAttention();
-        // Xử lý response trực tiếp
         const patientsData = Array.isArray(res) ? res : [];
         setPatients(patientsData);
         setSelectedPatient(patientsData.length > 0 ? patientsData[0] : null);
@@ -79,7 +77,6 @@ const OverviewTab = () => {
     fetchPatients();
   }, []);
 
-  // Fetch revenue
   useEffect(() => {
     const fetchRevenue = async () => {
       try {
@@ -98,7 +95,6 @@ const OverviewTab = () => {
     fetchRevenue();
   }, []);
 
-  // Fetch health
   useEffect(() => {
     if (selectedPatient) {
       const fetchHealth = async () => {
@@ -113,7 +109,7 @@ const OverviewTab = () => {
     }
   }, [selectedPatient, healthPeriod]);
 
-  // Chart options for revenue
+  // Chart options remain unchanged
   const getRevenueChartOptions = (period) => ({
     tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
     grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
@@ -124,7 +120,6 @@ const OverviewTab = () => {
     ],
   });
 
-  // Chart options for health
   const getHealthChartOptions = () => ({
     tooltip: { trigger: "axis" },
     legend: { data: ["Huyết áp", "Nhịp tim", "Đường huyết"] },
@@ -171,8 +166,15 @@ const OverviewTab = () => {
     };
   }, [revenuePeriod, healthData, selectedPatient]);
 
-  // Kiểm tra summary trước khi render
   const isSummaryValid = summary && typeof summary === "object" && "newPatients" in summary;
+
+  // Define how many patients to show by default
+  const DEFAULT_PATIENT_LIMIT = 5;
+
+  // Toggle show all patients
+  const handleToggleShowAll = () => {
+    setShowAllPatients(!showAllPatients);
+  };
 
   return (
     <div className="container mt-4">
@@ -267,7 +269,9 @@ const OverviewTab = () => {
             <Card.Body>
               <div className="d-flex justify-content-between mb-3">
                 <h5>Bệnh nhân cần chú ý</h5>
-                <Button variant="link" className="p-0">Xem tất cả</Button>
+                <Button variant="link" className="p-0" onClick={handleToggleShowAll}>
+                  {showAllPatients ? "Thu gọn" : "Xem tất cả"}
+                </Button>
               </div>
               <div className="table-responsive">
                 <Table hover responsive>
@@ -281,7 +285,7 @@ const OverviewTab = () => {
                   </thead>
                   <tbody>
                     {Array.isArray(patients) && patients.length > 0 ? (
-                      patients.map((patient, index) => (
+                      (showAllPatients ? patients : patients.slice(0, DEFAULT_PATIENT_LIMIT)).map((patient, index) => (
                         <tr
                           key={index}
                           onClick={() => setSelectedPatient(patient)}
