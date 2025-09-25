@@ -60,7 +60,7 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
                                     {patient.name}
                                 </h4>
                                 <div className="text-muted mb-2 d-flex align-items-center gap-2">
-                                    <span className="fw-semibold">Mã bệnh nhân:</span> {patient.patientCount}
+                                    <span className="fw-semibold">Tuổi:</span> {patient.patientCount}
                                 </div>
                                 <Badge
                                     className={`${patient.statusColor} ${patient.statusTextColor} px-3 py-1`}
