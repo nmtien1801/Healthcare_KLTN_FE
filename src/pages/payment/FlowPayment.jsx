@@ -1,9 +1,4 @@
-// File: PaymentFlow.jsx
-
-"use client"
-
-import { useState } from "react"
-// Import các component của React-Bootstrap
+import React, { useState, useEffect, useCallback } from "react";
 import {
     Card,
     Button,
@@ -14,7 +9,6 @@ import {
     ListGroup,
     Container
 } from "react-bootstrap"
-// Import các biểu tượng từ lucide-react
 import {
     ArrowLeft,
     ArrowRight,
@@ -22,16 +16,15 @@ import {
     CreditCard,
     DollarSign,
     Shield,
-    Smartphone,
+    QrCode,
     Wallet,
     Building2,
-    Send, // Thêm icon Send cho nút xác nhận
+    Send,
 } from "lucide-react"
-
-// --- Dữ liệu tĩnh ---
+import { useSelector, useDispatch } from "react-redux"
+import { deposit } from "../../redux/paymentSlice"
 
 const banks = [
-    // Sử dụng Bootstrap color classes
     { id: "mbbank", name: "MBBank", fullName: "Ngân hàng TMCP Quân Đội", color: "bg-danger" },
     { id: "vietcombank", name: "Vietcombank", fullName: "Ngân hàng TMCP Ngoại thương Việt Nam", color: "bg-success" },
     { id: "techcombank", name: "Techcombank", fullName: "Ngân hàng TMCP Kỹ thương Việt Nam", color: "bg-danger" },
@@ -41,39 +34,35 @@ const banks = [
 ]
 
 const paymentMethods = [
-    { id: "wallet", name: "Ví điện tử", icon: Wallet, balance: "2.450.000đ", recommended: true },
-    { id: "momo", name: "Ví MoMo", icon: Smartphone, balance: "850.000đ" },
-    { id: "bank", name: "Tài khoản ngân hàng", icon: Building2, balance: "15.200.000đ" },
+    { id: "bank", name: "Tài khoản ngân hàng", icon: Building2, balance: "15.200.000đ", recommended: true },
+    { id: "qr", name: "Quét mã QR", icon: QrCode, balance: "2.450.000đ" },
 ]
 
 const steps = [
-    { id: 1, title: "Chọn ngân hàng", description: "Chọn ngân hàng người nhận" },
+    { id: 1, title: "Chọn ngân hàng", description: "Chọn ngân hàng của bạn" },
     { id: 2, title: "Phương thức thanh toán", description: "Chọn cách thanh toán" },
     { id: 3, title: "Thông tin chuyển tiền", description: "Nhập thông tin giao dịch" },
     { id: 4, title: "Xác nhận", description: "Xem lại và xác nhận" },
 ]
 
-// Kích thước icons
 const ICON_SIZE = 20
 const STEP_ICON_SIZE = 16
 
 export default function PaymentFlow() {
+    const dispatch = useDispatch()
     const [currentStep, setCurrentStep] = useState(1)
+    const user = useSelector((state) => state.auth.userInfo)
 
-    // State lưu trữ dữ liệu chuyển tiền
     const [paymentData, setPaymentData] = useState({
         amount: "50000", // Số tiền mặc định
         recipient: "NGUYEN MINH TIEN",
         bank: "mbbank", // Ngân hàng mặc định
         accountNumber: "0967273063",
-        message: "Chuyển tiền qua ứng dụng",
-        paymentMethod: "wallet", // Phương thức mặc định
+        message: "Chuyển tiền vào ví",
+        paymentMethod: "bank", // Phương thức mặc định
     })
 
-    // --- Hàm xử lý Logic ---
-
     const nextStep = () => {
-        // Thêm logic kiểm tra dữ liệu ở đây trước khi chuyển bước
         if (currentStep === 1 && !paymentData.bank) return
         if (currentStep === 2 && (paymentData.amount === "" || paymentData.recipient === "" || paymentData.accountNumber === "")) return
         if (currentStep === 3 && !paymentData.paymentMethod) return
@@ -93,9 +82,8 @@ export default function PaymentFlow() {
     }
 
     // Hàm xử lý khi người dùng ấn xác nhận
-    const handleConfirm = () => {
-        alert(`Xác nhận chuyển ${formatCurrency(paymentData.amount)} đến ${paymentData.recipient} qua ngân hàng ${paymentData.bank}.`)
-        // Thực hiện các logic API hoặc chuyển trang ở đây
+    const handleConfirm = async () => {
+        await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
     }
 
     return (
@@ -153,7 +141,7 @@ export default function PaymentFlow() {
                                             </div>
                                             <div>
                                                 <h2 className="h5 fw-semibold mb-0">Bước 1: Chọn ngân hàng</h2>
-                                                <p className="text-muted small mb-0">Chọn ngân hàng của tài khoản nhận tiền</p>
+                                                <p className="text-muted small mb-0">Chọn ngân hàng của tài khoản chuyển tiền</p>
                                             </div>
                                         </div>
 
@@ -265,8 +253,8 @@ export default function PaymentFlow() {
                                                             type="text"
                                                             value={paymentData.recipient}
                                                             onChange={(e) => setPaymentData({ ...paymentData, recipient: e.target.value })}
-                                                            placeholder="NGUYEN VAN A"
-                                                            required
+                                                            placeholder="NGUYEN MINH TIEN"
+                                                            disabled
                                                         />
                                                     </Form.Group>
                                                 </Col>
@@ -278,14 +266,14 @@ export default function PaymentFlow() {
                                                             value={paymentData.accountNumber}
                                                             onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
                                                             placeholder="123456789"
-                                                            required
+                                                            disabled
                                                         />
                                                     </Form.Group>
                                                 </Col>
                                             </Row>
 
                                             <Form.Group controlId="amount" className="mb-3">
-                                                <Form.Label className="small fw-medium">Số tiền chuyển</Form.Label>
+                                                <Form.Label className="small fw-medium">Số tiền nạp ví</Form.Label>
                                                 <div className="input-group">
                                                     <Form.Control
                                                         type="number"

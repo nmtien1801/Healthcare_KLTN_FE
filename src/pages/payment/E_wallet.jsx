@@ -1,9 +1,4 @@
-// File: WalletUIDesktop.jsx (Đã chỉnh sửa)
-
-"use client"
-
-import { useState } from "react"
-// Import các component của React-Bootstrap
+import React, { useState, useEffect, useCallback } from "react";
 import { 
     Container, 
     Row, 
@@ -23,8 +18,8 @@ import {
     History,
 } from "lucide-react"
 import FlowPayment from "./FlowPayment" 
-
-const currentBalance = "2,450,000" 
+import { useSelector, useDispatch } from "react-redux"
+import { getBalance } from "../../redux/paymentSlice"
 
 const transactionHistory = [
     { id: 1, description: "Thanh toán hóa đơn Internet", date: "12/05/2025", amount: "- 180.000 đ", type: "expense" },
@@ -40,10 +35,19 @@ const transactionHistory = [
     // Thêm nhiều giao dịch hơn để đảm bảo cuộn
 ] 
 
-// --- Component chính ---
-
 export default function WalletUIDesktop() {
+    const dispatch = useDispatch()
     const [balanceVisible, setBalanceVisible] = useState(true)
+    const user = useSelector((state) => state.auth.userInfo)
+    const balance = useSelector((state) => state.payment.balance);
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            await dispatch(getBalance(user.userId))
+        }
+
+        fetchBalance()
+    }, [dispatch, balance])
 
     const handleBalanceToggle = () => {
         setBalanceVisible(!balanceVisible)
@@ -65,7 +69,7 @@ export default function WalletUIDesktop() {
                                 
                                 <div className="d-flex justify-content-between align-items-center">
                                     <h3 className="fw-bolder mb-0">
-                                        {balanceVisible ? `${currentBalance} đ` : '*******'}
+                                        {balanceVisible ? `${balance} đ` : '*******'}
                                     </h3>
                                     <Button 
                                         variant="light" 
