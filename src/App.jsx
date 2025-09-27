@@ -46,6 +46,7 @@ import {
   createCall,
   generateJitsiUrl,
 } from './components/call/functionCall';
+import E_wallet from "./pages/payment/E_wallet";
 
 function App() {
   const dispatch = useDispatch();
@@ -272,6 +273,7 @@ function App() {
                       <Route path="/bookingTabs" element={<BookingTabs handleStartCall={handleStartCall} />} />
                       <Route path="/personalTabs" element={<PersonalTabs />} />
                       <Route path="/assitant" element={<FormPatient />} />
+                      <Route path="/pay" element={<E_wallet />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /home */}
                       <Route path="*" element={<Navigate to="/healthTabs" replace />} />
                     </>

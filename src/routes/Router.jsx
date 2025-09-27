@@ -20,7 +20,8 @@ import {
   CalendarDays,
   ChevronUp,
   ChevronDown,
-  Bot
+  Bot,
+  Wallet
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import "./Router.css";
@@ -140,6 +141,10 @@ const Router = (props) => {
                 <Nav.Link as={NavLink} to="/assitant" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
                   <Bot size={20} />
                   <span>Trợ lý AI</span>
+                </Nav.Link>
+                <Nav.Link as={NavLink} to="/pay" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
+                  <Wallet size={20} />
+                  <span>Ví điện tử</span>
                 </Nav.Link>
               </>
             )}

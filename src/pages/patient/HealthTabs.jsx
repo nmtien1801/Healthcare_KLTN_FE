@@ -21,7 +21,7 @@ const Following = ({ user, nearestAppointment }) => {
     border: latestReading < 6 ? 'border-success' : latestReading < 7 ? 'border-warning' : 'border-danger'
   };
 
-  return <div className="container py-3">
+  return <div className="py-3">
     {/* Header */}
     <div className="bg-white rounded shadow-sm border p-3 mb-3">
       <div className="d-flex justify-content-between align-items-center">
