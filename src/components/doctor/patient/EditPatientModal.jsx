@@ -1,70 +1,56 @@
-
-
 import { useState, useEffect } from "react"
-import { Button, Input, Select } from "../common-ui-components" // Import from common-ui-components
+import { Button, Input, Select } from "../common-ui-components"
+import ApiDoctor from "../../../apis/ApiDoctor"
 
+// Component chỉnh sửa thông tin y tế của bệnh nhân
 const EditPatientModal = ({ show, onHide, patient, onSave }) => {
+    // State để lưu dữ liệu form, chỉ bao gồm các trường y tế trực tiếp
     const [formData, setFormData] = useState({
-        name: "",
-        age: "",
-        phone: "",
-        email: "",
-        address: "",
         disease: "",
-        patientId: "",
         status: "Theo dõi",
-        bloodType: "",
         allergies: "",
-        emergencyContact: "",
         notes: "",
     })
 
+    // State để lưu lỗi validation
     const [errors, setErrors] = useState({})
 
+    // Cập nhật formData khi patient thay đổi
     useEffect(() => {
         if (patient) {
             setFormData({
-                name: patient.name || "",
-                age: patient.age || "",
-                phone: patient.phone || "",
-                email: patient.email || "",
-                address: patient.address || "",
                 disease: patient.disease || "",
-                patientId: patient.patientId || "",
                 status: patient.status || "Theo dõi",
-                bloodType: patient.bloodType || "",
                 allergies: patient.allergies || "",
-                emergencyContact: patient.emergencyContact || "",
                 notes: patient.notes || "",
             })
         }
     }, [patient])
 
+    // Hàm kiểm tra dữ liệu đầu vào
     const validateForm = () => {
         const newErrors = {}
 
-        if (!formData.name.trim()) newErrors.name = "Họ tên là bắt buộc"
-        if (!formData.age || formData.age < 1 || formData.age > 120) newErrors.age = "Tuổi phải từ 1-120"
-        if (!formData.phone.trim()) newErrors.phone = "Số điện thoại là bắt buộc"
         if (!formData.disease.trim()) newErrors.disease = "Bệnh là bắt buộc"
-        if (!formData.patientId.trim()) newErrors.patientId = "Mã BHYT là bắt buộc"
-
-        if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = "Email không hợp lệ"
-        }
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         if (validateForm()) {
-            onSave({ ...patient, ...formData })
-            setErrors({})
-            onHide()
+            try {
+                await ApiDoctor.updatePatientHealthInfo(patient.id, formData);
+                onSave({ ...patient, ...formData });
+                setErrors({});
+                onHide();
+            } catch (error) {
+                console.error("Lỗi khi cập nhật thông tin y tế:", error);
+                setErrors({ api: "Không thể cập nhật thông tin. Vui lòng thử lại sau." });
+            }
         }
-    }
+    };
 
     const handleChange = (field, value) => {
         setFormData({ ...formData, [field]: value })
@@ -80,72 +66,14 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
             <div className="modal-dialog modal-md" style={{ marginTop: "5rem" }}>
                 <div className="modal-content" style={{ borderRadius: "12px" }}>
                     <div className="modal-header border-0 pb-0">
-                        <h5 className="modal-title fw-bold">Chỉnh sửa thông tin bệnh nhân</h5>
+                        <h5 className="modal-title fw-bold">Chỉnh sửa thông tin y tế bệnh nhân</h5>
                         <button type="button" className="btn-close" onClick={onHide}></button>
                     </div>
                     <form onSubmit={handleSubmit}>
                         <div className="modal-body">
                             <div className="row g-3">
-                                {/* Thông tin cơ bản */}
-                                <div className="col-12">
-                                    <h6 className="fw-semibold text-primary mb-3">Thông tin cơ bản</h6>
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-medium">Họ và tên *</label>
-                                    <Input
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => handleChange("name", e.target.value)}
-                                        placeholder="Nhập họ và tên"
-                                        className={errors.name ? "is-invalid" : ""}
-                                    />
-                                    {errors.name && <div className="invalid-feedback">{errors.name}</div>}
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-medium">Tuổi *</label>
-                                    <Input
-                                        type="number"
-                                        value={formData.age}
-                                        onChange={(e) => handleChange("age", e.target.value)}
-                                        placeholder="Nhập tuổi"
-                                        className={errors.age ? "is-invalid" : ""}
-                                    />
-                                    {errors.age && <div className="invalid-feedback">{errors.age}</div>}
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-medium">Số điện thoại *</label>
-                                    <Input
-                                        type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => handleChange("phone", e.target.value)}
-                                        placeholder="Nhập số điện thoại"
-                                        className={errors.phone ? "is-invalid" : ""}
-                                    />
-                                    {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-medium">Email</label>
-                                    <Input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => handleChange("email", e.target.value)}
-                                        placeholder="Nhập email"
-                                        className={errors.email ? "is-invalid" : ""}
-                                    />
-                                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-                                </div>
-                                <div className="col-12">
-                                    <label className="form-label fw-medium">Địa chỉ</label>
-                                    <Input
-                                        type="text"
-                                        value={formData.address}
-                                        onChange={(e) => handleChange("address", e.target.value)}
-                                        placeholder="Nhập địa chỉ"
-                                    />
-                                </div>
-
                                 {/* Thông tin y tế */}
-                                <div className="col-12 mt-4">
+                                <div className="col-12">
                                     <h6 className="fw-semibold text-primary mb-3">Thông tin y tế</h6>
                                 </div>
                                 <div className="col-md-6">
@@ -158,27 +86,6 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
                                         className={errors.disease ? "is-invalid" : ""}
                                     />
                                     {errors.disease && <div className="invalid-feedback">{errors.disease}</div>}
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-medium">Mã BHYT *</label>
-                                    <Input
-                                        type="text"
-                                        value={formData.patientId}
-                                        onChange={(e) => handleChange("patientId", e.target.value)}
-                                        placeholder="Nhập mã BHYT"
-                                        className={errors.patientId ? "is-invalid" : ""}
-                                    />
-                                    {errors.patientId && <div className="invalid-feedback">{errors.patientId}</div>}
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-medium">Nhóm máu</label>
-                                    <Select value={formData.bloodType} onChange={(value) => handleChange("bloodType", value)}>
-                                        <option value="">Chọn nhóm máu</option>
-                                        <option value="A">A</option>
-                                        <option value="B">B</option>
-                                        <option value="AB">AB</option>
-                                        <option value="O">O</option>
-                                    </Select>
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-medium">Tình trạng *</label>
@@ -199,15 +106,6 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
                                     />
                                 </div>
                                 <div className="col-12">
-                                    <label className="form-label fw-medium">Liên hệ khẩn cấp</label>
-                                    <Input
-                                        type="text"
-                                        value={formData.emergencyContact}
-                                        onChange={(e) => handleChange("emergencyContact", e.target.value)}
-                                        placeholder="Tên và số điện thoại người liên hệ khẩn cấp"
-                                    />
-                                </div>
-                                <div className="col-12">
                                     <label className="form-label fw-medium">Ghi chú</label>
                                     <textarea
                                         className="form-control border-0 shadow-sm"
@@ -219,6 +117,11 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
                                     />
                                 </div>
                             </div>
+                            {errors.api && (
+                                <div className="alert alert-danger mt-3" role="alert">
+                                    {errors.api}
+                                </div>
+                            )}
                         </div>
                         <div className="modal-footer border-0 pt-0">
                             <Button variant="secondary" onClick={onHide}>
@@ -232,7 +135,7 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
 export default EditPatientModal
