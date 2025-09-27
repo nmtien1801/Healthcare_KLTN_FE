@@ -1,4 +1,4 @@
-// File: WalletUIDesktop.jsx
+// File: WalletUIDesktop.jsx (Đã chỉnh sửa)
 
 "use client"
 
@@ -24,15 +24,23 @@ import {
 } from "lucide-react"
 import FlowPayment from "./FlowPayment" 
 
-// --- Dữ liệu tĩnh/mô phỏng ---
-
 const currentBalance = "2,450,000" 
 
 const transactionHistory = [
     { id: 1, description: "Thanh toán hóa đơn Internet", date: "12/05/2025", amount: "- 180.000 đ", type: "expense" },
     { id: 2, description: "Nạp tiền từ Vietcombank", date: "10/05/2025", amount: "+ 500.000 đ", type: "income" },
     { id: 3, description: "Rút tiền về MBBank", date: "09/05/2025", amount: "- 1,000.000 đ", type: "expense" },
-] // Giảm bớt lịch sử để hiển thị đẹp hơn trong Sidebar (Col lg=4)
+    { id: 4, description: "Mua sắm tại Shopee", date: "08/05/2025", amount: "- 250.000 đ", type: "expense" },
+    { id: 5, description: "Hoàn tiền ưu đãi", date: "07/05/2025", amount: "+ 50.000 đ", type: "income" },
+    { id: 6, description: "Chuyển tiền cho bạn A", date: "06/05/2025", amount: "- 120.000 đ", type: "expense" },
+    { id: 7, description: "Nạp tiền từ Techcombank", date: "05/05/2025", amount: "+ 750.000 đ", type: "income" },
+    { id: 8, description: "Thanh toán Google Ads", date: "04/05/2025", amount: "- 400.000 đ", type: "expense" },
+    { id: 9, description: "Nạp tiền điện thoại", date: "03/05/2025", amount: "- 100.000 đ", type: "expense" },
+    { id: 10, description: "Thanh toán tiền nước", date: "02/05/2025", amount: "- 150.000 đ", type: "expense" },
+    // Thêm nhiều giao dịch hơn để đảm bảo cuộn
+] 
+
+// --- Component chính ---
 
 export default function WalletUIDesktop() {
     const [balanceVisible, setBalanceVisible] = useState(true)
@@ -42,11 +50,12 @@ export default function WalletUIDesktop() {
     }
 
     return (
-        <div style={{  }}>
-                <Row className="g-4">
-                    {/* Cột 4/12: Giao diện Ví Điện Tử (Sidebar) */}
-                    <Col lg={3} className="bg-light">
-                        {/* 1. Số dư khả dụng (Sử dụng cỡ chữ nhỏ hơn) */}
+        <div className="bg-light p-2">
+             <Row className="g-4">
+                    {/* Cột 3/12: Giao diện Ví Điện Tử (Sidebar) */}
+                    <Col lg={3}> 
+                        
+                        {/* 1. Số dư khả dụng */}
                         <Card className="shadow-sm border-0 mb-4">
                             <Card.Body className="p-3 bg-primary text-white rounded-3">
                                 <div className="d-flex align-items-center mb-2">
@@ -55,7 +64,6 @@ export default function WalletUIDesktop() {
                                 </div>
                                 
                                 <div className="d-flex justify-content-between align-items-center">
-                                    {/* Sử dụng cỡ chữ nhỏ hơn (h3 thay vì display-4) */}
                                     <h3 className="fw-bolder mb-0">
                                         {balanceVisible ? `${currentBalance} đ` : '*******'}
                                     </h3>
@@ -76,30 +84,24 @@ export default function WalletUIDesktop() {
                             <Card.Body className="p-3">
                                 <h6 className="fw-bold text-secondary mb-3">Dịch vụ chính</h6>
 
-                                {/* Sử dụng xs=2 để hai nút Nạp/Rút nằm cạnh nhau trong cột 4 */}
                                 <Row xs={2} className="g-3 text-center">
-                                    
-                                    {/* Nạp tiền */}
                                     <Col style={{ cursor: 'pointer' }}>
                                         <div className="p-3 rounded-3 shadow-sm bg-success bg-opacity-10 border border-success hover-shadow-lg">
                                             <Download size={28} className="text-success mb-1" />
                                             <div className="fw-bold text-success small">NẠP TIỀN</div>
                                         </div>
                                     </Col>
-                                    
-                                    {/* Rút tiền */}
                                     <Col style={{ cursor: 'pointer' }}>
                                         <div className="p-3 rounded-3 shadow-sm bg-danger bg-opacity-10 border border-danger hover-shadow-lg">
                                             <ReceiptText size={28} className="text-danger mb-1" />
                                             <div className="fw-bold text-danger small">RÚT TIỀN</div>
                                         </div>
                                     </Col>
-                                    
                                 </Row>
                             </Card.Body>
                         </Card>
 
-                        {/* 3. Giao dịch Gần đây */}
+                        {/* 3. Giao dịch Gần đây - ĐÃ THÊM SCROLL */}
                         <Card className="shadow-sm border-0">
                             <Card.Body className="p-3">
                                 <div className="d-flex align-items-center mb-3">
@@ -107,48 +109,47 @@ export default function WalletUIDesktop() {
                                     <h6 className="fw-bold mb-0 text-secondary">Giao dịch Gần đây</h6>
                                 </div>
                                 
-                                <ListGroup variant="flush">
-                                    {transactionHistory.map((item) => (
-                                        <ListGroup.Item 
-                                            key={item.id} 
-                                            className="d-flex justify-content-between align-items-center px-0 py-2"
-                                        >
-                                            <div className="d-flex align-items-center">
-                                                <div className={`p-1 rounded-circle me-2 
-                                                    ${item.type === 'income' ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'}`}
-                                                >
-                                                    <TrendingUp size={16} className={item.type === 'income' ? 'text-success' : 'text-danger'} />
-                                                </div>
-                                                <div>
-                                                    <div className="fw-medium small">{item.description}</div>
-                                                    <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>{item.date}</small>
-                                                </div>
-                                            </div>
-                                            <span 
-                                                className={`fw-bold small ${item.type === 'income' ? 'text-success' : 'text-danger'}`}
+                                {/* Container cho ListGroup với CSS để cuộn */}
+                                <div style={{ 
+                                    maxHeight: '350px', // Đặt chiều cao tối đa
+                                    overflowY: 'auto',   // Kích hoạt thanh cuộn dọc khi cần
+                                    paddingRight: '8px'  // Thêm padding cho thanh cuộn không che nội dung
+                                }}>
+                                    <ListGroup variant="flush">
+                                        {transactionHistory.map((item) => (
+                                            <ListGroup.Item 
+                                                key={item.id} 
+                                                className="d-flex justify-content-between align-items-center px-0 py-2"
                                             >
-                                                {item.amount}
-                                            </span>
-                                        </ListGroup.Item>
-                                    ))}
-                                    {/* Nút xem thêm */}
-                                    <ListGroup.Item 
-                                        className="d-flex justify-content-between align-items-center text-primary fw-medium small px-0 pt-3" 
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        Xem tất cả lịch sử
-                                        <ChevronRight size={14} />
-                                    </ListGroup.Item>
-                                </ListGroup>
+                                                <div className="d-flex align-items-center">
+                                                    <div className={`p-1 rounded-circle me-2 
+                                                        ${item.type === 'income' ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'}`}
+                                                    >
+                                                        <TrendingUp size={16} className={item.type === 'income' ? 'text-success' : 'text-danger'} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-medium small">{item.description}</div>
+                                                        <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>{item.date}</small>
+                                                    </div>
+                                                </div>
+                                                <span 
+                                                    className={`fw-bold small ${item.type === 'income' ? 'text-success' : 'text-danger'}`}
+                                                >
+                                                    {item.amount}
+                                                </span>
+                                            </ListGroup.Item>
+                                        ))}
+                                    </ListGroup>
+                                </div>
                             </Card.Body>
                         </Card>
                     </Col>
                     
-                    {/* Cột 8/12: Khu vực FlowPayment */}
-                    <Col lg={9}>
-                        <FlowPayment/>
+                    {/* Cột 9/12: Khu vực FlowPayment */}
+                    <Col lg={9}> 
+                        <FlowPayment/> 
                     </Col>
                 </Row>
-            </div>
+        </div>
     )
 }
