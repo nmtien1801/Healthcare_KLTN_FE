@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { 
-    Container, 
-    Row, 
-    Col, 
-    Card, 
-    Button, 
+import {
+    Container,
+    Row,
+    Col,
+    Card,
+    Button,
     ListGroup
-} from "react-bootstrap" 
+} from "react-bootstrap"
 import {
     Wallet,
     Download,
@@ -17,7 +17,7 @@ import {
     EyeOff,
     History,
 } from "lucide-react"
-import FlowPayment from "./FlowPayment" 
+import FlowPayment from "./FlowPayment"
 import { useSelector, useDispatch } from "react-redux"
 import { getBalance } from "../../redux/paymentSlice"
 
@@ -33,7 +33,7 @@ const transactionHistory = [
     { id: 9, description: "Nạp tiền điện thoại", date: "03/05/2025", amount: "- 100.000 đ", type: "expense" },
     { id: 10, description: "Thanh toán tiền nước", date: "02/05/2025", amount: "- 150.000 đ", type: "expense" },
     // Thêm nhiều giao dịch hơn để đảm bảo cuộn
-] 
+]
 
 export default function WalletUIDesktop() {
     const dispatch = useDispatch()
@@ -54,106 +54,124 @@ export default function WalletUIDesktop() {
     }
 
     return (
-        <div className="bg-light p-2">
-             <Row className="g-4">
-                    {/* Cột 3/12: Giao diện Ví Điện Tử (Sidebar) */}
-                    <Col lg={3}> 
-                        
-                        {/* 1. Số dư khả dụng */}
-                        <Card className="shadow-sm border-0 mb-4">
-                            <Card.Body className="p-3 bg-primary text-white rounded-3">
-                                <div className="d-flex align-items-center mb-2">
-                                    <Wallet size={20} className="me-2" />
-                                    <h6 className="mb-0 fw-bold">Số dư khả dụng</h6>
-                                </div>
-                                
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <h3 className="fw-bolder mb-0">
-                                        {balanceVisible ? `${balance} đ` : '*******'}
-                                    </h3>
-                                    <Button 
-                                        variant="light" 
-                                        size="sm" 
-                                        onClick={handleBalanceToggle}
-                                        className="rounded-circle p-1 shadow"
-                                    >
-                                        {balanceVisible ? <EyeOff size={20} /> : <Eye size={20} />}
-                                    </Button>
-                                </div>
-                            </Card.Body>
-                        </Card>
+        <div className="bg-light p-2" style={{ minHeight: "100vh" }}>
+            <Row className="g-4 h-100">
+                {/* Sidebar 3/12 */}
+                <Col lg={3} className="d-flex flex-column">
+                    {/* 1. Số dư khả dụng */}
+                    <Card className="shadow-sm border-0 mb-4">
+                        <Card.Body className="p-3 bg-primary text-white rounded-3">
+                            <div className="d-flex align-items-center mb-2">
+                                <Wallet size={20} className="me-2" />
+                                <h6 className="mb-0 fw-bold">Số dư khả dụng</h6>
+                            </div>
 
-                        {/* 2. Dịch vụ Phổ biến (Nạp & Rút) */}
-                        <Card className="shadow-sm border-0 mb-4">
-                            <Card.Body className="p-3">
-                                <h6 className="fw-bold text-secondary mb-3">Dịch vụ chính</h6>
+                            <div className="d-flex justify-content-between align-items-center">
+                                <h3 className="fw-bolder mb-0">
+                                    {balanceVisible ? `${balance} đ` : '*******'}
+                                </h3>
+                                <Button
+                                    variant="light"
+                                    size="sm"
+                                    onClick={handleBalanceToggle}
+                                    className="rounded-circle p-1 shadow"
+                                >
+                                    {balanceVisible ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
 
-                                <Row xs={2} className="g-3 text-center">
-                                    <Col style={{ cursor: 'pointer' }}>
-                                        <div className="p-3 rounded-3 shadow-sm bg-success bg-opacity-10 border border-success hover-shadow-lg">
-                                            <Download size={28} className="text-success mb-1" />
-                                            <div className="fw-bold text-success small">NẠP TIỀN</div>
-                                        </div>
-                                    </Col>
-                                    <Col style={{ cursor: 'pointer' }}>
-                                        <div className="p-3 rounded-3 shadow-sm bg-danger bg-opacity-10 border border-danger hover-shadow-lg">
-                                            <ReceiptText size={28} className="text-danger mb-1" />
-                                            <div className="fw-bold text-danger small">RÚT TIỀN</div>
-                                        </div>
-                                    </Col>
-                                </Row>
-                            </Card.Body>
-                        </Card>
+                    {/* 2. Dịch vụ Phổ biến (Nạp & Rút) */}
+                    <Card className="shadow-sm border-0 mb-4">
+                        <Card.Body className="p-3">
+                            <h6 className="fw-bold text-secondary mb-3">Dịch vụ chính</h6>
 
-                        {/* 3. Giao dịch Gần đây - ĐÃ THÊM SCROLL */}
-                        <Card className="shadow-sm border-0">
-                            <Card.Body className="p-3">
-                                <div className="d-flex align-items-center mb-3">
-                                    <History size={20} className="me-2 text-secondary" />
-                                    <h6 className="fw-bold mb-0 text-secondary">Giao dịch Gần đây</h6>
-                                </div>
-                                
-                                {/* Container cho ListGroup với CSS để cuộn */}
-                                <div style={{ 
-                                    maxHeight: '350px', // Đặt chiều cao tối đa
-                                    overflowY: 'auto',   // Kích hoạt thanh cuộn dọc khi cần
-                                    paddingRight: '8px'  // Thêm padding cho thanh cuộn không che nội dung
-                                }}>
-                                    <ListGroup variant="flush">
-                                        {transactionHistory.map((item) => (
-                                            <ListGroup.Item 
-                                                key={item.id} 
-                                                className="d-flex justify-content-between align-items-center px-0 py-2"
-                                            >
-                                                <div className="d-flex align-items-center">
-                                                    <div className={`p-1 rounded-circle me-2 
-                                                        ${item.type === 'income' ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'}`}
-                                                    >
-                                                        <TrendingUp size={16} className={item.type === 'income' ? 'text-success' : 'text-danger'} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="fw-medium small">{item.description}</div>
-                                                        <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>{item.date}</small>
-                                                    </div>
-                                                </div>
-                                                <span 
-                                                    className={`fw-bold small ${item.type === 'income' ? 'text-success' : 'text-danger'}`}
+                            <Row xs={2} className="g-3 text-center">
+                                <Col style={{ cursor: 'pointer' }}>
+                                    <div className="p-3 rounded-3 shadow-sm bg-success bg-opacity-10 border border-success hover-shadow-lg">
+                                        <Download size={28} className="text-success mb-1" />
+                                        <div className="fw-bold text-success small">NẠP TIỀN</div>
+                                    </div>
+                                </Col>
+                                <Col style={{ cursor: 'pointer' }}>
+                                    <div className="p-3 rounded-3 shadow-sm bg-danger bg-opacity-10 border border-danger hover-shadow-lg">
+                                        <ReceiptText size={28} className="text-danger mb-1" />
+                                        <div className="fw-bold text-danger small">RÚT TIỀN</div>
+                                    </div>
+                                </Col>
+                            </Row>
+                        </Card.Body>
+                    </Card>
+
+                    {/* 3. Giao dịch Gần đây */}
+                    <Card className="shadow-sm border-0 flex-grow-1 d-flex flex-column">
+                        <Card.Body className="p-3 d-flex flex-column">
+                            <div className="d-flex align-items-center mb-3">
+                                <History size={20} className="me-2 text-secondary" />
+                                <h6 className="fw-bold mb-0 text-secondary">Giao dịch Gần đây</h6>
+                            </div>
+
+                            {/* Cuộn auto */}
+                            <div className="flex-grow-1 overflow-auto pe-2">
+                                <ListGroup variant="flush">
+                                    {transactionHistory.map((item) => (
+                                        <ListGroup.Item
+                                            key={item.id}
+                                            className="d-flex justify-content-between align-items-center px-0 py-2"
+                                        >
+                                            <div className="d-flex align-items-center">
+                                                <div
+                                                    className={`p-1 rounded-circle me-2 ${item.type === "income"
+                                                        ? "bg-success bg-opacity-10"
+                                                        : "bg-danger bg-opacity-10"
+                                                        }`}
                                                 >
-                                                    {item.amount}
-                                                </span>
-                                            </ListGroup.Item>
-                                        ))}
-                                    </ListGroup>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    
-                    {/* Cột 9/12: Khu vực FlowPayment */}
-                    <Col lg={9}> 
-                        <FlowPayment/> 
-                    </Col>
-                </Row>
+                                                    <TrendingUp
+                                                        size={16}
+                                                        className={
+                                                            item.type === "income"
+                                                                ? "text-success"
+                                                                : "text-danger"
+                                                        }
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="fw-medium small">{item.description}</div>
+                                                    <small
+                                                        className="text-muted d-block"
+                                                        style={{ fontSize: "0.7rem" }}
+                                                    >
+                                                        {item.date}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <span
+                                                className={`fw-bold small ${item.type === "income"
+                                                    ? "text-success"
+                                                    : "text-danger"
+                                                    }`}
+                                            >
+                                                {item.amount}
+                                            </span>
+                                        </ListGroup.Item>
+                                    ))}
+                                </ListGroup>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+
+                {/* FlowPayment chiếm 9/12 */}
+                <Col lg={9} className="d-flex">
+                    <Card className="shadow-sm border-0 flex-grow-1">
+                        <Card.Body className="p-3">
+                            <FlowPayment />
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
         </div>
+
     )
 }

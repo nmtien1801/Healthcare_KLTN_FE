@@ -34,15 +34,14 @@ const banks = [
 ]
 
 const paymentMethods = [
-    { id: "bank", name: "Tài khoản ngân hàng", icon: Building2, balance: "15.200.000đ", recommended: true },
+    { id: "bank", name: "Quét mã QR ngân hàng", icon: QrCode, balance: "15.200.000đ", recommended: true },
     { id: "qr", name: "Quét mã QR", icon: QrCode, balance: "2.450.000đ" },
 ]
 
 const steps = [
-    { id: 1, title: "Chọn ngân hàng", description: "Chọn ngân hàng của bạn" },
-    { id: 2, title: "Phương thức thanh toán", description: "Chọn cách thanh toán" },
-    { id: 3, title: "Thông tin chuyển tiền", description: "Nhập thông tin giao dịch" },
-    { id: 4, title: "Xác nhận", description: "Xem lại và xác nhận" },
+    { id: 1, title: "Phương thức thanh toán", description: "Chọn cách thanh toán" },
+    { id: 2, title: "Thông tin chuyển tiền", description: "Nhập thông tin giao dịch" },
+    { id: 3, title: "Xác nhận", description: "Xem lại và xác nhận" },
 ]
 
 const ICON_SIZE = 20
@@ -63,11 +62,10 @@ export default function PaymentFlow() {
     })
 
     const nextStep = () => {
-        if (currentStep === 1 && !paymentData.bank) return
-        if (currentStep === 2 && (paymentData.amount === "" || paymentData.recipient === "" || paymentData.accountNumber === "")) return
-        if (currentStep === 3 && !paymentData.paymentMethod) return
+        if (currentStep === 1 && (paymentData.amount === "" || paymentData.recipient === "" || paymentData.accountNumber === "")) return
+        if (currentStep === 2 && !paymentData.paymentMethod) return
 
-        if (currentStep < 4) setCurrentStep(currentStep + 1)
+        if (currentStep < 3) setCurrentStep(currentStep + 1)
     }
 
     const prevStep = () => {
@@ -83,28 +81,27 @@ export default function PaymentFlow() {
 
     // Hàm xử lý khi người dùng ấn xác nhận
     const handleConfirm = async () => {
-        // await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
         try {
-            console.log('Creating payment with data:', {
-                amount: +paymentData.amount,
-                orderDescription: paymentData.message
-            });
-    
-            // Tạo payment URL mà KHÔNG gửi bankCode
-            const resCreateUrl = await dispatch(createPaymentUrl({
-                amount: +paymentData.amount,
-                orderDescription: paymentData.message || `Chuyển tiền vào ví ${paymentData.amount}đ`,
-                orderType: 'other',
-                language: 'vn',
-                bankCode: ''
-            }));
-    
-            if (resCreateUrl?.payload?.data?.paymentUrl) {
-                window.open(resCreateUrl.payload.data.paymentUrl, "_blank");
-            } else {
-                alert('Không thể tạo liên kết thanh toán. Vui lòng thử lại.');
+            const confirm = window.confirm(
+                `Bạn đã chuyển ${paymentData.amount} đ vào tài khoản ${paymentData.accountNumber} (${paymentData.recipient}) chưa?`
+            )
+            if (confirm) {
+                await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
             }
-    
+            // Tạo payment với vn pay
+            //     const resCreateUrl = await dispatch(createPaymentUrl({
+            //         amount: +paymentData.amount,
+            //         orderDescription: paymentData.message || `Chuyển tiền vào ví ${paymentData.amount}đ`,
+            //         orderType: 'other',
+            //         language: 'vn',
+            //         bankCode: ''
+            //     }));
+
+            //     if (resCreateUrl?.payload?.data?.paymentUrl) {
+            //         window.open(resCreateUrl.payload.data.paymentUrl, "_blank");
+            //     } else {
+            //         alert('Không thể tạo liên kết thanh toán. Vui lòng thử lại.');
+            //     }
         } catch (error) {
             console.error('Error creating payment URL:', error);
             alert('Có lỗi xảy ra khi tạo thanh toán: ' + (error.message || 'Vui lòng thử lại'));
@@ -152,320 +149,300 @@ export default function PaymentFlow() {
                     </div>
 
                     {/* 2. Main Content & Sidebar */}
-                    <Row className="g-4">
-                        {/* Main Content (8 cột trên màn hình lớn) */}
-                        <Col lg={8}>
-                            <Card className="p-4 shadow-sm">
+                    <Row className="g-4 align-items-stretch">
+                        {/* Main Content */}
+                        <Col lg={currentStep === 1 ? 12 : 8} className="d-flex">
+                            <div className={currentStep === 1 ? "mx-auto w-100 d-flex" : "w-100 d-flex"} style={currentStep === 1 ? { maxWidth: '600px' } : {}}>
+                                <Card className="p-4 shadow-sm h-100 w-100">
 
-                                {/* Step 1: Chọn Ngân hàng */}
-                                {currentStep === 1 && (
-                                    <div>
-                                        <div className="d-flex align-items-center gap-3 mb-4">
-                                            <div className="p-2 rounded bg-primary bg-opacity-10">
-                                                <Building2 size={ICON_SIZE} className="text-primary" />
+                                    {/* Step 1: Phương thức thanh toán */}
+                                    {currentStep === 1 && (
+                                        <div>
+                                            <div className="d-flex align-items-center gap-3 mb-4">
+                                                <div className="p-2 rounded bg-primary bg-opacity-10">
+                                                    <Wallet size={ICON_SIZE} className="text-primary" />
+                                                </div>
+                                                <div>
+                                                    <h2 className="h5 fw-semibold mb-0">Bước 1: Phương thức thanh toán</h2>
+                                                    <p className="text-muted small mb-0">Chọn nguồn tiền để thực hiện giao dịch</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h2 className="h5 fw-semibold mb-0">Bước 1: Chọn ngân hàng</h2>
-                                                <p className="text-muted small mb-0">Chọn ngân hàng của tài khoản chuyển tiền</p>
-                                            </div>
-                                        </div>
 
-                                        <Row xs={2} md={3} className="g-3">
-                                            {banks.map((bank) => (
-                                                <Col key={bank.id}>
-                                                    <div
-                                                        className={`p-3 border rounded shadow-sm h-100 
-                                        ${paymentData.bank === bank.id ? "border-primary bg-primary bg-opacity-10" : "bg-white hover:border-primary"}`}
-                                                        style={{ cursor: 'pointer' }}
-                                                        onClick={() => setPaymentData({ ...paymentData, bank: bank.id })}
-                                                    >
-                                                        <div className="d-flex align-items-start gap-3 w-100">
-                                                            <div
-                                                                className={`rounded-circle ${bank.color} d-flex align-items-center justify-content-center text-white fw-bold small flex-shrink-0`}
-                                                                style={{ width: '40px', height: '40px' }}
-                                                            >
-                                                                {bank.name.substring(0, 2)}
-                                                            </div>
-                                                            <div className="flex-grow-1 overflow-hidden">
-                                                                <div className="fw-medium small">{bank.name}</div>
-                                                                <div className="text-muted small text-truncate" style={{ fontSize: '0.75rem' }}>{bank.fullName}</div>
-                                                            </div>
-                                                            {paymentData.bank === bank.id && (
-                                                                <Check size={STEP_ICON_SIZE} className="text-primary ms-auto flex-shrink-0" />
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </Col>
-                                            ))}
-                                        </Row>
-                                    </div>
-                                )}
-
-                                {/* Step 2: Phương thức thanh toán */}
-                                {currentStep === 2 && (
-                                    <div>
-                                        <div className="d-flex align-items-center gap-3 mb-4">
-                                            <div className="p-2 rounded bg-primary bg-opacity-10">
-                                                <Wallet size={ICON_SIZE} className="text-primary" />
-                                            </div>
-                                            <div>
-                                                <h2 className="h5 fw-semibold mb-0">Bước 2: Phương thức thanh toán</h2>
-                                                <p className="text-muted small mb-0">Chọn nguồn tiền để thực hiện giao dịch</p>
-                                            </div>
-                                        </div>
-
-                                        <Form>
-                                            <ListGroup variant="flush">
-                                                {paymentMethods.map((method) => {
-                                                    const Icon = method.icon
-                                                    return (
-                                                        <ListGroup.Item
-                                                            key={method.id}
-                                                            action
-                                                            onClick={() => setPaymentData({ ...paymentData, paymentMethod: method.id })}
-                                                            className={`d-flex align-items-center py-3 
+                                            <Form>
+                                                <ListGroup variant="flush">
+                                                    {paymentMethods.map((method) => {
+                                                        const Icon = method.icon
+                                                        return (
+                                                            <ListGroup.Item
+                                                                key={method.id}
+                                                                action
+                                                                onClick={() => setPaymentData({ ...paymentData, paymentMethod: method.id })}
+                                                                className={`d-flex align-items-center py-3 
                                           ${paymentData.paymentMethod === method.id ? 'bg-primary bg-opacity-10 border-primary' : 'bg-white border-0'}`}
-                                                        >
-                                                            <Form.Check
-                                                                type="radio"
-                                                                id={`method-${method.id}`}
-                                                                name="paymentMethod"
-                                                                value={method.id}
-                                                                checked={paymentData.paymentMethod === method.id}
-                                                                onChange={() => setPaymentData({ ...paymentData, paymentMethod: method.id })}
-                                                                className="me-3 flex-shrink-0"
-                                                            />
-                                                            <Icon size={24} className="text-primary me-3 flex-shrink-0" />
-                                                            <div className="flex-grow-1">
-                                                                <div className="d-flex align-items-center gap-2">
-                                                                    <span className="fw-medium">{method.name}</span>
-                                                                    {method.recommended && (
-                                                                        <Badge bg="secondary" className="small">
-                                                                            Khuyến nghị
-                                                                        </Badge>
-                                                                    )}
+                                                            >
+                                                                <Form.Check
+                                                                    type="radio"
+                                                                    id={`method-${method.id}`}
+                                                                    name="paymentMethod"
+                                                                    value={method.id}
+                                                                    checked={paymentData.paymentMethod === method.id}
+                                                                    onChange={() => setPaymentData({ ...paymentData, paymentMethod: method.id })}
+                                                                    className="me-3 flex-shrink-0"
+                                                                />
+                                                                <Icon size={24} className="text-primary me-3 flex-shrink-0" />
+                                                                <div className="flex-grow-1">
+                                                                    <div className="d-flex align-items-center gap-2">
+                                                                        <span className="fw-medium">{method.name}</span>
+                                                                        {method.recommended && (
+                                                                            <Badge bg="secondary" className="small">
+                                                                                Khuyến nghị
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="small text-muted">Số dư: {method.balance}</div>
                                                                 </div>
-                                                                <div className="small text-muted">Số dư: {method.balance}</div>
-                                                            </div>
-                                                            {paymentData.paymentMethod === method.id && <Check size={STEP_ICON_SIZE} className="text-primary ms-2 flex-shrink-0" />}
-                                                        </ListGroup.Item>
-                                                    )
-                                                })}
-                                            </ListGroup>
-                                        </Form>
-                                    </div>
-                                )}
-
-                                {/* Step 3: Thông tin chuyển tiền */}
-                                {currentStep === 3 && (
-                                    <div>
-                                        <div className="d-flex align-items-center gap-3 mb-4">
-                                            <div className="p-2 rounded bg-primary bg-opacity-10">
-                                                <CreditCard size={ICON_SIZE} className="text-primary" />
-                                            </div>
-                                            <div>
-                                                <h2 className="h5 fw-semibold mb-0">Bước 3: Thông tin chuyển tiền</h2>
-                                                <p className="text-muted small mb-0">Nhập thông tin người nhận và số tiền</p>
-                                            </div>
+                                                                {paymentData.paymentMethod === method.id && <Check size={STEP_ICON_SIZE} className="text-primary ms-2 flex-shrink-0" />}
+                                                            </ListGroup.Item>
+                                                        )
+                                                    })}
+                                                </ListGroup>
+                                            </Form>
                                         </div>
+                                    )}
 
-                                        <Form>
-                                            <Row className="mb-3 g-3">
-                                                <Col md={6}>
-                                                    <Form.Group controlId="recipient">
-                                                        <Form.Label className="small fw-medium">Tên người nhận</Form.Label>
-                                                        <Form.Control
-                                                            type="text"
-                                                            value={paymentData.recipient}
-                                                            onChange={(e) => setPaymentData({ ...paymentData, recipient: e.target.value })}
-                                                            placeholder="NGUYEN MINH TIEN"
-                                                            disabled
-                                                        />
-                                                    </Form.Group>
-                                                </Col>
-                                                <Col md={6}>
-                                                    <Form.Group controlId="accountNumber">
-                                                        <Form.Label className="small fw-medium">Số tài khoản</Form.Label>
-                                                        <Form.Control
-                                                            type="text"
-                                                            value={paymentData.accountNumber}
-                                                            onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
-                                                            placeholder="123456789"
-                                                            disabled
-                                                        />
-                                                    </Form.Group>
-                                                </Col>
-                                            </Row>
-
-                                            <Form.Group controlId="amount" className="mb-3">
-                                                <Form.Label className="small fw-medium">Số tiền nạp ví</Form.Label>
-                                                <div className="input-group">
-                                                    <Form.Control
-                                                        type="number"
-                                                        value={paymentData.amount}
-                                                        onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-                                                        placeholder="Nhập số tiền"
-                                                        required
-                                                    />
-                                                    <span className="input-group-text text-muted">đ</span>
+                                    {/* Step 2: Thông tin chuyển tiền */}
+                                    {currentStep === 2 && (
+                                        <div>
+                                            <div className="d-flex align-items-center gap-3 mb-4">
+                                                <div className="p-2 rounded bg-primary bg-opacity-10">
+                                                    <CreditCard size={ICON_SIZE} className="text-primary" />
                                                 </div>
-                                            </Form.Group>
-
-                                            <Form.Group controlId="message" className="mb-3">
-                                                <Form.Label className="small fw-medium">Lời nhắn</Form.Label>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    rows={3}
-                                                    value={paymentData.message}
-                                                    onChange={(e) => setPaymentData({ ...paymentData, message: e.target.value })}
-                                                    placeholder="Nhập lời nhắn (tùy chọn)"
-                                                />
-                                            </Form.Group>
-                                        </Form>
-                                    </div>
-                                )}
-
-                                {/* Step 4: Xác nhận */}
-                                {currentStep === 4 && (
-                                    <div>
-                                        <div className="d-flex align-items-center gap-3 mb-4">
-                                            <div className="p-2 rounded bg-primary bg-opacity-10">
-                                                <Shield size={ICON_SIZE} className="text-primary" />
+                                                <div>
+                                                    <h2 className="h5 fw-semibold mb-0">Bước 2: Thông tin chuyển tiền</h2>
+                                                    <p className="text-muted small mb-0">Nhập thông tin người nhận và số tiền</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h2 className="h5 fw-semibold mb-0">Bước 4: Xác nhận giao dịch</h2>
-                                                <p className="text-muted small mb-0">Kiểm tra thông tin trước khi xác nhận chuyển tiền</p>
-                                            </div>
-                                        </div>
 
-                                        <div className="bg-light p-4 rounded border">
-                                            <h6 className="fw-bold mb-3 text-secondary">Chi tiết người nhận</h6>
-                                            <Row className="g-3 small">
-                                                <Col xs={6}>
-                                                    <span className="text-muted">Người nhận:</span>
-                                                    <div className="fw-medium">{paymentData.recipient}</div>
-                                                </Col>
-                                                <Col xs={6}>
-                                                    <span className="text-muted">Ngân hàng:</span>
-                                                    <div className="fw-medium">{banks.find((b) => b.id === paymentData.bank)?.name}</div>
-                                                </Col>
-                                                <Col xs={6}>
-                                                    <span className="text-muted">Số tài khoản:</span>
-                                                    <div className="fw-medium">{paymentData.accountNumber}</div>
-                                                </Col>
-                                                <Col xs={6}>
-                                                    <span className="text-muted">Phương thức TT:</span>
-                                                    <div className="fw-medium">
-                                                        {paymentMethods.find((m) => m.id === paymentData.paymentMethod)?.name}
+                                            <Form>
+                                                <Row className="mb-3 g-3">
+                                                    <Col md={6}>
+                                                        <Form.Group controlId="recipient">
+                                                            <Form.Label className="small fw-medium">Tên người nhận</Form.Label>
+                                                            <Form.Control
+                                                                type="text"
+                                                                value={paymentData.recipient}
+                                                                onChange={(e) => setPaymentData({ ...paymentData, recipient: e.target.value })}
+                                                                placeholder="NGUYEN MINH TIEN"
+                                                                disabled
+                                                            />
+                                                        </Form.Group>
+                                                    </Col>
+                                                    <Col md={6}>
+                                                        <Form.Group controlId="accountNumber">
+                                                            <Form.Label className="small fw-medium">Số tài khoản</Form.Label>
+                                                            <Form.Control
+                                                                type="text"
+                                                                value={paymentData.accountNumber}
+                                                                onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
+                                                                placeholder="123456789"
+                                                                disabled
+                                                            />
+                                                        </Form.Group>
+                                                    </Col>
+                                                </Row>
+
+                                                <Form.Group controlId="amount" className="mb-3">
+                                                    <Form.Label className="small fw-medium">Số tiền nạp ví</Form.Label>
+                                                    <div className="input-group">
+                                                        <Form.Control
+                                                            type="number"
+                                                            value={paymentData.amount}
+                                                            onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                                                            placeholder="Nhập số tiền"
+                                                            required
+                                                        />
+                                                        <span className="input-group-text text-muted">đ</span>
                                                     </div>
-                                                </Col>
-                                            </Row>
-                                            {paymentData.message && (
-                                                <div className="mt-3 pt-3 border-top">
-                                                    <span className="text-muted small">Lời nhắn:</span>
-                                                    <div className="small">{paymentData.message}</div>
-                                                </div>
-                                            )}
+                                                </Form.Group>
+
+                                                <Form.Group controlId="message" className="mb-3">
+                                                    <Form.Label className="small fw-medium">Lời nhắn</Form.Label>
+                                                    <Form.Control
+                                                        as="textarea"
+                                                        rows={3}
+                                                        value={paymentData.message}
+                                                        onChange={(e) => setPaymentData({ ...paymentData, message: e.target.value })}
+                                                        placeholder="Nhập lời nhắn (tùy chọn)"
+                                                    />
+                                                </Form.Group>
+                                            </Form>
                                         </div>
-
-                                        <div className="p-3 rounded bg-success bg-opacity-10 border border-success border-opacity-25 mt-3">
-                                            <div className="d-flex align-items-center gap-2 text-success small">
-                                                <Shield size={16} />
-                                                <span className="fw-medium">Giao dịch được bảo mật</span>
-                                            </div>
-                                            <p className="small text-success text-opacity-75 mt-1 mb-0">
-                                                Thông tin của bạn được mã hóa và bảo vệ.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* --- Navigation --- */}
-                                <div className="d-flex justify-content-between mt-4 pt-3 border-top">
-                                    <Button
-                                        variant="outline-secondary"
-                                        onClick={prevStep}
-                                        disabled={currentStep === 1}
-                                        className="d-flex align-items-center gap-2"
-                                    >
-                                        <ArrowLeft size={16} />
-                                        Quay lại
-                                    </Button>
-
-                                    {currentStep < 4 ? (
-                                        <Button onClick={nextStep} className="d-flex align-items-center gap-2">
-                                            Tiếp tục
-                                            <ArrowRight size={16} />
-                                        </Button>
-                                    ) : (
-                                        <Button variant="primary" onClick={handleConfirm} className="d-flex align-items-center gap-2">
-                                            <Send size={16} />
-                                            Xác nhận chuyển tiền
-                                        </Button>
                                     )}
-                                </div>
-                            </Card>
-                        </Col>
 
-                        {/* Sidebar Tóm tắt (4 cột trên màn hình lớn) */}
-                        <Col lg={4}>
-                            <Card className="p-4 shadow-sm sticky-top" style={{ top: '1.5rem' }}>
-                                <div className="d-flex align-items-center gap-3 mb-4">
-                                    <div className="p-2 rounded bg-primary bg-opacity-10">
-                                        <DollarSign size={ICON_SIZE} className="text-primary" />
-                                    </div>
-                                    <h3 className="h6 fw-semibold mb-0">Tóm tắt giao dịch</h3>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="d-flex justify-content-between align-items-center small">
-                                        <span className="text-muted">Số tiền chuyển:</span>
-                                        <span className="fw-medium">{formatCurrency(paymentData.amount)}</span>
-                                    </div>
-
-                                    <div className="d-flex justify-content-between align-items-center small">
-                                        <span className="text-muted">Phí giao dịch:</span>
-                                        <span className="fw-medium text-success">Miễn phí</span>
-                                    </div>
-
-                                    <hr className="my-2" />
-
-                                    <div className="d-flex justify-content-between align-items-center h5 fw-bold">
-                                        <span>Tổng cộng:</span>
-                                        <span className="text-primary">{formatCurrency(paymentData.amount)}</span>
-                                    </div>
-
-                                    {currentStep > 1 && (
-                                        <>
-                                            <hr className="my-2" />
-                                            <h6 className="fw-bold mb-2 text-secondary">Thông tin người nhận</h6>
-                                            <div className="small space-y-2">
-                                                <div className="d-flex justify-content-between">
-                                                    <span className="text-muted">Tên:</span>
-                                                    <span className="fw-medium">{paymentData.recipient}</span>
+                                    {/* Step 3: Xác nhận */}
+                                    {currentStep === 3 && (
+                                        <div>
+                                            <div className="d-flex align-items-center gap-3 mb-4">
+                                                <div className="p-2 rounded bg-primary bg-opacity-10">
+                                                    <Shield size={ICON_SIZE} className="text-primary" />
                                                 </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span className="text-muted">Tài khoản:</span>
-                                                    <span className="fw-medium">{paymentData.accountNumber}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span className="text-muted">Ngân hàng:</span>
-                                                    <span className="fw-medium">{banks.find((b) => b.id === paymentData.bank)?.name}</span>
+                                                <div>
+                                                    <h2 className="h5 fw-semibold mb-0">Bước 3: Xác nhận giao dịch</h2>
+                                                    <p className="text-muted small mb-0">Kiểm tra thông tin trước khi xác nhận chuyển tiền</p>
                                                 </div>
                                             </div>
-                                        </>
-                                    )}
-                                </div>
 
-                                <div className="mt-4 p-3 rounded bg-info bg-opacity-10">
-                                    <div className="d-flex align-items-center gap-2 small">
-                                        <Shield size={16} className="text-primary" />
-                                        <span className="fw-medium">An toàn giao dịch</span>
+                                            <div className="bg-light p-4 rounded border">
+                                                <h6 className="fw-bold mb-3 text-secondary">Chi tiết người nhận</h6>
+                                                <Row className="g-3 small">
+                                                    <Col xs={6}>
+                                                        <span className="text-muted">Người nhận:</span>
+                                                        <div className="fw-medium">{paymentData.recipient}</div>
+                                                    </Col>
+                                                    <Col xs={6}>
+                                                        <span className="text-muted">Ngân hàng:</span>
+                                                        <div className="fw-medium">{banks.find((b) => b.id === paymentData.bank)?.name}</div>
+                                                    </Col>
+                                                    <Col xs={6}>
+                                                        <span className="text-muted">Số tài khoản:</span>
+                                                        <div className="fw-medium">{paymentData.accountNumber}</div>
+                                                    </Col>
+                                                    <Col xs={6}>
+                                                        <span className="text-muted">Phương thức TT:</span>
+                                                        <div className="fw-medium">
+                                                            {paymentMethods.find((m) => m.id === paymentData.paymentMethod)?.name}
+                                                        </div>
+                                                    </Col>
+                                                </Row>
+                                                {paymentData.message && (
+                                                    <div className="mt-3 pt-3 border-top">
+                                                        <span className="text-muted small">Lời nhắn:</span>
+                                                        <div className="small">{paymentData.message}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-3 rounded bg-success bg-opacity-10 border border-success border-opacity-25 mt-3">
+                                                <div className="d-flex align-items-center gap-2 text-success small">
+                                                    <Shield size={16} />
+                                                    <span className="fw-medium">Giao dịch được bảo mật</span>
+                                                </div>
+                                                <p className="small text-success text-opacity-75 mt-1 mb-0">
+                                                    Thông tin của bạn được mã hóa và bảo vệ.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* --- Navigation --- */}
+                                    <div className="d-flex justify-content-between mt-4 pt-3 border-top">
+                                        <Button
+                                            variant="outline-secondary"
+                                            onClick={prevStep}
+                                            disabled={currentStep === 1}
+                                            className="d-flex align-items-center gap-2"
+                                        >
+                                            <ArrowLeft size={16} />
+                                            Quay lại
+                                        </Button>
+
+                                        {currentStep < 3 ? (
+                                            <Button onClick={nextStep} className="d-flex align-items-center gap-2">
+                                                Tiếp tục
+                                                <ArrowRight size={16} />
+                                            </Button>
+                                        ) : (
+                                            <Button variant="primary" onClick={handleConfirm} className="d-flex align-items-center gap-2">
+                                                <Send size={16} />
+                                                Xác nhận chuyển tiền
+                                            </Button>
+                                        )}
                                     </div>
-                                    <p className="small text-muted mt-1 mb-0">Đảm bảo tiền được chuyển đến đúng tài khoản đích.</p>
-                                </div>
-                            </Card>
+                                </Card>
+                            </div>
                         </Col>
+
+                        {/* Sidebar Tóm tắt (4 cột trên màn hình lớn) - Chỉ hiện từ bước 2 */}
+                        {currentStep > 1 && (
+                            <Col lg={4} className="d-flex">
+                                <Card className="p-4 shadow-sm h-100 w-100">
+                                    <div className="d-flex align-items-center gap-3 mb-4">
+                                        <div className="p-2 rounded bg-primary bg-opacity-10">
+                                            <DollarSign size={ICON_SIZE} className="text-primary" />
+                                        </div>
+                                        <h3 className="h6 fw-semibold mb-0">Tóm tắt giao dịch</h3>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="d-flex justify-content-between align-items-center small">
+                                            <span className="text-muted">Số tiền chuyển:</span>
+                                            <span className="fw-medium">{formatCurrency(paymentData.amount)}</span>
+                                        </div>
+
+                                        <div className="d-flex justify-content-between align-items-center small">
+                                            <span className="text-muted">Phí giao dịch:</span>
+                                            <span className="fw-medium text-success">Miễn phí</span>
+                                        </div>
+
+                                        <hr className="my-2" />
+
+                                        <div className="d-flex justify-content-between align-items-center h5 fw-bold">
+                                            <span>Tổng cộng:</span>
+                                            <span className="text-primary">{formatCurrency(paymentData.amount)}</span>
+                                        </div>
+
+                                        <hr className="my-2" />
+                                        <h6 className="fw-bold mb-2 text-secondary">Thông tin người nhận</h6>
+                                        <div className="small space-y-2">
+                                            <div className="d-flex justify-content-between">
+                                                <span className="text-muted">Tên:</span>
+                                                <span className="fw-medium">{paymentData.recipient}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between">
+                                                <span className="text-muted">Tài khoản:</span>
+                                                <span className="fw-medium">{paymentData.accountNumber}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between">
+                                                <span className="text-muted">Ngân hàng:</span>
+                                                <span className="fw-medium">{banks.find((b) => b.id === paymentData.bank)?.name}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 p-3 rounded bg-info bg-opacity-10">
+                                        <div className="d-flex align-items-center gap-2 small">
+                                            <Shield size={16} className="text-primary" />
+                                            <span className="fw-medium">An toàn giao dịch</span>
+                                        </div>
+                                        <p className="small text-muted mt-1 mb-0">Đảm bảo tiền được chuyển đến đúng tài khoản đích.</p>
+                                    </div>
+
+                                    {/* QR Code Section */}
+                                    <div className="mt-4 p-3 rounded bg-light border text-center">
+                                        <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+                                            <QrCode size={16} className="text-primary" />
+                                            <span className="fw-medium small">Mã QR thanh toán</span>
+                                        </div>
+                                        <div className="bg-white p-3 rounded border mx-auto d-inline-block">
+                                            <div
+                                                className="bg-dark mx-auto"
+                                                style={{ width: '120px', height: '120px'}}
+                                            >
+                                                <img
+                                                    src={`data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='qr' patternUnits='userSpaceOnUse' width='10' height='10'%3e%3crect width='5' height='5' fill='black'/%3e%3crect x='5' y='5' width='5' height='5' fill='black'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100' height='100' fill='url(%23qr)'/%3e%3c/svg%3e`}
+                                                    alt="QR code"
+                                                    width="100"
+                                                    height="100"
+                                                />
+                                            </div>
+                                        </div>
+                                        <p className="small text-muted mt-2 mb-0">
+                                            Quét mã để thanh toán {formatCurrency(paymentData.amount)}
+                                        </p>
+                                    </div>
+                                </Card>
+                            </Col>
+                        )}
                     </Row>
                 </div>
             </Container>
