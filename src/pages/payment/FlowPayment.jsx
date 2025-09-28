@@ -33,9 +33,15 @@ const banks = [
     { id: "acb", name: "ACB", fullName: "Ngân hàng TMCP Á Châu", color: "bg-primary" },
 ]
 
+// Thêm mapping QR cho từng phương thức
+const qrImages = {
+    bank: "https://github.com/nmtien1801/Healthcare_KLTN_FE/blob/develop/public/qrMb.png?raw=true",
+    qr: "https://github.com/nmtien1801/Healthcare_KLTN_FE/blob/develop/public/qrMomo.png?raw=true",
+}
+
 const paymentMethods = [
-    { id: "bank", name: "Quét mã QR ngân hàng", icon: QrCode, balance: "15.200.000đ", recommended: true },
-    { id: "qr", name: "Quét mã QR", icon: QrCode, balance: "2.450.000đ" },
+    { id: "bank", name: "Quét mã QR ngân hàng", icon: QrCode, recommended: true },
+    { id: "qr", name: "Quét mã QR momo", icon: QrCode },
 ]
 
 const steps = [
@@ -168,7 +174,7 @@ export default function PaymentFlow() {
                                                 </div>
                                             </div>
 
-                                            <Form>
+                                            <div>
                                                 <ListGroup variant="flush">
                                                     {paymentMethods.map((method) => {
                                                         const Icon = method.icon
@@ -176,9 +182,13 @@ export default function PaymentFlow() {
                                                             <ListGroup.Item
                                                                 key={method.id}
                                                                 action
-                                                                onClick={() => setPaymentData({ ...paymentData, paymentMethod: method.id })}
+                                                                onClick={() =>
+                                                                    setPaymentData({ ...paymentData, paymentMethod: method.id })
+                                                                }
                                                                 className={`d-flex align-items-center py-3 
-                                          ${paymentData.paymentMethod === method.id ? 'bg-primary bg-opacity-10 border-primary' : 'bg-white border-0'}`}
+            ${paymentData.paymentMethod === method.id
+                                                                        ? "bg-primary bg-opacity-10 border-primary"
+                                                                        : "bg-white border-0"}`}
                                                             >
                                                                 <Form.Check
                                                                     type="radio"
@@ -186,11 +196,13 @@ export default function PaymentFlow() {
                                                                     name="paymentMethod"
                                                                     value={method.id}
                                                                     checked={paymentData.paymentMethod === method.id}
-                                                                    onChange={() => setPaymentData({ ...paymentData, paymentMethod: method.id })}
+                                                                    onChange={() =>
+                                                                        setPaymentData({ ...paymentData, paymentMethod: method.id })
+                                                                    }
                                                                     className="me-3 flex-shrink-0"
                                                                 />
                                                                 <Icon size={24} className="text-primary me-3 flex-shrink-0" />
-                                                                <div className="flex-grow-1">
+                                                                <div className="flex-grow-1 p-3">
                                                                     <div className="d-flex align-items-center gap-2">
                                                                         <span className="fw-medium">{method.name}</span>
                                                                         {method.recommended && (
@@ -199,14 +211,18 @@ export default function PaymentFlow() {
                                                                             </Badge>
                                                                         )}
                                                                     </div>
-                                                                    <div className="small text-muted">Số dư: {method.balance}</div>
                                                                 </div>
-                                                                {paymentData.paymentMethod === method.id && <Check size={STEP_ICON_SIZE} className="text-primary ms-2 flex-shrink-0" />}
+                                                                {paymentData.paymentMethod === method.id && (
+                                                                    <Check
+                                                                        size={STEP_ICON_SIZE}
+                                                                        className="text-primary ms-2 flex-shrink-0"
+                                                                    />
+                                                                )}
                                                             </ListGroup.Item>
                                                         )
                                                     })}
                                                 </ListGroup>
-                                            </Form>
+                                            </div>
                                         </div>
                                     )}
 
@@ -429,7 +445,7 @@ export default function PaymentFlow() {
                                                 style={{ width: '120px', height: '120px' }}
                                             >
                                                 <img
-                                                    src="https://github.com/nmtien1801/Healthcare_KLTN_FE/blob/develop/public/qrMb.png?raw=true"
+                                                    src={qrImages[paymentData.paymentMethod]}
                                                     alt="QR code"
                                                     style={{ width: "100%", height: "100%", objectFit: "contain" }}
                                                 />
