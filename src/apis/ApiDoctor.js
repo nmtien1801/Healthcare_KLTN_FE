@@ -9,6 +9,11 @@ const ApiDoctor = {
     getAppointmentById: (id) => ApiManager.get(`/doctor/appointment/${id}`),
     deleteAppointment: (id) => ApiManager.delete(`/doctor/appointment/${id}`),
     getPatientPastAppointments: (patientId) => ApiManager.get(`/doctor/past-appointments/${patientId}`),
+    getSummary: () => ApiManager.get(`/doctor/summary`),
+    getRevenue: (period) => ApiManager.get(`/doctor/revenue/${period}`),
+    getPatientsAttention: () => ApiManager.get(`/doctor/patients-attention`),
+    getPatientHealth: (patientId, period) => ApiManager.get(`/doctor/patient-health/${patientId}/${period}`),
+    updatePatientHealthInfo: (patientId, data) => ApiManager.put(`/doctor/patient-health/${patientId}`, data),
 }
 
 export default ApiDoctor;
