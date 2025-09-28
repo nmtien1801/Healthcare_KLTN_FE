@@ -22,7 +22,7 @@ import {
     Send,
 } from "lucide-react"
 import { useSelector, useDispatch } from "react-redux"
-import { deposit } from "../../redux/paymentSlice"
+import { deposit, createPaymentUrl } from "../../redux/paymentSlice"
 
 const banks = [
     { id: "mbbank", name: "MBBank", fullName: "Ngân hàng TMCP Quân Đội", color: "bg-danger" },
@@ -83,7 +83,32 @@ export default function PaymentFlow() {
 
     // Hàm xử lý khi người dùng ấn xác nhận
     const handleConfirm = async () => {
-        await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
+        // await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
+        try {
+            console.log('Creating payment with data:', {
+                amount: +paymentData.amount,
+                orderDescription: paymentData.message
+            });
+    
+            // Tạo payment URL mà KHÔNG gửi bankCode
+            const resCreateUrl = await dispatch(createPaymentUrl({
+                amount: +paymentData.amount,
+                orderDescription: paymentData.message || `Chuyển tiền vào ví ${paymentData.amount}đ`,
+                orderType: 'other',
+                language: 'vn',
+                bankCode: ''
+            }));
+    
+            if (resCreateUrl?.payload?.data?.paymentUrl) {
+                window.open(resCreateUrl.payload.data.paymentUrl, "_blank");
+            } else {
+                alert('Không thể tạo liên kết thanh toán. Vui lòng thử lại.');
+            }
+    
+        } catch (error) {
+            console.error('Error creating payment URL:', error);
+            alert('Có lỗi xảy ra khi tạo thanh toán: ' + (error.message || 'Vui lòng thử lại'));
+        }
     }
 
     return (
