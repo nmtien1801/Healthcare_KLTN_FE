@@ -87,10 +87,6 @@ const Router = (props) => {
                   <Info size={20} />
                   <span>Thông tin</span>
                 </Nav.Link>
-                <Nav.Link as={NavLink} to="/settingTabs" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
-                  <Settings size={20} />
-                  <span>Cài đặt</span>
-                </Nav.Link>
               </>
             ) : (
               <>

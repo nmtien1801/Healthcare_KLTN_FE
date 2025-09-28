@@ -26,7 +26,6 @@ import OverviewTab from "./pages/doctor/OverviewTab";
 import InformationTab from "./pages/doctor/InformationTab";
 import AppointmentTab from "./pages/doctor/AppointmentTab";
 import PatientTab from "./pages/doctor/PatientTab";
-import SettingTabs from "./pages/doctor/SettingTabs";
 import Header from "./routes/Header";
 import FoodTrackerApp from "./pages/patient/nutrition/FoodTrackerApp";
 import SuggestedFood from "./pages/patient/nutrition/SuggestedFood";
@@ -258,7 +257,6 @@ function App() {
                       <Route path="/overviewTab" element={<OverviewTab />} />
                       <Route path="/patientTab" element={<PatientTab handleStartCall={handleStartCall} />} />
                       <Route path="/appointmentTab" element={<AppointmentTab />} />
-                      <Route path="/settingTabs" element={<SettingTabs />} />
                       <Route path="/informationTab" element={<InformationTab />} />
                       <Route path="/attendanceTab" element={<AttendanceTab />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /overviewTab */}
