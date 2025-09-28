@@ -27,26 +27,14 @@ const OverviewTab = () => {
     const fetchSummary = async () => {
       try {
         const res = await ApiDoctor.getSummary();
-        if (
-          res &&
-          typeof res === "object" &&
-          "newPatients" in res &&
-          "appointmentsToday" in res &&
-          "upcomingAppointments" in res &&
-          "monthlyRevenue" in res
-        ) {
-          setSummary(res);
-        } else {
-          console.error("Response summary không hợp lệ:", res);
-          setSummary({
-            newPatients: 0,
-            newPatientsChange: "",
-            appointmentsToday: 0,
-            upcomingAppointments: 0,
-            monthlyRevenue: "0 đ",
-            monthlyRevenueChange: "",
-          });
-        }
+        setSummary(res || {
+          newPatients: 0,
+          newPatientsChange: "",
+          appointmentsToday: 0,
+          upcomingAppointments: 0,
+          monthlyRevenue: "0 đ",
+          monthlyRevenueChange: "",
+        });
       } catch (err) {
         console.error("Lỗi fetch summary:", err);
         setSummary({
@@ -61,6 +49,7 @@ const OverviewTab = () => {
     };
     fetchSummary();
   }, []);
+
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -80,20 +69,18 @@ const OverviewTab = () => {
   useEffect(() => {
     const fetchRevenue = async () => {
       try {
-        const weekRes = await ApiDoctor.getRevenue("week");
-        const monthRes = await ApiDoctor.getRevenue("month");
-        const yearRes = await ApiDoctor.getRevenue("year");
-        setRevenueData({
-          week: weekRes || {},
-          month: monthRes || {},
-          year: yearRes || {},
-        });
+        const res = await ApiDoctor.getRevenue(revenuePeriod);
+        setRevenueData(prev => ({
+          ...prev,
+          [revenuePeriod]: res || {},
+        }));
       } catch (err) {
         console.error("Lỗi fetch revenue:", err);
       }
     };
     fetchRevenue();
-  }, []);
+  }, [revenuePeriod]);
+
 
   useEffect(() => {
     if (selectedPatient) {
