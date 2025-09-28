@@ -177,7 +177,7 @@ const OverviewTab = () => {
   };
 
   return (
-    <div className="container mt-4">
+    <div className="m-2">
       <h3 className="mb-4">Tổng quan</h3>
       <Row className="mb-4">
         {isSummaryValid ? (

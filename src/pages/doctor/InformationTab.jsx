@@ -290,7 +290,7 @@ export default function DoctorProfile() {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="m-2">
       <h3 className="mb-4">Thông tin cá nhân</h3>
       <ProfileHeader doctor={doctorData} />
       <Card className="shadow-sm mb-4">

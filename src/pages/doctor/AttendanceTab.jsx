@@ -421,7 +421,7 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
 // CurrentSchedule component
 const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
     return (
-        <div className="container my-3">
+        <div className="m-2">
             <div className="bg-white rounded shadow border p-4">
                 <div>
                     {/* Header */}
@@ -1079,7 +1079,7 @@ const AttendanceTab = () => {
     return (
         <div>
             <CurrentSchedule currentShift={currentShift} user={doctorInfo} loadingDoctor={loadingDoctor} />
-            <div className="container my-4">
+            <div className="m-2">
                 <div className="bg-white rounded shadow border p-4">
                     <h2 className="h5 mb-2">Chấm công</h2>
                     <p className="text-muted mb-4">Quản lý thời gian làm việc của bạn</p>

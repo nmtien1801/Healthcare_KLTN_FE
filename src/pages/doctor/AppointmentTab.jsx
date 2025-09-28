@@ -370,7 +370,7 @@ export default function AppointmentTab() {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   };
   return (
-    <div className="container mt-4">
+    <div className="m-2">
       <h3 className="mb-4">Lịch hẹn khám bệnh</h3>
 
       {/* Hôm nay */}
