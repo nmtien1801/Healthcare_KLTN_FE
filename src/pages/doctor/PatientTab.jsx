@@ -437,7 +437,7 @@ export default function PatientTab({ handleStartCall }) {
   // Hiển thị loading
   if (loading) {
     return (
-      <div className="container mt-4">
+      <div className="m-2">
         <h3 className="mb-4">Quản lý bệnh nhân</h3>
         <div className="text-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -451,7 +451,7 @@ export default function PatientTab({ handleStartCall }) {
   // Hiển thị lỗi
   if (error) {
     return (
-      <div className="container mt-4">
+      <div className="m-2">
         <h3 className="mb-4">Quản lý bệnh nhân</h3>
         <div className="alert alert-danger" role="alert">
           <i className="fas fa-exclamation-triangle me-2"></i>
@@ -473,7 +473,7 @@ export default function PatientTab({ handleStartCall }) {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="m-2">
       <h3 className="mb-4">Quản lý bệnh nhân</h3>
 
       {/* Thống kê */}

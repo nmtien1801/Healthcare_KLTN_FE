@@ -61,7 +61,11 @@ const Header = () => {
   };
 
   const handleInfo = () => {
-    navigate("/personalTabs");
+    if(user.role === 'doctor'){
+      navigate("/informationTab");
+    }else{
+      navigate("/personalTabs");
+    }
   }
 
   return (

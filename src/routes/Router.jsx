@@ -82,11 +82,6 @@ const Router = (props) => {
                   <CalendarDays size={20} />
                   <span>Chấm công</span>
                 </Nav.Link>
-
-                <Nav.Link as={NavLink} to="/informationTab" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
-                  <Info size={20} />
-                  <span>Thông tin</span>
-                </Nav.Link>
               </>
             ) : (
               <>
