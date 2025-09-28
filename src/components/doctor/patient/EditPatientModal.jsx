@@ -63,7 +63,7 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
 
     return (
         <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
-            <div className="modal-dialog modal-md" style={{ marginTop: "5rem" }}>
+            <div className="modal-dialog modal-md" style={{ marginTop: "7rem" }}>
                 <div className="modal-content" style={{ borderRadius: "12px" }}>
                     <div className="modal-header border-0 pb-0">
                         <h5 className="modal-title fw-bold">Chỉnh sửa thông tin y tế bệnh nhân</h5>

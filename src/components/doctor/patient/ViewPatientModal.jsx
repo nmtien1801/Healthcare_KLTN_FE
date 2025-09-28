@@ -16,8 +16,10 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
         >
             <div
                 className="modal-dialog modal-lg modal-dialog-scrollable"
-                style={{ marginTop: "5  rem", maxWidth: "900px" }}
+                style={{ marginTop: "6.5rem", maxWidth: "900px" }}
             >
+
+
                 <div
                     className="modal-content"
                     style={{
@@ -25,6 +27,7 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                         border: "none",
                         overflow: "hidden",
+                        maxHeight: "85vh"
                     }}
                 >
                     <div
@@ -388,19 +391,19 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
                     </div>
                     <div className="modal-footer border-0 pt-0 pb-4 px-4">
                         <Button
+                            variant="primary"
+                            onClick={() => onEdit(patient)}
+                            style={{ borderRadius: "8px", padding: "8px 20px" }}
+                        >
+                            Chỉnh sửa
+                        </Button> <Button
                             variant="secondary"
                             onClick={onHide}
                             style={{ borderRadius: "8px", padding: "8px 20px" }}
                         >
                             Đóng
                         </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => onEdit(patient)}
-                            style={{ borderRadius: "8px", padding: "8px 20px" }}
-                        >
-                            Chỉnh sửa
-                        </Button>
+
                     </div>
                 </div>
             </div>
