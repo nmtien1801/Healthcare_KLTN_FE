@@ -426,13 +426,12 @@ export default function PaymentFlow() {
                                         <div className="bg-white p-3 rounded border mx-auto d-inline-block">
                                             <div
                                                 className="bg-dark mx-auto"
-                                                style={{ width: '120px', height: '120px'}}
+                                                style={{ width: '120px', height: '120px' }}
                                             >
                                                 <img
-                                                    src={`data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='qr' patternUnits='userSpaceOnUse' width='10' height='10'%3e%3crect width='5' height='5' fill='black'/%3e%3crect x='5' y='5' width='5' height='5' fill='black'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100' height='100' fill='url(%23qr)'/%3e%3c/svg%3e`}
+                                                    src="https://github.com/nmtien1801/Healthcare_KLTN_FE/blob/develop/public/qrMb.png?raw=true"
                                                     alt="QR code"
-                                                    width="100"
-                                                    height="100"
+                                                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
                                                 />
                                             </div>
                                         </div>
