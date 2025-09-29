@@ -421,7 +421,7 @@ const SavedSchedulesModal = ({ show, onClose, savedSchedules, formatDate, handle
 // CurrentSchedule component
 const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
     return (
-        <div className="container my-3">
+        <div className="m-2">
             <div className="bg-white rounded shadow border p-4">
                 <div>
                     {/* Header */}
@@ -463,7 +463,7 @@ const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
                                     </div>
                                     <div className="d-flex flex-column align-items-end">
                                         <span className="badge rounded-pill bg-success mb-2 px-3 py-2 d-flex align-items-center">
-                                            <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Đang làm việc
+                                            <span className="me-1" style={{ fontSize: "0.75rem" }}>●</span> Online
                                         </span>
                                     </div>
                                 </div>
@@ -663,7 +663,7 @@ const AttendanceTab = () => {
 
                             // Xét thêm trạng thái check-out
                             if (shift.attendance.checkedOut) {
-                                status = checkOutTime !== "-" ? status : "Đang làm việc";
+                                status = checkOutTime !== "-" ? status : "Online";
                             }
                         }
 
@@ -964,13 +964,13 @@ const AttendanceTab = () => {
                         ...updatedHistory[existingEntryIndex],
                         checkIn: checkInTimeStr,
                         checkOut: null,
-                        status: "Đang làm việc",
+                        status: "Online",
                     };
                     return updatedHistory;
                 }
                 return [
                     ...prev,
-                    { date: todayDate, checkIn: checkInTimeStr, checkOut: null, status: "Đang làm việc" },
+                    { date: todayDate, checkIn: checkInTimeStr, checkOut: null, status: "Online" },
                 ];
             });
 
@@ -1079,7 +1079,7 @@ const AttendanceTab = () => {
     return (
         <div>
             <CurrentSchedule currentShift={currentShift} user={doctorInfo} loadingDoctor={loadingDoctor} />
-            <div className="container my-4">
+            <div className="m-2">
                 <div className="bg-white rounded shadow border p-4">
                     <h2 className="h5 mb-2">Chấm công</h2>
                     <p className="text-muted mb-4">Quản lý thời gian làm việc của bạn</p>
