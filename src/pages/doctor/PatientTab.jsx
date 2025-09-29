@@ -438,7 +438,7 @@ export default function PatientTab({ handleStartCall }) {
   if (loading) {
     return (
       <div className="m-2">
-        <h3 className="mb-4">Quản lý bệnh nhân</h3>
+        <h1 className="mb-4">Quản lý bệnh nhân</h1>
         <div className="text-center py-5">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Đang tải danh sách bệnh nhân...</span>
@@ -474,95 +474,72 @@ export default function PatientTab({ handleStartCall }) {
 
   return (
     <div className="m-2">
-      <h3 className="mb-4">Quản lý bệnh nhân</h3>
-
-      {/* Thống kê */}
-      <div className="row mb-4">
-        {[
-          { icon: "exclamation-circle", title: "Cần theo dõi", value: patientList.filter((p) => p.status === "Cần theo dõi").length, color: "danger" },
-          { icon: "hospital-user", title: "Đang điều trị", value: patientList.filter((p) => p.status === "Đang điều trị").length, color: "warning" },
-          { icon: "check-circle", title: "Ổn định", value: patientList.filter((p) => p.status === "Ổn định").length, color: "success" },
-        ].map((item, index) => (
-          <div className="col-md-4" key={index}>
-            <div className="card shadow-sm">
-              <div className="card-body d-flex align-items-center">
-                <div className={`bg-${item.color} bg-opacity-10 rounded-circle p-3 me-3`}>
-                  <i className={`fas fa-${item.icon} text-${item.color} fs-5`}></i>
-                </div>
-                <div>
-                  <div className="text-muted small">{item.title}</div>
-                  <div className="fs-4 fw-semibold">{item.value}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Search and Filters */}
-      <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
-        <div className="card-body p-4">
-          <div className="row g-3">
-            <div className="col-12 col-md-6">
-              <div className="position-relative">
-                <Search
-                  className="position-absolute top-50 translate-middle-y text-muted"
-                  size={16}
-                  style={{ left: "12px", zIndex: 10 }}
-                />
-                <Input
-                  placeholder="Tìm kiếm bệnh nhân..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ paddingLeft: "2.5rem" }}
-                />
-              </div>
-            </div>
-            <div className="col-12 col-md-3">
-              <div className="position-relative">
-                <Filter
-                  className="position-absolute top-50 translate-middle-y text-muted"
-                  size={16}
-                  style={{ left: "12px", zIndex: 10 }}
-                />
-                <Select value={statusFilter} onChange={setStatusFilter}>
-                  <option value="all">Tất cả tình trạng</option>
-                  <option value="Cần theo dõi">Cần theo dõi</option>
-                  <option value="Đang điều trị">Đang điều trị</option>
-                  <option value="Ổn định">Ổn định</option>
-                </Select>
-              </div>
-            </div>
-            <div className="col-12 col-md-3">
-              <Select value={sortBy} onChange={setSortBy}>
-                <option value="name">Sắp xếp theo tên</option>
-                <option value="age">Sắp xếp theo tuổi</option>
-                <option value="lastVisit">Lần khám gần nhất</option>
-                <option value="status">Tình trạng</option>
-              </Select>
-            </div>
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        {/* Title bên trái */}
+        <h3 className="mb-0">Quản lý bệnh nhân</h3>
+
+        {/* Bộ lọc + search bên phải */}
+        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
+          {/* Filter select */}
+          <div className="position-relative">
+            <Filter
+              className="position-absolute top-50 translate-middle-y text-muted"
+              size={16}
+              style={{ left: "12px", zIndex: 10 }}
+            />
+            <Select value={statusFilter} onChange={setStatusFilter} style={{ paddingLeft: "2rem" }}>
+              <option value="all">Tất cả tình trạng</option>
+              <option value="Cần theo dõi">Cần theo dõi</option>
+              <option value="Đang điều trị">Đang điều trị</option>
+              <option value="Ổn định">Ổn định</option>
+            </Select>
+          </div>
+
+          {/* Sort select */}
+          <Select value={sortBy} onChange={setSortBy}>
+            <option value="name">Sắp xếp theo tên</option>
+            <option value="age">Sắp xếp theo tuổi</option>
+            <option value="lastVisit">Lần khám gần nhất</option>
+            <option value="status">Tình trạng</option>
+          </Select>
+
+          {/* Search input */}
+          <div className="position-relative">
+            <Search
+              className="position-absolute top-50 translate-middle-y text-muted"
+              size={16}
+              style={{ left: "12px", zIndex: 10 }}
+            />
+            <Input
+              placeholder="Tìm kiếm bệnh nhân..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ paddingLeft: "2.5rem" }}
+            />
           </div>
         </div>
       </div>
 
       {/* Patient Table */}
-      <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
+      <div className="card shadow-sm m-4" style={{ borderRadius: "12px", border: "none" }}>
         <div className="table-responsive">
-          <table className="table hover responsive">
-            <thead style={{ backgroundColor: "#f8f9fa" }}>
+          <table className="w-100">
+            <thead className="bg-primary text-white">
               <tr>
-                <th className="fw-bold text-muted small py-3 border-0">Bệnh nhân</th>
-                <th className="fw-bold text-muted small py-3 border-0">Thông tin</th>
-                <th className="fw-bold text-muted small py-3 border-0">Tình trạng</th>
-                <th className="fw-bold text-muted small py-3 border-0">Lần khám gần nhất</th>
-                <th className="fw-bold text-muted small py-3 border-0">Hành động</th>
+                <th className="p-2 fw-bold py-3 border-0">Bệnh nhân</th>
+                <th className="fw-bold py-3 border-0">Thông tin</th>
+                <th className="fw-bold py-3 border-0">Tình trạng</th>
+                <th className="fw-bold py-3 border-0">Lần khám gần nhất</th>
+                <th className="fw-bold small py-3 border-0">Hành động</th>
               </tr>
             </thead>
             <tbody>
               {paginatedPatients.length > 0 ? (
                 paginatedPatients.map((patient) => (
                   <tr key={patient.id} style={{ borderTop: "1px solid #f1f3f4" }}>
-                    <td className="py-3 border-0">
+                    <td className="p-3 border-0">
                       <div className="d-flex align-items-center gap-3">
                         <Avatar
                           src={patient.avatar}
