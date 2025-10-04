@@ -1,10 +1,11 @@
-import React, { useState, forwardRef } from "react";
-import { Container, Row, Col, Badge, Image, Dropdown } from "react-bootstrap";
-import { FaHeartbeat, FaBell } from "react-icons/fa";
+import React, { forwardRef } from "react";
+import { Container, Row, Col, Image, Dropdown } from "react-bootstrap";
+import { FaHeartbeat } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
+import NotificationDropdown from "../components/notifications/NotificationDropdown";
 
 const CustomToggle = forwardRef(({ onClick, user }, ref) => (
   <div
@@ -38,7 +39,7 @@ const CustomToggle = forwardRef(({ onClick, user }, ref) => (
 
 const Header = () => {
   const auth = getAuth();
-  const [notifications, setNotifications] = useState(5);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   let user = useSelector((state) => state.auth.userInfo);
@@ -61,9 +62,9 @@ const Header = () => {
   };
 
   const handleInfo = () => {
-    if(user.role === 'doctor'){
+    if (user.role === 'doctor') {
       navigate("/informationTab");
-    }else{
+    } else {
       navigate("/personalTabs");
     }
   }
@@ -83,23 +84,9 @@ const Header = () => {
 
           {/* Notifications & Info */}
           <Col xs="auto" className="d-flex align-items-center">
-            {/* Bell Icon */}
-            <div className="position-relative me-4">
-              <FaBell size={20} className="text-secondary" />
-              {notifications > 0 && (
-                <Badge
-                  bg="danger"
-                  pill
-                  className="position-absolute top-0 start-100 translate-middle"
-                  style={{
-                    fontSize: "0.6rem",
-                    width: "1.2rem",
-                    height: "1.2rem",
-                  }}
-                >
-                  {notifications}
-                </Badge>
-              )}
+            {/* Notification Dropdown */}
+            <div className="me-4">
+              <NotificationDropdown />
             </div>
 
             <div className="me-4 text-end">
