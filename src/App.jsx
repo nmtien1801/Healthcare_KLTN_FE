@@ -46,6 +46,8 @@ import {
   generateJitsiUrl,
 } from './components/call/functionCall';
 import E_wallet from "./pages/payment/E_wallet";
+import notificationService from "./services/notificationService";
+import RealTimeNotifications from "./components/notifications/RealTimeNotifications";
 
 function App() {
   const dispatch = useDispatch();
@@ -69,7 +71,7 @@ function App() {
 
         if (userInfo && userInfo.userId) {
           // Có đầy đủ thông tin từ MongoDB
-          dispatch(setUser({
+          const userData = {
             userId: userInfo.userId,
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -80,7 +82,12 @@ function App() {
             phone: userInfo.phone || '',
             dob: userInfo.dob || '',
             gender: userInfo.gender || '',
-          }));
+          };
+
+          dispatch(setUser(userData));
+
+          // Khởi tạo notification service với user hiện tại
+          notificationService.setCurrentUser(userData);
 
           if (firebaseUser.accessToken !== localStorage.getItem('access_Token')) {
             localStorage.setItem("access_Token", firebaseUser.accessToken);
@@ -311,18 +318,24 @@ function App() {
         />
       )}
 
-      {/* <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      /> */}
+      {/* Real-time notifications listener */}
+      <RealTimeNotifications />
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      /> */}
+      pauseOnHover
+      theme="light"
+      />
     </Router>
   );
 }

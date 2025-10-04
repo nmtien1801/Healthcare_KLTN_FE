@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { useSelector, useDispatch } from "react-redux"
 import { deposit, createPaymentUrl } from "../../redux/paymentSlice"
+import notificationService from "../../services/notificationService"
 
 const banks = [
     { id: "mbbank", name: "MBBank", fullName: "Ngân hàng TMCP Quân Đội", color: "bg-danger" },
@@ -92,7 +93,23 @@ export default function PaymentFlow() {
                 `Bạn đã chuyển ${paymentData.amount} đ vào tài khoản ${paymentData.accountNumber} (${paymentData.recipient}) chưa?`
             )
             if (confirm) {
-                await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
+                const depositResult = await dispatch(deposit({ userId: user.userId, amount: paymentData.amount }))
+
+                // Gửi thông báo thanh toán thành công
+                try {
+                    await notificationService.sendPaymentNotification(
+                        user.userId,
+                        {
+                            id: Date.now().toString(),
+                            amount: paymentData.amount,
+                            appointmentId: null, // Có thể thêm appointmentId nếu cần
+                            method: paymentData.paymentMethod
+                        },
+                        depositResult.type.endsWith('/fulfilled') // Kiểm tra thành công
+                    );
+                } catch (notificationError) {
+                    console.error('Error sending payment notification:', notificationError);
+                }
             }
             // Tạo payment với vn pay
             //     const resCreateUrl = await dispatch(createPaymentUrl({

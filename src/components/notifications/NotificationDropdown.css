@@ -1,0 +1,41 @@
+.notification-dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+}
+
+.notification-item {
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.notification-item.unread:hover {
+    background-color: #e1f5fe;
+}
+
+.notification-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}

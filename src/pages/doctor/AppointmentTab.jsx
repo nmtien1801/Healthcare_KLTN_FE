@@ -23,6 +23,7 @@ import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appoint
 import { listenStatus } from "../../utils/SetupSignFireBase";
 import Notification from "../../components/booking/Notification";
 import { useSelector } from "react-redux";
+import notificationService from "../../services/notificationService";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../firebase";
 
@@ -239,6 +240,32 @@ export default function AppointmentTab() {
         )
       );
 
+      // Gửi thông báo cập nhật lịch hẹn đến bệnh nhân
+      try {
+        const patientId = selectedAppointment?.patientId || updatedAppointment.patientId;
+        if (patientId) {
+          await notificationService.sendAppointmentUpdateNotification(
+            patientId,
+            {
+              id: user?.uid,
+              name: user?.username || 'Bác sĩ',
+              role: 'doctor'
+            },
+            {
+              date: selectedAppointment?.date,
+              time: selectedAppointment?.time
+            },
+            {
+              id: updatedAppointment.id,
+              date: new Date(updatedAppointment.date).toLocaleDateString("vi-VN"),
+              time: updatedAppointment.time
+            }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Error sending appointment update notification:', notificationError);
+      }
+
       setShowEditModal(false);
       setSelectedAppointment(updatedAppointmentWithFormattedDate);
     } catch (error) {
@@ -256,6 +283,29 @@ export default function AppointmentTab() {
       if (!appointmentToDelete) return;
 
       await ApiDoctor.deleteAppointment(appointmentToDelete.id);
+
+      // Gửi thông báo hủy lịch hẹn đến bệnh nhân
+      try {
+        const patientId = appointmentToDelete?.patientId;
+        if (patientId) {
+          await notificationService.sendCancellationNotification(
+            patientId,
+            {
+              id: user?.uid,
+              name: user?.username || 'Bác sĩ',
+              role: 'doctor'
+            },
+            {
+              id: appointmentToDelete.id,
+              date: appointmentToDelete.date,
+              time: appointmentToDelete.time,
+              reason: 'Hủy bởi bác sĩ'
+            }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Error sending cancellation notification:', notificationError);
+      }
 
       setUpcomingAppointments((prev) =>
         prev.filter((app) => app.id !== appointmentToDelete.id)

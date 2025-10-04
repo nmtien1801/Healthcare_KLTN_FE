@@ -7,6 +7,7 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
+import notificationService from "../../services/notificationService";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -194,6 +195,29 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
 
       // gửi tín hiệu trạng thái hủy lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Hủy lịch");
+
+      // Tìm thông tin appointment để gửi thông báo
+      const cancelledAppointment = appointments.find(app => app._id === appointmentToCancel);
+      if (cancelledAppointment) {
+        try {
+          await notificationService.sendCancellationNotification(
+            cancelledAppointment.doctorId?._id || receiverId, // doctorId
+            {
+              id: user?.uid,
+              name: user?.username || 'Bệnh nhân',
+              role: 'patient'
+            },
+            {
+              id: cancelledAppointment._id,
+              date: new Date(cancelledAppointment.date).toLocaleDateString("vi-VN"),
+              time: cancelledAppointment.time,
+              reason: 'Hủy bởi bệnh nhân'
+            }
+          );
+        } catch (notificationError) {
+          console.error('Error sending cancellation notification:', notificationError);
+        }
+      }
 
       setShowCancelModal(false);
       setAppointmentToCancel(null);
@@ -806,8 +830,30 @@ const BookingNew = ({ handleSubmit }) => {
       };
 
       const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
+
       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Đặt lịch");
+
+      // Gửi thông báo đến bác sĩ
+      try {
+        await notificationService.sendBookingNotification(
+          selectedDoctor, // doctorId
+          {
+            id: user?.uid,
+            name: user?.username || 'Bệnh nhân'
+          },
+          {
+            id: response._id || response.id,
+            date: selectedDate,
+            time: selectedTime,
+            type: appointmentType,
+            reason: reason
+          }
+        );
+      } catch (notificationError) {
+        console.error('Error sending booking notification:', notificationError);
+      }
+
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 
