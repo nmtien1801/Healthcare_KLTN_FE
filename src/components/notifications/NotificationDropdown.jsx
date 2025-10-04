@@ -21,7 +21,7 @@ import ApiNotification from "../../apis/ApiNotification";
 import { formatDate } from "../../utils/formatDate";
 
 const NotificationDropdown = () => {
-    // 🔹 Lấy user từ Redux (đảm bảo đúng key)
+    // Lấy user từ Redux (đảm bảo đúng key)
     const user = useSelector((state) => state.auth.userInfo);
 
     const [notifications, setNotifications] = useState([]);
