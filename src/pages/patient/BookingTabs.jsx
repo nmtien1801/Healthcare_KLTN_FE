@@ -7,6 +7,7 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
+import ApiNotification from "../../apis/ApiNotification";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -808,6 +809,15 @@ const BookingNew = ({ handleSubmit }) => {
       const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Đặt lịch");
+      await ApiNotification.createNotification({
+        receiverId: selectedDoctorData.userId._id, // ID bác sĩ (MongoDB ObjectId hoặc tương ứng)
+        title: "Bệnh nhân mới đặt lịch khám",
+        content: `Bệnh nhân ${user.displayName || ""} đã đặt lịch khám vào lúc ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}.`,
+        type: "system",
+        metadata: {
+          link: `/appointments/${response._id}`, // đường dẫn chi tiết lịch hẹn (nếu có)
+        },
+      });
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 
