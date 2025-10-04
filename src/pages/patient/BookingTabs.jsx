@@ -8,7 +8,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
-import { getBalanceService, withdrawService } from "../../apis/paymentService";
+import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -114,6 +114,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [errorMessage, setErrorMessage] = useState("");
   const senderId = user?.uid;
   const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+  const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
 
   // Fetch appointments từ API
   useEffect(() => {
@@ -182,6 +183,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     try {
       setCancelling(true);
       await ApiBooking.cancelBooking(appointmentToCancel);
+      await depositService(user.userId || user.uid, BOOKING_FEE);
 
       setAppointments((prev) =>
         prev.filter((appt) => appt._id !== appointmentToCancel)
