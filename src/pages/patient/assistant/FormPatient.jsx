@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { api, apply_medicine } from "../../../apis/assistant";
+import { api } from "../../../apis/assistant";
 import {
     Box,
     Typography,
@@ -192,12 +192,21 @@ const FormPatient = () => {
         const fetchMedicine = async () => {
             const today = new Date();
             const res = await dispatch(fetchMedicines({ userId: user.userId, date: today }));
-
+    
             if (res?.payload?.DT) {
-                const categorized = categorizeMedicines(res.payload.DT);
+                const data = res.payload.DT;
+    
+                // ✅ Nếu DB đã có thuốc, coi như đơn đã được áp dụng
+                if (data.length > 0) {
+                    setPrescriptionStatus("applied");
+                }
+    
+                const categorized = categorizeMedicines(data);
                 setMedicines(categorized);
-                const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
-                if (prescriptionStatus !== "applied") {
+    
+                // Nếu chưa có thuốc, giữ logic cũ
+                if (data.length === 0) {
+                    const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
                     if (hasAny(categorized.sang) || hasAny(categorized.trua) || hasAny(categorized.toi)) {
                         setPrescriptionStatus("created");
                     } else {
@@ -268,21 +277,6 @@ const FormPatient = () => {
         let data = {
             email: user.email,
             medicinePlan: medicines,
-        }
-
-        try {
-            const res = await apply_medicine.post(
-                "/apply-medicine", // Thay bằng webhook thực tế của bạn
-                {
-                    message: {
-                        text: data,
-                    }
-                },
-            );
-
-            const botResponse = res.data.myField;
-        } catch (err) {
-            console.error(err);
         }
 
         Object.entries(medicines).forEach(([time, arr]) => {
