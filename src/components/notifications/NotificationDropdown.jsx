@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
     Bell,
-    X,
     Check,
     Trash2,
     MoreVertical,
@@ -19,9 +18,11 @@ import { useSelector } from "react-redux";
 import "./NotificationDropdown.css";
 import ApiNotification from "../../apis/ApiNotification";
 import { formatDate } from "../../utils/formatDate";
+import { listenStatus } from "../../utils/SetupSignFireBase";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../firebase";
 
 const NotificationDropdown = () => {
-    // Lấy user từ Redux (đảm bảo đúng key)
     const user = useSelector((state) => state.auth.userInfo);
 
     const [notifications, setNotifications] = useState([]);
@@ -29,7 +30,7 @@ const NotificationDropdown = () => {
     const [loading, setLoading] = useState(false);
     const [showAllModal, setShowAllModal] = useState(false);
 
-    //  Load danh sách thông báo
+    // Load danh sách thông báo từ API (MongoDB)
     const loadNotifications = async () => {
         try {
             setLoading(true);
@@ -49,7 +50,7 @@ const NotificationDropdown = () => {
         }
     };
 
-    //  Đếm số thông báo chưa đọc
+    // Đếm số thông báo chưa đọc
     const loadUnreadCount = async () => {
         try {
             const res = await ApiNotification.getUnreadCount();
@@ -59,7 +60,7 @@ const NotificationDropdown = () => {
         }
     };
 
-    //  Đánh dấu 1 thông báo đã đọc
+    // Đánh dấu 1 thông báo đã đọc
     const handleMarkAsRead = async (id) => {
         try {
             await ApiNotification.markAsRead(id);
@@ -69,51 +70,93 @@ const NotificationDropdown = () => {
             setUnreadCount((prev) => Math.max(prev - 1, 0));
             toast.success("Đã đánh dấu đã đọc");
         } catch (error) {
-            console.error("Lỗi khi đánh dấu đã đọc:", error);
             toast.error("Không thể đánh dấu đã đọc");
         }
     };
 
-    //  Xóa thông báo
+    // Xóa 1 thông báo
     const handleDeleteNotification = async (id) => {
         try {
             await ApiNotification.deleteNotification(id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             toast.success("Đã xóa thông báo");
         } catch (error) {
-            console.error("Lỗi khi xóa:", error);
             toast.error("Không thể xóa thông báo");
         }
     };
 
-    //  Đánh dấu tất cả đã đọc
+    // Đánh dấu tất cả đã đọc
     const handleMarkAllAsRead = async () => {
         try {
             await ApiNotification.markAllAsRead();
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             setUnreadCount(0);
-            toast.success("Tất cả thông báo đã được đánh dấu là đã đọc");
+            toast.success("Tất cả thông báo đã được đánh dấu đã đọc");
         } catch (error) {
             toast.error("Không thể đánh dấu tất cả");
         }
     };
 
-    //  Load dữ liệu khi mở trang
+    // Lắng nghe realtime Firestore
     useEffect(() => {
-        if (user) {
-            loadNotifications();
-            loadUnreadCount();
-        }
-    }, [user]);
+        if (!user?.userId) return;
+        loadNotifications();
+        loadUnreadCount();
 
+        const doctorUid = user.userId;
+        const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+        const roomChats = [doctorUid, patientUid].sort().join("_");
+
+        const unsub = listenStatus(roomChats, doctorUid, async (signal) => {
+            if (!signal) return;
+
+            let senderName = "Người dùng";
+            let senderAvatar = null;
+
+            if (signal.senderId) {
+                try {
+                    const docRef = doc(db, "users", signal.senderId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        senderName = docSnap.data().username || senderName;
+                        senderAvatar = docSnap.data().avatar || senderAvatar;
+                    }
+                } catch (error) {
+                    console.error("Lỗi lấy thông tin user:", error);
+                }
+            }
+
+            // 🔹 Thay vì tạo default notification, ta dùng dữ liệu gốc từ signal
+            if (signal.id && signal.title && signal.content) {
+                setNotifications((prev) => [
+                    {
+                        ...signal,
+                        id: signal.id.toString(),
+                        avatar: senderAvatar,
+                        createdAt: signal.createdAt || new Date().toISOString(),
+                        isRead: signal.isRead ?? false,
+                    },
+                    ...prev,
+                ]);
+                setUnreadCount((prev) => prev + 1);
+                toast.info(signal.content);
+            }
+        });
+
+        return () => unsub();
+    }, [user?.userId]);
+
+    // Map icon theo schema type
     const getNotificationIcon = (notification) => {
         switch (notification.type) {
+            case "system":
+                return "💻";
             case "reminder":
                 return "⏰";
-            case "warning":
+            case "message":
+                return "💬";
+            case "alert":
                 return "⚠️";
-            case "info":
-                return "ℹ️";
             default:
                 return "🔔";
         }
@@ -126,7 +169,6 @@ const NotificationDropdown = () => {
                     variant="link"
                     id="notification-dropdown"
                     className="p-2 position-relative text-decoration-none"
-                    style={{ border: "none", background: "none" }}
                 >
                     <Bell size={20} />
                     {unreadCount > 0 && (
@@ -186,10 +228,7 @@ const NotificationDropdown = () => {
                                                     <h6 className="mb-1" style={{ fontSize: "0.9rem" }}>
                                                         {notification.title}
                                                     </h6>
-                                                    <p
-                                                        className="mb-1 text-muted"
-                                                        style={{ fontSize: "0.8rem" }}
-                                                    >
+                                                    <p className="mb-1 text-muted" style={{ fontSize: "0.8rem" }}>
                                                         {notification.content}
                                                     </p>
                                                     <small className="text-muted">
@@ -201,7 +240,6 @@ const NotificationDropdown = () => {
                                                         variant="link"
                                                         size="sm"
                                                         className="p-0"
-                                                        style={{ border: "none", background: "none" }}
                                                     >
                                                         <MoreVertical size={16} />
                                                     </Dropdown.Toggle>
@@ -247,65 +285,32 @@ const NotificationDropdown = () => {
                 </Dropdown.Menu>
             </Dropdown>
 
-            {/* Modal hiển thị tất cả */}
             <NotificationModal
                 show={showAllModal}
                 onHide={() => setShowAllModal(false)}
+                allNotifications={notifications}
+                handleMarkAsRead={handleMarkAsRead}
+                handleDeleteNotification={handleDeleteNotification}
             />
         </>
     );
 };
 
-// ==================== MODAL ====================
-const NotificationModal = ({ show, onHide }) => {
-    const [allNotifications, setAllNotifications] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (show) loadAllNotifications();
-    }, [show]);
-
-    const loadAllNotifications = async () => {
-        try {
-            setLoading(true);
-            const res = await ApiNotification.getNotificationsByUser();
-            if (res?.data) {
-                const normalized = res.data.map((n) => ({
-                    ...n,
-                    id: n.id || n._id,
-                }));
-                setAllNotifications(normalized);
-            }
-        } catch (error) {
-            console.error("Lỗi khi load all:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleMarkAsRead = async (id) => {
-        await ApiNotification.markAsRead(id);
-        setAllNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-        );
-    };
-
-    const handleDeleteNotification = async (id) => {
-        await ApiNotification.deleteNotification(id);
-        setAllNotifications((prev) => prev.filter((n) => n.id !== id));
-    };
-
+// Modal hiển thị tất cả thông báo
+const NotificationModal = ({
+    show,
+    onHide,
+    allNotifications,
+    handleMarkAsRead,
+    handleDeleteNotification,
+}) => {
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
             <Modal.Header closeButton>
                 <Modal.Title>Tất cả thông báo</Modal.Title>
             </Modal.Header>
             <Modal.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
-                {loading ? (
-                    <div className="text-center p-4">
-                        <Spinner animation="border" />
-                    </div>
-                ) : allNotifications.length === 0 ? (
+                {allNotifications.length === 0 ? (
                     <div className="text-center p-4 text-muted">
                         <Bell size={48} className="mb-2 opacity-50" />
                         <div>Không có thông báo nào</div>

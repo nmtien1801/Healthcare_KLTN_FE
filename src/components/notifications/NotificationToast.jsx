@@ -1,41 +1,34 @@
-import React from 'react';
-import { Toast, ToastContainer } from 'react-bootstrap';
-import { Bell, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import React from "react";
+import { Toast, ToastContainer } from "react-bootstrap";
+import {
+    Bell,
+    AlertCircle,
+    Info,
+    MessageCircle,
+    Server,
+} from "lucide-react";
 
 const NotificationToast = ({
     show,
     onClose,
     title,
     content,
-    type = 'info',
+    type = "message", // mặc định theo schema
     autoHide = true,
-    delay = 5000
+    delay = 5000,
 }) => {
     const getIcon = () => {
         switch (type) {
-            case 'success':
-                return <CheckCircle size={20} className="text-success" />;
-            case 'error':
-                return <XCircle size={20} className="text-danger" />;
-            case 'warning':
+            case "system":
+                return <Server size={20} className="text-secondary" />;
+            case "reminder":
                 return <AlertCircle size={20} className="text-warning" />;
-            case 'info':
+            case "message":
+                return <MessageCircle size={20} className="text-primary" />;
+            case "alert":
+                return <AlertCircle size={20} className="text-danger" />;
             default:
                 return <Info size={20} className="text-info" />;
-        }
-    };
-
-    const getBgColor = () => {
-        switch (type) {
-            case 'success':
-                return 'bg-success';
-            case 'error':
-                return 'bg-danger';
-            case 'warning':
-                return 'bg-warning';
-            case 'info':
-            default:
-                return 'bg-info';
         }
     };
 
@@ -45,10 +38,10 @@ const NotificationToast = ({
             onClose={onClose}
             autohide={autoHide}
             delay={delay}
-            className="mb-2"
-            style={{ minWidth: '300px' }}
+            className="mb-2 shadow"
+            style={{ minWidth: "300px" }}
         >
-            <Toast.Header className={`${getBgColor()} text-white`}>
+            <Toast.Header>
                 <div className="d-flex align-items-center">
                     {getIcon()}
                     <strong className="ms-2 me-auto">{title}</strong>
@@ -64,14 +57,10 @@ const NotificationToast = ({
     );
 };
 
-// Container for multiple toasts
-export const NotificationToastContainer = ({ children, position = 'top-end' }) => {
+// Container hiển thị nhiều toasts
+export const NotificationToastContainer = ({ children, position = "top-end" }) => {
     return (
-        <ToastContainer
-            position={position}
-            className="p-3"
-            style={{ zIndex: 9999 }}
-        >
+        <ToastContainer position={position} className="p-3" style={{ zIndex: 9999 }}>
             {children}
         </ToastContainer>
     );
