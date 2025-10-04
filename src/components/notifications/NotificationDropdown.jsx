@@ -321,48 +321,6 @@ const NotificationDropdown = () => {
                                 </div>
                             ))}
                             <div className="p-3 text-center">
-                                <div className="d-flex gap-2 justify-content-center mb-2">
-                                    <Button
-                                        variant="outline-success"
-                                        size="sm"
-                                        onClick={async () => {
-                                            try {
-                                                console.log('Creating test notification for user:', user);
-                                                await notificationService.createNotification({
-                                                    receiverId: user?.userId, // Sử dụng MongoDB User ObjectId
-                                                    type: "message",
-                                                    title: "Test Notification",
-                                                    content: `Test thông báo lúc ${new Date().toLocaleTimeString()}`,
-                                                    metadata: { notificationType: "test" }
-                                                });
-                                                toast.success('Đã tạo test notification');
-                                            } catch (error) {
-                                                console.error('Error creating test notification:', error);
-                                                toast.error('Lỗi tạo test notification: ' + error.message);
-                                            }
-                                        }}
-                                    >
-                                        Test Notification
-                                    </Button>
-                                    <Button
-                                        variant="outline-info"
-                                        size="sm"
-                                        onClick={async () => {
-                                            try {
-                                                console.log('=== MANUAL NOTIFICATION CHECK ===');
-                                                console.log('Current user:', user);
-                                                const response = await notificationService.getNotifications();
-                                                console.log('Manual check response:', response);
-                                                toast.info(`Found ${response?.data?.length || 0} notifications`);
-                                            } catch (error) {
-                                                console.error('Error checking notifications:', error);
-                                                toast.error('Lỗi check notifications: ' + error.message);
-                                            }
-                                        }}
-                                    >
-                                        Check Notifications
-                                    </Button>
-                                </div>
                                 <Button
                                     variant="outline-primary"
                                     size="sm"

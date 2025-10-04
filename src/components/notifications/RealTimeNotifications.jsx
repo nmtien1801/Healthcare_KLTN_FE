@@ -28,7 +28,6 @@ const RealTimeNotifications = () => {
                     case 'attendance': return '🏥';
                     case 'health_update': return '💊';
                     case 'reminder': return '⏰';
-                    case 'test': return '🧪';
                     default: return '📢';
                 }
             };
