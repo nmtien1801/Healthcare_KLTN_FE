@@ -14,7 +14,7 @@ const NotificationDropdown = () => {
     const user = useSelector((state) => state.auth.userInfo);
 
     useEffect(() => {
-        if (user?.uid) {
+        if (user?.userId) { // Check userId instead of uid
             // Set current user for notification service
             notificationService.setCurrentUser(user);
 
@@ -23,17 +23,24 @@ const NotificationDropdown = () => {
 
             // Listen to real-time notifications
             const unsubscribe = notificationService.listenToNotifications(
-                user.uid,
+                user.userId, // Sử dụng MongoDB User ObjectId
                 handleNotificationsUpdate
             );
 
-            // Listen for new notification events
+            // Listen for new notification events  
             const handleNewNotification = (event) => {
                 const { detail } = event;
-                toast.info(detail.content, {
-                    position: "top-right",
-                    autoClose: 5000,
-                });
+                console.log('NotificationDropdown: New notification event received', detail);
+
+                // Add pulse animation to badge
+                const badge = document.querySelector('.notification-badge');
+                if (badge) {
+                    badge.classList.add('has-new');
+                    setTimeout(() => {
+                        badge.classList.remove('has-new');
+                    }, 600);
+                }
+
                 loadNotifications(); // Refresh notifications
             };
 
@@ -44,7 +51,7 @@ const NotificationDropdown = () => {
                 window.removeEventListener('newNotification', handleNewNotification);
             };
         }
-    }, [user]);
+    }, [user?.userId]); // Depend on userId specifically
 
     const loadNotifications = async () => {
         try {
@@ -122,7 +129,7 @@ const NotificationDropdown = () => {
         try {
             console.log('Marking all notifications as read');
             console.log('Current notifications:', notifications);
-            
+
             await notificationService.markAllAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
@@ -137,13 +144,13 @@ const NotificationDropdown = () => {
         try {
             console.log('Deleting notification with ID:', notificationId);
             console.log('All notifications before delete:', notifications);
-            
+
             if (!notificationId) {
                 console.error('Notification ID is undefined for delete');
                 toast.error('ID thông báo không hợp lệ');
                 return;
             }
-            
+
             await notificationService.deleteNotification(notificationId);
             setNotifications(prev => prev.filter(n => n.id !== notificationId));
             setUnreadCount(prev => {
@@ -157,8 +164,11 @@ const NotificationDropdown = () => {
         }
     };
 
-    const getNotificationIcon = (type) => {
-        switch (type) {
+    const getNotificationIcon = (notification) => {
+        // Use notificationType from metadata if available, otherwise use type
+        const notificationType = notification.metadata?.notificationType || notification.type;
+
+        switch (notificationType) {
             case 'appointment_booking':
                 return '📅';
             case 'appointment_cancellation':
@@ -175,6 +185,12 @@ const NotificationDropdown = () => {
                 return '💊';
             case 'reminder':
                 return '⏰';
+            case 'system':
+                return '⚙️';
+            case 'alert':
+                return '⚠️';
+            case 'message':
+                return '💬';
             default:
                 return '📢';
         }
@@ -254,7 +270,7 @@ const NotificationDropdown = () => {
                                     <div className="d-flex">
                                         <div className="me-3">
                                             <span style={{ fontSize: '1.5rem' }}>
-                                                {getNotificationIcon(notification.type)}
+                                                {getNotificationIcon(notification)}
                                             </span>
                                         </div>
                                         <div className="flex-grow-1">
@@ -305,6 +321,48 @@ const NotificationDropdown = () => {
                                 </div>
                             ))}
                             <div className="p-3 text-center">
+                                <div className="d-flex gap-2 justify-content-center mb-2">
+                                    <Button
+                                        variant="outline-success"
+                                        size="sm"
+                                        onClick={async () => {
+                                            try {
+                                                console.log('Creating test notification for user:', user);
+                                                await notificationService.createNotification({
+                                                    receiverId: user?.userId, // Sử dụng MongoDB User ObjectId
+                                                    type: "message",
+                                                    title: "Test Notification",
+                                                    content: `Test thông báo lúc ${new Date().toLocaleTimeString()}`,
+                                                    metadata: { notificationType: "test" }
+                                                });
+                                                toast.success('Đã tạo test notification');
+                                            } catch (error) {
+                                                console.error('Error creating test notification:', error);
+                                                toast.error('Lỗi tạo test notification: ' + error.message);
+                                            }
+                                        }}
+                                    >
+                                        Test Notification
+                                    </Button>
+                                    <Button
+                                        variant="outline-info"
+                                        size="sm"
+                                        onClick={async () => {
+                                            try {
+                                                console.log('=== MANUAL NOTIFICATION CHECK ===');
+                                                console.log('Current user:', user);
+                                                const response = await notificationService.getNotifications();
+                                                console.log('Manual check response:', response);
+                                                toast.info(`Found ${response?.data?.length || 0} notifications`);
+                                            } catch (error) {
+                                                console.error('Error checking notifications:', error);
+                                                toast.error('Lỗi check notifications: ' + error.message);
+                                            }
+                                        }}
+                                    >
+                                        Check Notifications
+                                    </Button>
+                                </div>
                                 <Button
                                     variant="outline-primary"
                                     size="sm"
@@ -345,14 +403,14 @@ const NotificationModal = ({ show, onHide, userId }) => {
             setLoading(true);
             const response = await notificationService.getNotifications(page, 20);
             console.log('Modal - API Response for all notifications:', response);
-            
+
             if (response?.data) {
                 // Normalize notification objects - handle both id and _id
                 const normalizedNotifications = response.data.map(notification => ({
                     ...notification,
                     id: notification.id || notification._id
                 }));
-                
+
                 console.log('Modal - Normalized notifications:', normalizedNotifications);
                 setAllNotifications(normalizedNotifications);
             }
@@ -366,13 +424,13 @@ const NotificationModal = ({ show, onHide, userId }) => {
     const handleMarkAsRead = async (notificationId) => {
         try {
             console.log('Modal - Marking as read:', notificationId);
-            
+
             if (!notificationId) {
                 console.error('Modal - Notification ID is undefined');
                 toast.error('ID thông báo không hợp lệ');
                 return;
             }
-            
+
             await notificationService.markAsRead(notificationId);
             setAllNotifications(prev =>
                 prev.map(n =>
@@ -389,13 +447,13 @@ const NotificationModal = ({ show, onHide, userId }) => {
     const handleDeleteNotification = async (notificationId) => {
         try {
             console.log('Modal - Deleting notification with ID:', notificationId);
-            
+
             if (!notificationId) {
                 console.error('Modal - Notification ID is undefined for delete');
                 toast.error('ID thông báo không hợp lệ');
                 return;
             }
-            
+
             await notificationService.deleteNotification(notificationId);
             setAllNotifications(prev => prev.filter(n => n.id !== notificationId));
             toast.success('Đã xóa thông báo');

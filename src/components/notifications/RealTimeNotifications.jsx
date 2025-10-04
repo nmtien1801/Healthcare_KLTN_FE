@@ -1,64 +1,86 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { db } from '../../../firebase';
 import { toast } from 'react-toastify';
+import notificationService from '../../services/notificationService';
 
 const RealTimeNotifications = () => {
     const user = useSelector((state) => state.auth.userInfo);
 
     useEffect(() => {
-        if (!user?.uid) return;
+        if (!user?.userId) return;
 
-        // Lắng nghe thông báo real-time từ Firestore
-        const notificationsRef = collection(db, 'notifications');
-        const q = query(
-            notificationsRef,
-            where('receiverId', '==', user.uid),
-            where('isRead', '==', false),
-            orderBy('createdAt', 'desc'),
-            limit(10)
+        console.log('RealTimeNotifications: Setting up for user', user.userId);
+
+        // Listen for new notification events từ NotificationService
+        const handleNewNotification = (event) => {
+            const notification = event.detail;
+            console.log('RealTimeNotifications: New notification received', notification);
+
+            // Hiển thị toast notification với icon tương ứng
+            const getNotificationIcon = (metadata) => {
+                const notificationType = metadata?.notificationType;
+                switch (notificationType) {
+                    case 'appointment_booking': return '📅';
+                    case 'appointment_cancellation': return '❌';
+                    case 'appointment_update': return '✏️';
+                    case 'payment_success': return '💳';
+                    case 'payment_failed': return '❌';
+                    case 'attendance': return '🏥';
+                    case 'health_update': return '💊';
+                    case 'reminder': return '⏰';
+                    case 'test': return '🧪';
+                    default: return '📢';
+                }
+            };
+
+            const icon = getNotificationIcon(notification.metadata);
+
+            // Play notification sound
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAaAzuB1+/MdiQEL4XS9tiEOAgdaLnw6aJQDBFUqu3wr2UbBDiQ1/LNeSkEJXfG8N+SQwsUXrXq76lXFAlFnt/yuF8ZBDuB1/PPfCMELmvT49p7NwkadKzz5qVXF...');
+                audio.volume = 0.3;
+                audio.play().catch(e => console.log('Could not play notification sound:', e));
+            } catch (error) {
+                console.log('Notification sound not available:', error);
+            }
+
+            toast.info(
+                <div>
+                    <strong>{icon} {notification.title}</strong>
+                    <br />
+                    <small>{notification.content}</small>
+                </div>,
+                {
+                    position: "top-right",
+                    autoClose: 6000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    className: 'notification-toast'
+                }
+            );
+        };
+
+        // Listen for custom notification events
+        window.addEventListener('newNotification', handleNewNotification);
+
+        // Khởi tạo notification service listener
+        const unsubscribe = notificationService.listenToNotifications(
+            user.userId,
+            (notifications) => {
+                console.log('RealTimeNotifications: Notifications updated', notifications.length);
+                // NotificationDropdown sẽ handle việc cập nhật UI
+            }
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const notification = change.doc.data();
-
-                    // Chỉ hiển thị toast cho thông báo mới (được tạo trong vòng 10 giây qua)
-                    const notificationTime = notification.createdAt?.toDate();
-                    const now = new Date();
-                    const timeDiff = now - notificationTime;
-
-                    if (timeDiff < 10000) { // 10 giây
-                        // Hiển thị toast notification
-                        toast.info(notification.content, {
-                            position: "top-right",
-                            autoClose: 5000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                        });
-
-                        // Trigger custom event để cập nhật UI
-                        window.dispatchEvent(new CustomEvent('newNotification', {
-                            detail: {
-                                id: change.doc.id,
-                                title: notification.title,
-                                content: notification.content,
-                                type: notification.type,
-                                metadata: notification.metadata,
-                                createdAt: notificationTime
-                            }
-                        }));
-                    }
-                }
-            });
-        });
-
-        return () => unsubscribe();
-    }, [user?.uid]);
+        return () => {
+            window.removeEventListener('newNotification', handleNewNotification);
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
+    }, [user?.userId]);
 
     // Component không render gì cả, chỉ lắng nghe events
     return null;

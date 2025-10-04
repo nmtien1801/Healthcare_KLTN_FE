@@ -86,6 +86,12 @@ function App() {
 
           dispatch(setUser(userData));
 
+          // Debug: Log userData for notification debugging
+          console.log('🔍 DEBUG [App.jsx] User Data:', userData);
+          console.log('🔍 DEBUG [App.jsx] User ID (uid):', userData.uid);
+          console.log('🔍 DEBUG [App.jsx] User ID (userId):', userData.userId);
+          console.log('🔍 DEBUG [App.jsx] User Role:', userData.role);
+
           // Khởi tạo notification service với user hiện tại
           notificationService.setCurrentUser(userData);
 
@@ -332,9 +338,6 @@ function App() {
         draggable
         pauseOnHover
         theme="light"
-      /> */}
-      pauseOnHover
-      theme="light"
       />
     </Router>
   );

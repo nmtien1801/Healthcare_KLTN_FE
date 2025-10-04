@@ -200,20 +200,28 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       const cancelledAppointment = appointments.find(app => app._id === appointmentToCancel);
       if (cancelledAppointment) {
         try {
-          await notificationService.sendCancellationNotification(
-            cancelledAppointment.doctorId?._id || receiverId, // doctorId
-            {
-              id: user?.uid,
-              name: user?.username || 'Bệnh nhân',
-              role: 'patient'
-            },
-            {
-              id: cancelledAppointment._id,
-              date: new Date(cancelledAppointment.date).toLocaleDateString("vi-VN"),
-              time: cancelledAppointment.time,
-              reason: 'Hủy bởi bệnh nhân'
-            }
-          );
+          // Lấy doctor userId để gửi notification
+          const doctorUserId = cancelledAppointment.doctorId?.userId?._id || cancelledAppointment.doctorId?.userId;
+          console.log('Sending cancellation notification to doctor userId:', doctorUserId);
+
+          if (doctorUserId) {
+            await notificationService.sendCancellationNotification(
+              doctorUserId, // MongoDB User ObjectId của doctor
+              {
+                id: user?.uid,
+                name: user?.username || 'Bệnh nhân',
+                role: 'patient'
+              },
+              {
+                id: cancelledAppointment._id,
+                date: new Date(cancelledAppointment.date).toLocaleDateString("vi-VN"),
+                time: cancelledAppointment.time,
+                reason: 'Hủy bởi bệnh nhân'
+              }
+            );
+          } else {
+            console.error('Cannot find doctor userId for cancellation notification');
+          }
         } catch (notificationError) {
           console.error('Error sending cancellation notification:', notificationError);
         }
@@ -735,11 +743,17 @@ const BookingNew = ({ handleSubmit }) => {
         const response = await ApiBooking.getDoctorsByDate(selectedDate);
         // Chuẩn hóa data
         const data = Array.isArray(response) ? response : response?.data || [];
+        console.log('🔍 DEBUG [fetchDoctors] Raw doctor data from API:', data);
+        if (data.length > 0) {
+          console.log('🔍 DEBUG [fetchDoctors] First doctor structure:', data[0]);
+          console.log('🔍 DEBUG [fetchDoctors] First doctor fields:', Object.keys(data[0]));
+        }
         // Đảm bảo mỗi bác sĩ có ID duy nhất
         const normalizedDoctors = data.map((doctor, index) => ({
           ...doctor,
           id: doctor.id || doctor._id || doctor.doctorId || `doctor-${index}`, // Sử dụng index làm fallback
         }));
+        console.log('🔍 DEBUG [fetchDoctors] Normalized doctors:', normalizedDoctors);
         setDoctors(normalizedDoctors);
       } catch (err) {
         console.error("Lỗi khi tải danh sách bác sĩ:", err);
@@ -836,22 +850,45 @@ const BookingNew = ({ handleSubmit }) => {
 
       // Gửi thông báo đến bác sĩ
       try {
-        await notificationService.sendBookingNotification(
-          selectedDoctor, // doctorId
-          {
-            id: user?.uid,
-            name: user?.username || 'Bệnh nhân'
-          },
-          {
-            id: response._id || response.id,
-            date: selectedDate,
-            time: selectedTime,
-            type: appointmentType,
-            reason: reason
-          }
-        );
+        // Lấy doctor userId để gửi notification
+        // Từ log debug, doctorId có vẻ là MongoDB ObjectId cần thiết
+        const doctorUserId = selectedDoctorData?.doctorId;
+        console.log('=== BOOKING NOTIFICATION DEBUG ===');
+        console.log('Selected doctor data full:', selectedDoctorData);
+        console.log('Available fields:', Object.keys(selectedDoctorData || {}));
+        console.log('doctorId field:', selectedDoctorData?.doctorId);
+        console.log('id field:', selectedDoctorData?.id);
+        console.log('_id field:', selectedDoctorData?._id);
+        console.log('Final doctor userId to send notification:', doctorUserId);
+        console.log('Patient info:', { id: user?.uid, userId: user?.userId, name: user?.username });
+        console.log('Appointment data:', { id: response._id || response.id, date: selectedDate, time: selectedTime });
+
+        if (doctorUserId) {
+          const notificationResult = await notificationService.sendBookingNotification(
+            doctorUserId, // MongoDB User ObjectId của doctor
+            {
+              id: user?.uid,
+              name: user?.username || 'Bệnh nhân'
+            },
+            {
+              id: response._id || response.id,
+              date: selectedDate,
+              time: selectedTime,
+              type: appointmentType,
+              reason: reason
+            }
+          );
+          console.log('Booking notification result:', notificationResult);
+        } else {
+          console.error('❌ Cannot find doctor userId for notification');
+          console.error('Selected doctor data:', selectedDoctorData);
+          console.error('Available doctor fields:', Object.keys(selectedDoctorData || {}));
+          console.error('doctorId value:', selectedDoctorData?.doctorId);
+          console.error('id value:', selectedDoctorData?.id);
+          console.error('_id value:', selectedDoctorData?._id);
+        }
       } catch (notificationError) {
-        console.error('Error sending booking notification:', notificationError);
+        console.error('❌ Error sending booking notification:', notificationError);
       }
 
       setSuccessMessage(successMsg);
