@@ -8,8 +8,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
-import { getBalanceService } from "../../apis/paymentService";
-// import walletService from "../../apis/walletService";
+import { getBalanceService, withdrawService } from "../../apis/paymentService";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -785,7 +784,8 @@ const BookingNew = ({ handleSubmit }) => {
 
       // Check wallet balance
       const balanceResponse = await getBalanceService(user.userId || user.uid);
-      const balance = balanceResponse?.data?.balance || 0; // Assuming balance is returned in data.balance
+      const balance = balanceResponse?.DT?.balance || 0;
+      console.log("User balance:", balance);
 
       if (balance < BOOKING_FEE) {
         setShowInsufficientBalanceModal(true); // Show insufficient balance modal
@@ -806,8 +806,7 @@ const BookingNew = ({ handleSubmit }) => {
 
       const response = await ApiBooking.bookAppointment(payload);
 
-      // await walletService.withdraw(user.uid, BOOKING_FEE);
-
+      await withdrawService(user.userId || user.uid, BOOKING_FEE);
       const newAppointment = {
         _id: response._id || response.id || Date.now().toString(),
         doctorId: {
