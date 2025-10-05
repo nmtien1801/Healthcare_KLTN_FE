@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send, Trash2, CheckCircle2 } from 'lucide-react';
-import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { useSelector } from "react-redux";
 import { db } from "../../../firebase";
 import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { sendStatus } from "../../utils/SetupSignFireBase";
+import { sendStatus, listenStatus } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
 import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
+import Notification from "../../components/booking/Notification";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -142,7 +143,78 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
 
     fetchAppointments();
   }, [refreshTrigger]);
+  useEffect(() => {
+    const roomChats = [senderId, receiverId].sort().join("_");
 
+    const unsub = listenStatus(roomChats, senderId, async (signal) => {
+      if (!signal?.status) return;
+
+      if (["Hủy lịch", "Đặt lịch", "Cập nhật lịch"].includes(signal.status)) {
+        const fetchAppointments = async () => {
+          try {
+            setLoading(true);
+            const response = await ApiBooking.getUpcomingAppointments();
+            const data = Array.isArray(response)
+              ? response
+              : response?.appointments || response?.data || [];
+            setAppointments(data);
+          } catch (err) {
+            console.error("Error fetching appointments:", err);
+            setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
+            setShowErrorModal(true);
+          } finally {
+            setLoading(false);
+          }
+        };
+        fetchAppointments();
+        let senderName = "";
+        let senderAvatar = signal?.senderId?.userId?.avatar || null;
+
+        if (signal?.senderId) {
+          try {
+            const docRef = doc(db, "users", signal.senderId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              senderName = docSnap.data().username;
+              senderAvatar = docSnap.data().avatar;
+            }
+          } catch (error) {
+            console.error("Lỗi lấy thông tin người gửi:", error);
+          }
+        }
+
+        let message = "";
+        let type = "info";
+
+        if (typeStatus === "Hủy lịch") {
+          message = `Bệnh nhân ${senderName} đã hủy lịch hẹn vào ${new Date().toLocaleDateString("vi-VN")}`;
+          type = "danger";
+        } else if (typeStatus === "Đặt lịch") {
+          message = `Bệnh nhân ${senderName} vừa đặt lịch hẹn mới vào ${new Date().toLocaleDateString("vi-VN")}`;
+          type = "success";
+        } else if (typeStatus === "Cập nhật lịch") {
+          message = `Bác sĩ ${parsed?.doctorName || senderName} đã cập nhật lịch hẹn vào ${parsed?.time} ngày ${parsed?.date} (Trạng thái: ${parsed?.status})`;
+          type = "info";
+        }
+        setNotifications((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            message,
+            type,
+            avatar: senderAvatar,
+          },
+        ]);
+      }
+    });
+
+    return () => unsub();
+  }, [senderId, receiverId]);
+
+  const [notifications, setNotifications] = useState([]);
+  const removeNotification = (id) => {
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
   useEffect(() => {
     if (onNewAppointment) {
       setAppointments((prev) => {
@@ -664,6 +736,17 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             Đóng
           </button>
         </Modal>
+        <div className="notification-container">
+          {notifications.map((notif) => (
+            <Notification
+              key={notif.id}
+              message={notif.message}
+              type={notif.type}
+              avatar={notif.avatar}
+              onClose={() => removeNotification(notif.id)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

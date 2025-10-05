@@ -20,7 +20,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
 import { getLabelFromOptions } from "../../utils/apppointmentHelper";
 import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
-import { listenStatus } from "../../utils/SetupSignFireBase";
+import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 import Notification from "../../components/booking/Notification";
 import { useSelector } from "react-redux";
 import { doc, getDoc } from "firebase/firestore";
@@ -233,6 +233,23 @@ export default function AppointmentTab() {
         prev.map((app) =>
           app.id === updatedAppointment.id ? updatedAppointmentWithFormattedDate : app
         )
+      );
+
+      const doctorUid = user?.uid || "1HwseYsBwxby5YnsLUWYzvRtCw53"; // UID của bác sĩ
+      const patientUid = updatedAppointment.patientUid || "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // UID của bệnh nhân
+      const roomChats = [doctorUid, patientUid].sort().join("_");
+
+      await sendStatus(
+        doctorUid,
+        patientUid,
+        JSON.stringify({
+          type: "Cập nhật lịch",
+          appointmentId: updatedAppointment.id,
+          date: updatedAppointmentWithFormattedDate.date,
+          time: updatedAppointment.time,
+          status: updatedAppointment.status,
+          doctorName: user?.username || "Bác sĩ chưa xác định",
+        })
       );
 
       setShowEditModal(false);
