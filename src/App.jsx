@@ -259,6 +259,7 @@ function App() {
                       <Route path="/appointmentTab" element={<AppointmentTab />} />
                       <Route path="/informationTab" element={<InformationTab />} />
                       <Route path="/attendanceTab" element={<AttendanceTab />} />
+                      <Route path="/payment" element={<E_wallet />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /overviewTab */}
                       <Route path="*" element={<Navigate to="/overviewTab" replace />} />
                     </>

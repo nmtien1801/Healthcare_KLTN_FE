@@ -166,7 +166,14 @@ export default function WalletUIDesktop() {
                 <Col lg={9} className="d-flex">
                     <Card className="shadow-sm border-0 flex-grow-1">
                         <Card.Body className="p-3">
-                            <FlowPayment />
+                            {user.role === 'doctor' ? (
+                                <div>
+                                    <h4>Quản lý Thu nhập & Thanh toán</h4>
+                                    <p>Chức năng thanh toán nạp/rút tiền của Bác sĩ sẽ được hiển thị ở đây.</p>
+                                </div>
+                            ) : (
+                                <FlowPayment />
+                            )}
                         </Card.Body>
                     </Card>
                 </Col>
