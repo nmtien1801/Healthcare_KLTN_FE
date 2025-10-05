@@ -4,19 +4,7 @@ import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal";
 import EditPatientModal from "../../components/doctor/patient/EditPatientModal";
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSelector, useDispatch } from "react-redux";
-import { db, dbCall } from "../../../firebase";
-import VideoCallModal from '../../components/call/videoModalCall';
-import {
-  ref,
-  onValue,
-  off,
-} from "firebase/database";
-import {
-  acceptCall,
-  endCall,
-  createCall,
-  generateJitsiUrl
-} from '../../components/call/functionCall';
+import { db } from "../../../firebase";
 import ApiPatient from "../../apis/ApiPatient";
 import ApiDoctor from "../../apis/ApiDoctor";
 
