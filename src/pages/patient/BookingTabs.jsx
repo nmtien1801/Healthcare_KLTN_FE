@@ -149,7 +149,16 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     const unsub = listenStatus(roomChats, senderId, async (signal) => {
       if (!signal?.status) return;
 
-      if (["Hủy lịch", "Đặt lịch", "Cập nhật lịch"].includes(signal.status)) {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(signal.status);
+      } catch {
+        parsed = null;
+      }
+
+      const typeStatus = parsed?.type || signal.status;
+
+      if (["Hủy lịch", "Đặt lịch", "Cập nhật lịch"].includes(typeStatus)) {
         const fetchAppointments = async () => {
           try {
             setLoading(true);
@@ -167,6 +176,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
           }
         };
         fetchAppointments();
+
         let senderName = "";
         let senderAvatar = signal?.senderId?.userId?.avatar || null;
 
@@ -182,7 +192,6 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
             console.error("Lỗi lấy thông tin người gửi:", error);
           }
         }
-
         let message = "";
         let type = "info";
 
@@ -210,6 +219,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
 
     return () => unsub();
   }, [senderId, receiverId]);
+
 
   const [notifications, setNotifications] = useState([]);
   const removeNotification = (id) => {
