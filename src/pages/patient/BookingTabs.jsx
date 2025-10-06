@@ -7,6 +7,9 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
+import { listenStatus } from "../../utils/SetupSignFireBase";
+import { useNavigate } from "react-router-dom";
+import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
 import ApiNotification from "../../apis/ApiNotification";
 
 // CSS cho phân trang
@@ -68,7 +71,7 @@ const Modal = ({ show, onClose, title, children, type = "info" }) => {
       case "success":
         return <CheckCircle2 size={48} className="text-success mb-3" />;
       case "danger":
-        return <Trash2 size={48} className="text-danger mb-3" />;
+        return <Clock size={48} className="text-danger mb-3" />;
       case "warning":
         return <Clock size={48} className="text-warning mb-3" />;
       default:
@@ -113,31 +116,30 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [errorMessage, setErrorMessage] = useState("");
   const senderId = user?.uid;
   const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+  const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
 
   // Fetch appointments từ API
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      const response = await ApiBooking.getUpcomingAppointments();
+
+      // đảm bảo appointments luôn là array
+      const data = Array.isArray(response)
+        ? response
+        : response?.appointments || response?.data || [];
+
+      setAppointments(data);
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+      setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAppointments = async () => {
-      console.log("Fetching appointments...");
-      try {
-        setLoading(true);
-        const response = await ApiBooking.getUpcomingAppointments();
-        console.log("Appointments fetched:", response);
-
-        // đảm bảo appointments luôn là array
-        const data = Array.isArray(response)
-          ? response
-          : response?.appointments || response?.data || [];
-
-        setAppointments(data);
-      } catch (err) {
-        console.error("Error fetching appointments:", err);
-        setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
-        setShowErrorModal(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAppointments();
   }, [refreshTrigger]);
 
@@ -181,6 +183,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     try {
       setCancelling(true);
       await ApiBooking.cancelBooking(appointmentToCancel);
+      await depositService(user.userId || user.uid, BOOKING_FEE);
 
       setAppointments((prev) =>
         prev.filter((appt) => appt._id !== appointmentToCancel)
@@ -312,6 +315,20 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       setIsSending(false);
     }
   };
+
+  // nhận tín hiệu firebase
+  let doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+  let patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+  useEffect(() => {
+    const roomChats = [doctorUid, patientUid].sort().join("_");
+
+    const unsub = listenStatus(roomChats, async (signal) => {
+      if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
+        fetchAppointments();
+      }
+    });
+    return () => unsub();
+  }, [doctorUid, patientUid]);
 
   return (
     <div className="container">
@@ -670,7 +687,6 @@ const BookingNew = ({ handleSubmit }) => {
   const [appointmentType, setAppointmentType] = useState("onsite");
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState(() => {
-    // Mặc định chọn ngày hiện tại
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -687,11 +703,13 @@ const BookingNew = ({ handleSubmit }) => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false); // New modal state
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const user = useSelector((state) => state.auth.userInfo);
+  const navigate = useNavigate();
   const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-
+  const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
   useEffect(() => {
     if (error || success) {
       const timer = setTimeout(() => {
@@ -778,9 +796,21 @@ const BookingNew = ({ handleSubmit }) => {
     }
 
     try {
+      setLoadingSubmit(true);
+
+      // Check wallet balance
+      const balanceResponse = await getBalanceService(user.userId || user.uid);
+      const balance = balanceResponse?.DT?.balance || 0;
+
+      if (balance < BOOKING_FEE) {
+        setShowInsufficientBalanceModal(true); // Show insufficient balance modal
+        return;
+      }
+
+      // Proceed with booking if balance is sufficient
       const payload = {
         firebaseUid: user.uid,
-        doctorId: selectedDoctor, // Sử dụng selectedDoctor (đã là doctor.id)
+        doctorId: selectedDoctor,
         date: selectedDate,
         time: selectedTime,
         type: appointmentType,
@@ -791,6 +821,7 @@ const BookingNew = ({ handleSubmit }) => {
 
       const response = await ApiBooking.bookAppointment(payload);
 
+      await withdrawService(user.userId || user.uid, BOOKING_FEE);
       const newAppointment = {
         _id: response._id || response.id || Date.now().toString(),
         doctorId: {
@@ -1130,6 +1161,33 @@ const BookingNew = ({ handleSubmit }) => {
           >
             Đóng
           </button>
+        </Modal>
+
+
+        {/* Insufficient Balance Modal */}
+        <Modal
+          show={showInsufficientBalanceModal}
+          onClose={() => setShowInsufficientBalanceModal(false)}
+          title="Số dư không đủ"
+          type="warning"
+        >
+          <p className="mb-4">
+            Số dư ví của bạn không đủ để thanh toán phí đặt lịch là 200,000. Vui lòng nạp tiền vào ví để tiếp tục.
+          </p>
+          <div className="d-flex gap-2 justify-content-center">
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => setShowInsufficientBalanceModal(false)}
+            >
+              Hủy
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate("/payment")}
+            >
+              Nạp tiền vào ví
+            </button>
+          </div>
         </Modal>
       </div>
     </div>

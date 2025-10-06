@@ -19,7 +19,8 @@ import {
 } from "lucide-react"
 import FlowPayment from "./FlowPayment"
 import { useSelector, useDispatch } from "react-redux"
-import { getBalance } from "../../redux/paymentSlice"
+import { getBalance, deposit } from "../../redux/paymentSlice"
+import ApiDoctor from "../../apis/ApiDoctor";
 
 const transactionHistory = [
     { id: 1, description: "Thanh toán hóa đơn Internet", date: "12/05/2025", amount: "- 180.000 đ", type: "expense" },
@@ -48,6 +49,77 @@ export default function WalletUIDesktop() {
 
         fetchBalance()
     }, [dispatch, balance])
+
+    // ví bác sĩ
+    useEffect(() => {
+        let timeouts = [];
+
+        const fetchAppointments = async () => {
+            try {
+                const resToday = await ApiDoctor.getAppointmentsToday();
+                // ✅ Chỉ lấy các lịch hẹn có status = "confirmed"
+                const confirmedAppointments = resToday.filter(
+                    (appointment) => appointment.status === "confirmed"
+                );
+                
+                const now = new Date();
+                for (const appointment of confirmedAppointments) {
+                    const baseDate = new Date(appointment.date);
+                    const [hours, minutes] = appointment.time.split(":").map(Number);
+
+                    // Tạo thời điểm lịch hẹn đầy đủ (theo giờ địa phương)
+                    const appointmentTime = new Date(
+                        baseDate.getFullYear(),
+                        baseDate.getMonth(),
+                        baseDate.getDate(),
+                        hours,
+                        minutes,
+                        0
+                    );
+
+                    // +30 phút
+                    const alertTime = new Date(appointmentTime.getTime() + 30 * 60 * 1000);
+                    const msUntilAlert = alertTime - now;
+
+                    console.log(
+                        `Lịch hẹn ${appointment._id || ""} (confirmed) sẽ chạy sau ${Math.round(
+                            msUntilAlert / 60000
+                        )} phút`
+                    );
+
+                    if (msUntilAlert > 0) {
+                        // Hẹn dispatch đúng thời điểm
+                        const timeout = setTimeout(async () => {
+                            try {
+                                await dispatch(deposit({ userId: user.userId, amount: 200000 }));
+                                await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
+                            } catch (err) {
+                                console.error("Lỗi dispatch deposit:", err);
+                            }
+                        }, msUntilAlert);
+                        timeouts.push(timeout);
+                    } else {
+                        // Nếu đã qua 30 phút thì thực hiện ngay
+                        try {
+                            await dispatch(deposit({ userId: user.userId, amount: 200000 }));
+                            await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
+                        } catch (err) {
+                            console.error("Lỗi dispatch deposit:", err);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Lỗi lấy appointments:", err);
+            }
+        };
+
+        fetchAppointments();
+
+        return () => {
+            timeouts.forEach(clearTimeout);
+            timeouts = [];
+        };
+    }, [dispatch, user.userId]);
 
     const handleBalanceToggle = () => {
         setBalanceVisible(!balanceVisible)
@@ -166,7 +238,14 @@ export default function WalletUIDesktop() {
                 <Col lg={9} className="d-flex">
                     <Card className="shadow-sm border-0 flex-grow-1">
                         <Card.Body className="p-3">
-                            <FlowPayment />
+                            {user.role === 'doctor' ? (
+                                <div>
+                                    <h4>Quản lý Thu nhập & Thanh toán</h4>
+                                    <p>Chức năng thanh toán nạp/rút tiền của Bác sĩ sẽ được hiển thị ở đây.</p>
+                                </div>
+                            ) : (
+                                <FlowPayment />
+                            )}
                         </Card.Body>
                     </Card>
                 </Col>

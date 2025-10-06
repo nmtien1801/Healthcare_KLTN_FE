@@ -5,8 +5,12 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
 import { TYPE_OPTIONS, STATUS_OPTIONS } from "../../../utils/appointmentConstants";
+import { book_appointment } from "../../../apis/assistant";
+import { useSelector, useDispatch } from "react-redux";
 
 const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
+    const dispatch = useDispatch();
+    const user = useSelector((state) => state.auth.userInfo);
     const [formData, setFormData] = useState({
         patientName: "",
         patientAge: "",
@@ -57,10 +61,13 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
     const parseDate = (dateStr) => {
         if (!dateStr) return null;
         const [day, month, year] = dateStr.split("/");
-        return new Date(`${year}-${month}-${day}`);
+        const date = new Date(`${year}-${month}-${day}`);
+        date.setHours(date.getHours() + 7);
+        return date;
     };
 
-    const handleSubmit = (e) => {
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateForm()) {
             const parsedDate = parseDate(formData.date);
@@ -71,6 +78,34 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                 id: appointment.id,
                 date: parsedDate ? parsedDate.toISOString().split("T")[0] : "", // Gửi YYYY-MM-DD cho API
             };
+
+            // Kiểm tra nếu tình trạng là "đã xác nhận"
+            if (formData.status === "confirmed") {
+                try {
+                    // Hàm chuyển đổi định dạng ngày/giờ
+                    const formatDateTime = (dateStr, timeStr) => {
+                        const [day, month, year] = dateStr.split('/');
+                        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        const formattedTime = timeStr;
+                        return `${formattedDate}T${formattedTime}`;
+                    };
+
+                    const calendarTime = formatDateTime(appointment.date, appointment.time);
+
+                    const res = await book_appointment.post(
+                        "/create-calendar-schedule",
+                        {
+                            email_Patient: appointment.patientEmail,
+                            email_Docter: user.email,
+                            period: 30,  // thời lượng buổi hẹn
+                            time: calendarTime,
+                            location: appointment.type  // "online"
+                        }
+                    );
+                } catch (err) {
+                    console.error(err);
+                }
+            }
 
             onSave(payload);
             setErrors({});

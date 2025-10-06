@@ -62,17 +62,12 @@ export default function AppointmentTab() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const user = useSelector((state) => state.auth.userInfo);
-  console.log("User Info from Redux:", user);
 
   const fetchAppointments = async () => {
-    console.log("fetchAppointments chạy...");
     try {
       const resToday = await ApiDoctor.getAppointmentsToday();
-      console.log("Raw Today:", resToday);
       setTodayAppointments(resToday.map(mapAppointment));
-      console.log("Appointments Today:", resToday);
       const resUpcoming = await ApiDoctor.getAppointments();
-      console.log("Upcoming Appointments:", resUpcoming);
       setUpcomingAppointments(resUpcoming.map(mapAppointment));
     } catch (err) {
       console.error("Lỗi lấy appointments:", err);
@@ -89,7 +84,7 @@ export default function AppointmentTab() {
   useEffect(() => {
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
-    const unsub = listenStatus(roomChats, doctorUid, async (signal) => {
+    const unsub = listenStatus(roomChats, async (signal) => {
       if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
         fetchAppointments();
         let patientName = "";
@@ -132,6 +127,7 @@ export default function AppointmentTab() {
   const mapAppointment = (item) => ({
     id: item._id,
     patientName: item.patientId?.userId?.username || "",
+    patientEmail: item.patientId?.userId?.email || "",
     patientAge: item.patientId?.age || "",
     patientDisease: item.patientId?.disease || "",
     patientAvatar:

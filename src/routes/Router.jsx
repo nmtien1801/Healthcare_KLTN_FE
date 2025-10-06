@@ -133,12 +133,12 @@ const Router = (props) => {
                   <Bot size={20} />
                   <span>Trợ lý AI</span>
                 </Nav.Link>
-                <Nav.Link as={NavLink} to="/payment" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
+              </>
+            )}
+            <Nav.Link as={NavLink} to="/payment" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
                   <Wallet size={20} />
                   <span>Ví điện tử</span>
                 </Nav.Link>
-              </>
-            )}
           </Nav>
         </Container>
       </Navbar>
