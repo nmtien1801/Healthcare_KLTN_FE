@@ -7,6 +7,7 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
+import { listenStatus } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
 import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
 
@@ -117,29 +118,27 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
 
   // Fetch appointments từ API
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      const response = await ApiBooking.getUpcomingAppointments();
+
+      // đảm bảo appointments luôn là array
+      const data = Array.isArray(response)
+        ? response
+        : response?.appointments || response?.data || [];
+
+      setAppointments(data);
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+      setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAppointments = async () => {
-      console.log("Fetching appointments...");
-      try {
-        setLoading(true);
-        const response = await ApiBooking.getUpcomingAppointments();
-        console.log("Appointments fetched:", response);
-
-        // đảm bảo appointments luôn là array
-        const data = Array.isArray(response)
-          ? response
-          : response?.appointments || response?.data || [];
-
-        setAppointments(data);
-      } catch (err) {
-        console.error("Error fetching appointments:", err);
-        setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
-        setShowErrorModal(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAppointments();
   }, [refreshTrigger]);
 
@@ -315,6 +314,20 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       setIsSending(false);
     }
   };
+
+  // nhận tín hiệu firebase
+  let doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+  let patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+  useEffect(() => {
+    const roomChats = [doctorUid, patientUid].sort().join("_");
+
+    const unsub = listenStatus(roomChats, async (signal) => {
+      if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
+        fetchAppointments();
+      }
+    });
+    return () => unsub();
+  }, [doctorUid, patientUid]);
 
   return (
     <div className="container">
@@ -787,7 +800,6 @@ const BookingNew = ({ handleSubmit }) => {
       // Check wallet balance
       const balanceResponse = await getBalanceService(user.userId || user.uid);
       const balance = balanceResponse?.DT?.balance || 0;
-      console.log("User balance:", balance);
 
       if (balance < BOOKING_FEE) {
         setShowInsufficientBalanceModal(true); // Show insufficient balance modal

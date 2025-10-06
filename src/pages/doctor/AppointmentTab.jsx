@@ -84,7 +84,7 @@ export default function AppointmentTab() {
   useEffect(() => {
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
-    const unsub = listenStatus(roomChats, doctorUid, async (signal) => {
+    const unsub = listenStatus(roomChats, async (signal) => {
       if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
         fetchAppointments();
         let patientName = "";

@@ -61,8 +61,11 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
     const parseDate = (dateStr) => {
         if (!dateStr) return null;
         const [day, month, year] = dateStr.split("/");
-        return new Date(`${year}-${month}-${day}`);
+        const date = new Date(`${year}-${month}-${day}`);
+        date.setHours(date.getHours() + 7);
+        return date;
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
