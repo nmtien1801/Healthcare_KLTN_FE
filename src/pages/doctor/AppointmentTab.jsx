@@ -20,7 +20,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
 import { getLabelFromOptions } from "../../utils/apppointmentHelper";
 import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
-import { listenStatus } from "../../utils/SetupSignFireBase";
+import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 import Notification from "../../components/booking/Notification";
 import { useSelector } from "react-redux";
 import { doc, getDoc } from "firebase/firestore";
@@ -218,6 +218,20 @@ export default function AppointmentTab() {
 
       await ApiDoctor.updateAppointment(updatedAppointment.id, payload);
 
+      const doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+      const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // Hardcode như code gốc
+      if (payload.status === "confirmed") {
+        await sendStatus(doctorUid, patientUid, "Xác nhận");
+      } else if (payload.status === "canceled") {
+        await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
+      }
+      else if (payload.status === "completed") {
+        await sendStatus(doctorUid, patientUid, "Hoàn thành");
+      }
+      else if (payload.status === "pending") {
+        await sendStatus(doctorUid, patientUid, "Đang chờ");
+      }
+
       // Chuyển đổi lại date sang DD/MM/YYYY khi cập nhật state
       const updatedAppointmentWithFormattedDate = {
         ...updatedAppointment,
@@ -252,6 +266,10 @@ export default function AppointmentTab() {
       if (!appointmentToDelete) return;
 
       await ApiDoctor.deleteAppointment(appointmentToDelete.id);
+
+      const doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+      const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // Hardcode
+      await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
 
       setUpcomingAppointments((prev) =>
         prev.filter((app) => app.id !== appointmentToDelete.id)

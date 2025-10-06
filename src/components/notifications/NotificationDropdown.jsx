@@ -97,60 +97,99 @@ const NotificationDropdown = () => {
         }
     };
 
-    // Lắng nghe realtime Firestore
+    // Lắng nghe realtime Firestore với phân biệt role
     useEffect(() => {
-        if (!user?.userId) return;
+        if (!user?.uid) return;
         loadNotifications();
         loadUnreadCount();
 
-        const doctorUid = user.userId;
-        const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+        const doctorHardcodeUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+        const patientHardcodeUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+
+        const isDoctor = user.uid === doctorHardcodeUid;
+        const doctorUid = isDoctor ? user.uid : doctorHardcodeUid;
+        const patientUid = isDoctor ? patientHardcodeUid : user.uid;
+
         const roomChats = [doctorUid, patientUid].sort().join("_");
 
-        const unsub = listenStatus(roomChats, doctorUid, async (signal) => {
-            if (!signal) return;
+        const unsub = listenStatus(roomChats, async (signal) => {
+            if (!signal || signal.senderId === user.uid) return; // Bỏ qua nếu là status tự gửi
 
-            let senderName = "Người dùng";
+            let senderName = "";
             let senderAvatar = null;
 
             if (signal.senderId) {
                 try {
-                    const docRef = doc(db, "users", signal.senderId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        senderName = docSnap.data().username || senderName;
-                        senderAvatar = docSnap.data().avatar || senderAvatar;
+                    // Thử tìm trong "patients" trước
+                    const patientRef = doc(db, "patients", signal.senderId);
+                    const patientSnap = await getDoc(patientRef);
+
+                    if (patientSnap.exists()) {
+                        senderName = patientSnap.data().username || "";
+                        senderAvatar = patientSnap.data().avatar || null;
+                    } else {
+                        // Nếu không có trong patients, thử trong doctors
+                        const doctorRef = doc(db, "doctors", signal.senderId);
+                        const doctorSnap = await getDoc(doctorRef);
+                        if (doctorSnap.exists()) {
+                            senderName = doctorSnap.data().username || "";
+                            senderAvatar = doctorSnap.data().avatar || null;
+                        } else {
+                            console.warn("Không tìm thấy user trong Firestore:", signal.senderId);
+                        }
                     }
                 } catch (error) {
-                    console.error("Lỗi lấy thông tin user:", error);
+                    console.error("Lỗi lấy thông tin người gửi:", error);
                 }
             }
 
-            // 🔹 Thay vì tạo default notification, ta dùng dữ liệu gốc từ signal
-            if (signal.id && signal.title && signal.content) {
-                setNotifications((prev) => [
-                    {
-                        ...signal,
-                        id: signal.id.toString(),
-                        avatar: senderAvatar,
-                        createdAt: signal.createdAt || new Date().toISOString(),
-                        isRead: signal.isRead ?? false,
-                    },
-                    ...prev,
-                ]);
-                setUnreadCount((prev) => prev + 1);
-                toast.info(signal.content);
+
+            let title = "";
+            let content = "";
+
+            if (isDoctor) {
+                // Bác sĩ nhận từ bệnh nhân
+                if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
+                    title = signal.status === "Hủy lịch" ? "Hủy lịch hẹn" : "Lịch hẹn mới";
+                    content = `Bệnh nhân ${senderName} đã ${signal.status.toLowerCase()} vào ${new Date().toLocaleDateString("vi-VN")}`;
+                } else {
+                    return; // Bỏ qua status không liên quan
+                }
+            } else {
+                // Bệnh nhân nhận từ bác sĩ
+                if (signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
+                    title = signal.status === "Xác nhận" ? "Lịch hẹn được xác nhận" : "Lịch hẹn bị hủy";
+                    content = `Bác sĩ ${senderName} đã ${signal.status.toLowerCase()} lịch hẹn của bạn vào ${new Date().toLocaleDateString("vi-VN")}`;
+                } else {
+                    return; // Bỏ qua status không liên quan
+                }
             }
+
+            // Thêm thông báo vào state (realtime)
+            setNotifications((prev) => [
+                {
+                    id: Date.now().toString(),
+                    title,
+                    content,
+                    type: "system",
+                    createdAt: new Date().toISOString(),
+                    isRead: false,
+                    avatar: senderAvatar,
+                },
+                ...prev,
+            ]);
+            setUnreadCount((prev) => prev + 1);
+            toast.info(content);
         });
 
         return () => unsub();
-    }, [user?.userId]);
+    }, [user?.uid]);
 
     // Map icon theo schema type
     const getNotificationIcon = (notification) => {
         switch (notification.type) {
             case "system":
-                return "💻";
+                return "🔔";
             case "reminder":
                 return "⏰";
             case "message":
@@ -296,7 +335,7 @@ const NotificationDropdown = () => {
     );
 };
 
-// Modal hiển thị tất cả thông báo
+// Modal hiển thị tất cả thông báo (giữ nguyên)
 const NotificationModal = ({
     show,
     onHide,
