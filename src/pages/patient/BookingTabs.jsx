@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send, Trash2, CheckCircle2 } from 'lucide-react';
+import {
+  Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award,
+  ClockIcon as Clock24, MessageSquare, X, Bot, Send, CheckCircle2
+} from 'lucide-react';
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { useSelector } from "react-redux";
 import { db } from "../../../firebase";
@@ -10,6 +13,7 @@ import { sendStatus, listenStatus } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
 import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
 import Notification from "../../components/booking/Notification";
+import { saveAppointment, deleteAppointment, listenAppointments, saveNotification, listenNotifications, clearUserAppointments, clearUserNotifications } from "../../utils/FirestoreUtils";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -113,25 +117,37 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [cancelErrorMessage, setCancelErrorMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [notifications, setNotifications] = useState([]);
   const senderId = user?.uid;
   const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
   const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
 
-  // Fetch appointments từ API
+  // Lắng nghe danh sách lịch hẹn từ Firestore
   useEffect(() => {
+    if (!senderId) return;
+
+    const unsub = listenAppointments(senderId, (appointmentsData) => {
+      setAppointments(appointmentsData);
+      setLoading(false);
+    });
+
+    // Khởi tạo dữ liệu từ API lần đầu
     const fetchAppointments = async () => {
-      console.log("Fetching appointments...");
       try {
-        setLoading(true);
         const response = await ApiBooking.getUpcomingAppointments();
-        console.log("Appointments fetched:", response);
 
         // đảm bảo appointments luôn là array
         const data = Array.isArray(response)
           ? response
           : response?.appointments || response?.data || [];
 
-        setAppointments(data);
+        // Xóa toàn bộ lịch hẹn cũ trong Firestore
+        await clearUserAppointments(senderId);
+        await clearUserNotifications(senderId);
+        // Đồng bộ API với Firestore
+        for (const appt of data) {
+          await saveAppointment(senderId, appt);
+        }
       } catch (err) {
         console.error("Error fetching appointments:", err);
         setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
@@ -142,31 +158,49 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     };
 
     fetchAppointments();
-  }, [refreshTrigger]);
+    return () => unsub();
+  }, [senderId, refreshTrigger]);
+
+  // Lắng nghe thông báo từ Firestore
   useEffect(() => {
-    const roomChats = [senderId, receiverId].sort().join("_");
+    if (!senderId) return;
 
-    const unsub = listenStatus(roomChats, senderId, async (signal) => {
-      if (!signal?.status) return;
+    const unsub = listenNotifications(senderId, (notificationsData) => {
+      setNotifications(notificationsData);
+    });
 
-      let parsed = null;
-      try {
-        parsed = JSON.parse(signal.status);
-      } catch {
-        parsed = null;
-      }
+    return () => unsub();
+  }, [senderId]);
 
-      const typeStatus = parsed?.type || signal.status;
+  // Lắng nghe trạng thái từ Firestore cho từng bác sĩ
+  useEffect(() => {
+    if (!senderId || !appointments.length) return;
 
-      if (["Hủy lịch", "Đặt lịch", "Cập nhật lịch"].includes(typeStatus)) {
-        const fetchAppointments = async () => {
+    const unsubs = appointments.map(appt => {
+      const doctorId = appt.doctorId?._id || receiverId;
+      const roomChats = [senderId, doctorId].sort().join("_");
+      return listenStatus(roomChats, senderId, async (signal) => {
+        if (!signal?.status) return;
+
+        let parsed = null;
+        try {
+          parsed = JSON.parse(signal.status);
+        } catch {
+          parsed = null;
+        }
+
+        const typeStatus = parsed?.type || signal.status;
+
+        if (["Hủy lịch", "Đặt lịch", "Cập nhật lịch"].includes(typeStatus)) {
+          // Làm mới danh sách lịch hẹn từ API
           try {
             setLoading(true);
             const response = await ApiBooking.getUpcomingAppointments();
-            const data = Array.isArray(response)
-              ? response
-              : response?.appointments || response?.data || [];
-            setAppointments(data);
+            const data = Array.isArray(response) ? response : response?.appointments || response?.data || [];
+            // Đồng bộ API với Firestore
+            for (const appt of data) {
+              await saveAppointment(senderId, appt);
+            }
           } catch (err) {
             console.error("Error fetching appointments:", err);
             setErrorMessage("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
@@ -174,86 +208,61 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
           } finally {
             setLoading(false);
           }
-        };
-        fetchAppointments();
 
-        let senderName = "";
-        let senderAvatar = signal?.senderId?.userId?.avatar || null;
-
-        if (signal?.senderId) {
-          try {
-            const docRef = doc(db, "users", signal.senderId);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-              senderName = docSnap.data().username;
-              senderAvatar = docSnap.data().avatar;
+          let senderName = "";
+          let senderAvatar = signal?.senderId?.userId?.avatar || null;
+          if (signal.senderId) {
+            try {
+              const docRef = doc(db, "users", signal.senderId);
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                senderName = docSnap.data().username;
+                senderAvatar = docSnap.data().avatar;
+              }
+            } catch (error) {
+              console.error("Lỗi lấy thông tin người gửi:", error);
             }
-          } catch (error) {
-            console.error("Lỗi lấy thông tin người gửi:", error);
           }
-        }
-        let message = "";
-        let type = "info";
 
-        if (typeStatus === "Hủy lịch") {
-          message = `Bệnh nhân ${senderName} đã hủy lịch hẹn vào ${new Date().toLocaleDateString("vi-VN")}`;
-          type = "danger";
-        } else if (typeStatus === "Đặt lịch") {
-          message = `Bệnh nhân ${senderName} vừa đặt lịch hẹn mới vào ${new Date().toLocaleDateString("vi-VN")}`;
-          type = "success";
-        } else if (typeStatus === "Cập nhật lịch") {
-          message = `Bác sĩ ${parsed?.doctorName || senderName} đã cập nhật lịch hẹn vào ${parsed?.time} ngày ${parsed?.date} (Trạng thái: ${parsed?.status})`;
-          type = "info";
-        }
-        setNotifications((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
+          let message = "";
+          let type = "info";
+          if (typeStatus === "Hủy lịch") {
+            message = `Bệnh nhân ${senderName} đã hủy lịch hẹn vào ${new Date().toLocaleDateString("vi-VN")}`;
+            type = "danger";
+          } else if (typeStatus === "Đặt lịch") {
+            message = `Bệnh nhân ${senderName} vừa đặt lịch hẹn mới vào ${new Date().toLocaleDateString("vi-VN")}`;
+            type = "success";
+          } else if (typeStatus === "Cập nhật lịch") {
+            message = `Bác sĩ ${parsed?.doctorName || senderName} đã cập nhật lịch hẹn vào ${parsed?.time} ngày ${parsed?.date} (Trạng thái: ${parsed?.status})`;
+            type = "info";
+          }
+
+          // Lưu thông báo vào Firestore
+          await saveNotification(senderId, {
             message,
             type,
             avatar: senderAvatar,
-          },
-        ]);
-      }
+          });
+        }
+      });
     });
 
-    return () => unsub();
-  }, [senderId, receiverId]);
+    return () => unsubs.forEach(unsub => unsub());
+  }, [senderId, appointments]);
 
-
-  const [notifications, setNotifications] = useState([]);
-  const removeNotification = (id) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
-  };
   useEffect(() => {
     if (onNewAppointment) {
       setAppointments((prev) => {
-        // Kiểm tra tránh trùng lặp
         const exists = prev.some(appt => appt._id === onNewAppointment._id);
         if (!exists) {
+          saveAppointment(senderId, onNewAppointment); // Lưu lịch mới vào Firestore
           return [...prev, onNewAppointment];
         }
         return prev;
       });
     }
-  }, [onNewAppointment]);
+  }, [onNewAppointment, senderId]);
 
-  // Pagination functions
-  const itemsPerPage = 2;
-  const totalPages = Math.ceil(appointments.length / itemsPerPage);
-  const startIndex = currentPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAppointments = appointments.slice(startIndex, endIndex);
-
-  const handlePrev = () => {
-    setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
-  };
-
-  // Hủy lịch hẹn
   const handleCancelBooking = (appointmentId) => {
     setAppointmentToCancel(appointmentId);
     setShowCancelModal(true);
@@ -267,19 +276,24 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       await ApiBooking.cancelBooking(appointmentToCancel);
       await depositService(user.userId || user.uid, BOOKING_FEE);
 
+      // Xóa khỏi Firestore
+      await deleteAppointment(senderId, appointmentToCancel);
+      // Cập nhật state appointments ngay lập tức
       setAppointments((prev) =>
         prev.filter((appt) => appt._id !== appointmentToCancel)
       );
 
-      // Reset page nếu trang hiện tại không còn lịch hẹn nào
-      const remainingAppointments = appointments.filter((appt) => appt._id !== appointmentToCancel);
-      const newTotalPages = Math.ceil(remainingAppointments.length / itemsPerPage);
+      const newTotalPages = Math.ceil((appointments.length - 1) / itemsPerPage);
       if (currentPage >= newTotalPages && newTotalPages > 0) {
         setCurrentPage(newTotalPages - 1);
       }
 
-      // gửi tín hiệu trạng thái hủy lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Hủy lịch");
+      await saveNotification(senderId, {
+        message: `Bạn đã hủy lịch hẹn vào ${new Date().toLocaleDateString("vi-VN")}`,
+        type: "danger",
+        avatar: user?.avatar || null,
+      });
 
       setShowCancelModal(false);
       setAppointmentToCancel(null);
@@ -396,6 +410,25 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     } finally {
       setIsSending(false);
     }
+  };
+
+
+  const removeNotification = (id) => {
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
+
+  const itemsPerPage = 2;
+  const totalPages = Math.ceil(appointments.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAppointments = appointments.slice(startIndex, endIndex);
+
+  const handlePrev = () => {
+    setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
   };
 
   return (
@@ -782,7 +815,7 @@ const BookingNew = ({ handleSubmit }) => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false); // New modal state
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const user = useSelector((state) => state.auth.userInfo);
@@ -917,9 +950,17 @@ const BookingNew = ({ handleSubmit }) => {
         status: response.status || "pending",
       };
 
+      // Lưu lịch hẹn vào Firestore
+      await saveAppointment(user.uid, newAppointment);
+
       const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
-      // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Đặt lịch");
+      await saveNotification(user.uid, {
+        message: successMsg,
+        type: "success",
+        avatar: user?.avatar || null,
+      });
+
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 
