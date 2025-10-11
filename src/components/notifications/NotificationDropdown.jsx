@@ -44,7 +44,6 @@ const NotificationDropdown = () => {
             }
         } catch (error) {
             console.error("Lỗi khi load thông báo:", error);
-            toast.error("Không thể tải thông báo");
         } finally {
             setLoading(false);
         }
@@ -68,9 +67,8 @@ const NotificationDropdown = () => {
                 prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
             );
             setUnreadCount((prev) => Math.max(prev - 1, 0));
-            toast.success("Đã đánh dấu đã đọc");
         } catch (error) {
-            toast.error("Không thể đánh dấu đã đọc");
+            console.error("Không thể đánh dấu đã đọc", error);
         }
     };
 
@@ -79,9 +77,8 @@ const NotificationDropdown = () => {
         try {
             await ApiNotification.deleteNotification(id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
-            toast.success("Đã xóa thông báo");
         } catch (error) {
-            toast.error("Không thể xóa thông báo");
+            console.error("Không thể xóa thông báo", error);
         }
     };
 
@@ -91,9 +88,8 @@ const NotificationDropdown = () => {
             await ApiNotification.markAllAsRead();
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             setUnreadCount(0);
-            toast.success("Tất cả thông báo đã được đánh dấu đã đọc");
         } catch (error) {
-            toast.error("Không thể đánh dấu tất cả");
+            console.error("Không thể đánh dấu tất cả đã đọc", error);
         }
     };
 
@@ -120,7 +116,6 @@ const NotificationDropdown = () => {
 
             if (signal.senderId) {
                 try {
-                    // Thử tìm trong "patients" trước
                     const patientRef = doc(db, "patients", signal.senderId);
                     const patientSnap = await getDoc(patientRef);
 
@@ -128,7 +123,6 @@ const NotificationDropdown = () => {
                         senderName = patientSnap.data().username || "";
                         senderAvatar = patientSnap.data().avatar || null;
                     } else {
-                        // Nếu không có trong patients, thử trong doctors
                         const doctorRef = doc(db, "doctors", signal.senderId);
                         const doctorSnap = await getDoc(doctorRef);
                         if (doctorSnap.exists()) {
@@ -148,7 +142,6 @@ const NotificationDropdown = () => {
             let content = "";
 
             if (isDoctor) {
-                // Bác sĩ nhận từ bệnh nhân
                 if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
                     title = signal.status === "Hủy lịch" ? "Hủy lịch hẹn" : "Lịch hẹn mới";
                     content = `Bệnh nhân ${senderName} đã ${signal.status.toLowerCase()} vào ${new Date().toLocaleDateString("vi-VN")}`;
@@ -156,7 +149,6 @@ const NotificationDropdown = () => {
                     return; // Bỏ qua status không liên quan
                 }
             } else {
-                // Bệnh nhân nhận từ bác sĩ
                 if (signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
                     title = signal.status === "Xác nhận" ? "Lịch hẹn được xác nhận" : "Lịch hẹn bị hủy";
                     content = `Bác sĩ ${senderName} đã ${signal.status.toLowerCase()} lịch hẹn của bạn vào ${new Date().toLocaleDateString("vi-VN")}`;
@@ -166,20 +158,35 @@ const NotificationDropdown = () => {
             }
 
             // Thêm thông báo vào state (realtime)
-            setNotifications((prev) => [
-                {
-                    id: Date.now().toString(),
-                    title,
-                    content,
-                    type: "system",
-                    createdAt: new Date().toISOString(),
-                    isRead: false,
-                    avatar: senderAvatar,
-                },
-                ...prev,
-            ]);
+            const newNotification = {
+                id: Date.now().toString(),
+                title,
+                content,
+                type: "system",
+                createdAt: new Date().toISOString(),
+                isRead: false,
+                avatar: senderAvatar,
+            };
+
+            setNotifications((prev) => [newNotification, ...prev]);
             setUnreadCount((prev) => prev + 1);
-            toast.info(content);
+
+            // Hiển thị thông báo bằng react-toastify
+            toast.success(
+                <div>
+                    <strong>{title}</strong>
+                    <p>{content}</p>
+                </div>,
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    theme: "light",
+                }
+            );
         });
 
         return () => unsub();
@@ -254,8 +261,7 @@ const NotificationDropdown = () => {
                             {notifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`notification-item p-3 border-bottom ${!notification.isRead ? "unread" : ""
-                                        }`}
+                                    className={`notification-item p-3 border-bottom ${!notification.isRead ? "unread" : ""}`}
                                 >
                                     <div className="d-flex">
                                         <div className="me-3" style={{ fontSize: "1.5rem" }}>
@@ -285,18 +291,14 @@ const NotificationDropdown = () => {
                                                     <Dropdown.Menu>
                                                         {!notification.isRead && (
                                                             <Dropdown.Item
-                                                                onClick={() =>
-                                                                    handleMarkAsRead(notification.id)
-                                                                }
+                                                                onClick={() => handleMarkAsRead(notification.id)}
                                                             >
                                                                 <Check size={16} className="me-2" />
                                                                 Đánh dấu đã đọc
                                                             </Dropdown.Item>
                                                         )}
                                                         <Dropdown.Item
-                                                            onClick={() =>
-                                                                handleDeleteNotification(notification.id)
-                                                            }
+                                                            onClick={() => handleDeleteNotification(notification.id)}
                                                             className="text-danger"
                                                         >
                                                             <Trash2 size={16} className="me-2" />
@@ -335,7 +337,7 @@ const NotificationDropdown = () => {
     );
 };
 
-// Modal hiển thị tất cả thông báo (giữ nguyên)
+// Modal hiển thị tất cả thông báo
 const NotificationModal = ({
     show,
     onHide,
