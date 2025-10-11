@@ -323,7 +323,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
     const unsub = listenStatus(roomChats, async (signal) => {
-      if (signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ") {
+      if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
         fetchAppointments();
       }
     });

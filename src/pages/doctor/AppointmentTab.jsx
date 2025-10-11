@@ -85,7 +85,7 @@ export default function AppointmentTab() {
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
     const unsub = listenStatus(roomChats, async (signal) => {
-      if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
+      if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
         fetchAppointments();
         let patientName = "";
         let patientAvatar = signal?.patientUid?.userId?.avatar || null;
