@@ -24,6 +24,7 @@ import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 import { useSelector } from "react-redux";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../firebase";
+import ApiNotification from "../../apis/ApiNotification";
 
 
 export default function AppointmentTab() {
@@ -197,7 +198,15 @@ export default function AppointmentTab() {
       else if (payload.status === "pending") {
         await sendStatus(doctorUid, patientUid, "Đang chờ");
       }
-
+      await ApiNotification.createNotification({
+        receiverId: patientUid,
+        title: "Cập nhật lịch hẹn",
+        content: `Lịch hẹn của bạn vào ngày ${new Date(updatedAppointment.date).toLocaleDateString("vi-VN")} lúc ${updatedAppointment.time} đã được cập nhật.`,
+        metadata: {
+          link: `/patient/appointments/${updatedAppointment.id}`
+        },
+        avatar: user?.avatar || null,
+      });
       // Chuyển đổi lại date sang DD/MM/YYYY khi cập nhật state
       const updatedAppointmentWithFormattedDate = {
         ...updatedAppointment,
@@ -246,6 +255,15 @@ export default function AppointmentTab() {
 
       setShowDeleteModal(false);
       setAppointmentToDelete(null);
+      await ApiNotification.createNotification({
+        receiverId: patientUid,
+        avatar: user?.avatar || null,
+        title: "Lịch hẹn bị hủy",
+        content: `Lịch hẹn của bạn vào ngày ${appointmentToDelete.date} lúc ${appointmentToDelete.time} đã bị hủy.`,
+        metadata: {
+          link: `/patient/appointments/${appointmentToDelete.id}`
+        },
+      });
     } catch (error) {
       console.error("Lỗi khi xóa lịch hẹn:", error);
       alert("Xóa lịch hẹn thất bại. Vui lòng thử lại.");

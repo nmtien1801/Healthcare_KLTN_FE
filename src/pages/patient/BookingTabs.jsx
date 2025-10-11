@@ -195,7 +195,17 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       if (currentPage >= newTotalPages && newTotalPages > 0) {
         setCurrentPage(newTotalPages - 1);
       }
-
+      await ApiNotification.createNotification({
+        receiverId: receiverId,
+        title: "Bệnh nhân hủy lịch khám",
+        content: `Bệnh nhân ${user.username || ""} đã hủy lịch khám.`,
+        type: "system",
+        metadata: {
+          link: `/patient/appointments/${appointmentToCancel}`, // đường dẫn chi tiết lịch hẹn (nếu có)
+        },
+        avatar: user.avatar || "", // avatar người gửi (nếu có)
+      });
+      console.log("avatar:", user.avatar || "");
       // gửi tín hiệu trạng thái hủy lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Hủy lịch");
 
@@ -779,6 +789,7 @@ const BookingNew = ({ handleSubmit }) => {
     }
 
     const selectedDoctorData = doctors.find((d) => d.id === selectedDoctor);
+    console.log("Selected Doctor Data:", selectedDoctorData);
     if (!selectedDoctorData) {
       console.log("Error: Invalid doctor", { selectedDoctor, doctors });
       setErrorMessage("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
@@ -840,13 +851,14 @@ const BookingNew = ({ handleSubmit }) => {
       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
 
       await ApiNotification.createNotification({
-        receiverId: selectedDoctorData.userId._id, // ID bác sĩ (MongoDB ObjectId hoặc tương ứng)
+        receiverId: receiverId,
         title: "Bệnh nhân mới đặt lịch khám",
         content: `Bệnh nhân ${user.username || ""} đã đặt lịch khám vào lúc ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}.`,
         type: "system",
         metadata: {
           link: `/appointments/${response._id}`, // đường dẫn chi tiết lịch hẹn (nếu có)
         },
+        avatar: user.avatar || "", // avatar người gửi (nếu có)
       });
 
       await sendStatus(user?.uid, receiverId, "Đặt lịch");

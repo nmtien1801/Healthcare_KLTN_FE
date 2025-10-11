@@ -19,8 +19,8 @@ const CustomToggle = forwardRef(({ onClick, user }, ref) => (
     <div className="position-relative">
       <Image
         src={
-          user?.photoURL
-            ? user.photoURL
+          user?.avatar
+            ? user.avatar
             : "https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=50&height=50&seq=doctor1&orientation=squarish"
         }
         roundedCircle
@@ -43,7 +43,6 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   let user = useSelector((state) => state.auth.userInfo);
-
   const handleLogout = async () => {
     try {
       await signOut(auth); // Firebase sign out

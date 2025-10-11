@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-    Bell,
-    Check,
-    Trash2,
-    MoreVertical,
-} from "lucide-react";
+import { Bell, Check, Trash2, MoreVertical } from "lucide-react";
 import {
     Dropdown,
     Badge,
@@ -23,13 +18,12 @@ import ApiDoctor from "../../apis/ApiDoctor";
 
 const NotificationDropdown = () => {
     const user = useSelector((state) => state.auth.userInfo);
-
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [showAllModal, setShowAllModal] = useState(false);
 
-    // Load danh sách thông báo từ API (MongoDB)
+    // Load danh sách thông báo từ API
     const loadNotifications = async () => {
         try {
             setLoading(true);
@@ -92,7 +86,23 @@ const NotificationDropdown = () => {
         }
     };
 
-    // Lắng nghe realtime Firestore với phân biệt role
+    // Map icon theo schema type
+    const getNotificationIcon = (notification) => {
+        switch (notification.type) {
+            case "system":
+                return "🔔";
+            case "reminder":
+                return "⏰";
+            case "message":
+                return "💬";
+            case "alert":
+                return "⚠️";
+            default:
+                return "🔔";
+        }
+    };
+
+    // Lắng nghe realtime Firestore
     useEffect(() => {
         if (!user?.uid) return;
 
@@ -101,57 +111,51 @@ const NotificationDropdown = () => {
 
         const doctorHardcodeUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
         const patientHardcodeUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
-
         const isDoctor = user.uid === doctorHardcodeUid;
         const doctorUid = isDoctor ? user.uid : doctorHardcodeUid;
         const patientUid = isDoctor ? patientHardcodeUid : user.uid;
-
-        console.debug("role debug:", { isDoctor, doctorUid, patientUid });
-
         const roomChats = [doctorUid, patientUid].sort().join("_");
 
         const STATUS_MAP = {
             doctor: {
                 "Đặt lịch": {
                     title: "Lịch hẹn mới",
-                    content: (senderName, date) => `Bệnh nhân ${senderName} đã đặt lịch vào ${date}`,
+                    content: (name, date) => `Bệnh nhân ${name} đã đặt lịch vào ${date}`,
                 },
                 "Hủy lịch": {
                     title: "Hủy lịch hẹn",
-                    content: (senderName, date) => `Bệnh nhân ${senderName} đã hủy lịch vào ${date}`,
+                    content: (name, date) => `Bệnh nhân ${name} đã hủy lịch vào ${date}`,
                 },
             },
             patient: {
                 "Xác nhận": {
                     title: "Lịch hẹn được xác nhận",
-                    content: (senderName, date) => `Bác sĩ ${senderName} đã xác nhận lịch hẹn của bạn vào ${date}`,
+                    content: (name, date) => `Bác sĩ ${name} đã xác nhận lịch hẹn vào ${date}`,
                 },
                 "Hủy bởi bác sĩ": {
                     title: "Lịch hẹn bị hủy",
-                    content: (senderName, date) => `Bác sĩ ${senderName} đã hủy lịch hẹn của bạn vào ${date}`,
+                    content: (name, date) => `Bác sĩ ${name} đã hủy lịch hẹn vào ${date}`,
                 },
                 "Hoàn thành": {
                     title: "Lịch hẹn hoàn tất",
-                    content: (senderName, date) => `Bác sĩ ${senderName} đã hoàn thành lịch hẹn vào ${date}`,
+                    content: (name, date) => `Bác sĩ ${name} đã hoàn thành lịch hẹn vào ${date}`,
                 },
                 "Đang chờ": {
                     title: "Lịch hẹn đang chờ",
-                    content: (senderName, date) => `Lịch hẹn với bác sĩ ${senderName} đang chờ xác nhận`,
+                    content: (name, date) => `Lịch hẹn với bác sĩ ${name} đang chờ xác nhận`,
                 },
             },
         };
 
         const unsub = listenStatus(roomChats, async (signal) => {
-            if (!signal || signal.senderId === user.uid) return; // bỏ qua status tự gửi
+            if (!signal || signal.senderId === user.uid) return;
 
             let senderName = "";
             let senderAvatar = null;
-            console.log("Send signal:", signal.senderId, signal.status);
 
             if (signal.senderId) {
                 try {
                     const response = await ApiDoctor.getUserById(signal.senderId);
-                    console.log("User response:", response);
                     if (response) {
                         senderName = response.username || "";
                         senderAvatar = response.avatar || null;
@@ -164,19 +168,12 @@ const NotificationDropdown = () => {
             const dateStr = new Date().toLocaleDateString("vi-VN");
             const roleKey = isDoctor ? "doctor" : "patient";
             const entry = STATUS_MAP[roleKey][signal.status];
-
-            if (!entry) {
-                // trạng thái không quan tâm => bỏ qua
-                return;
-            }
-
-            const title = entry.title;
-            const content = entry.content(senderName, dateStr);
+            if (!entry) return;
 
             const newNotification = {
                 id: Date.now().toString(),
-                title,
-                content,
+                title: entry.title,
+                content: entry.content(senderName, dateStr),
                 type: "system",
                 createdAt: new Date().toISOString(),
                 isRead: false,
@@ -204,41 +201,15 @@ const NotificationDropdown = () => {
                         </div>
                     )}
                     <div>
-                        <strong>{title}</strong>
-                        <p style={{ margin: 0 }}>{content}</p>
+                        <strong>{entry.title}</strong>
+                        <p style={{ margin: 0 }}>{entry.content(senderName, dateStr)}</p>
                     </div>
-                </div>,
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    theme: "light",
-                }
+                </div>
             );
         });
 
         return () => unsub();
     }, [user?.uid]);
-
-
-    // Map icon theo schema type
-    const getNotificationIcon = (notification) => {
-        switch (notification.type) {
-            case "system":
-                return "🔔";
-            case "reminder":
-                return "⏰";
-            case "message":
-                return "💬";
-            case "alert":
-                return "⚠️";
-            default:
-                return "🔔";
-        }
-    };
 
     return (
         <>
@@ -290,15 +261,15 @@ const NotificationDropdown = () => {
                         </div>
                     ) : (
                         <>
-                            {notifications.map((notification) => (
+                            {notifications.map((n) => (
                                 <div
-                                    key={notification.id}
-                                    className={`notification-item p-3 border-bottom ${!notification.isRead ? "unread" : ""}`}
+                                    key={n.id}
+                                    className={`notification-item p-3 border-bottom ${!n.isRead ? "unread" : ""}`}
                                 >
                                     <div className="d-flex align-items-center">
-                                        {notification.avatar ? (
+                                        {n.avatar ? (
                                             <img
-                                                src={notification.avatar}
+                                                src={n.avatar}
                                                 alt="Avatar"
                                                 className="rounded-circle me-3"
                                                 style={{ width: "40px", height: "40px", objectFit: "cover" }}
@@ -309,7 +280,7 @@ const NotificationDropdown = () => {
                                                 style={{ width: "40px", height: "40px" }}
                                             >
                                                 <span style={{ color: "white" }}>
-                                                    {getNotificationIcon(notification)}
+                                                    {getNotificationIcon(n)}
                                                 </span>
                                             </div>
                                         )}
@@ -317,34 +288,28 @@ const NotificationDropdown = () => {
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <div>
                                                     <h6 className="mb-1" style={{ fontSize: "0.9rem" }}>
-                                                        {notification.title}
+                                                        {n.title}
                                                     </h6>
                                                     <p className="mb-1 text-muted" style={{ fontSize: "0.8rem" }}>
-                                                        {notification.content}
+                                                        {n.content}
                                                     </p>
                                                     <small className="text-muted">
-                                                        {formatDate(notification.createdAt)}
+                                                        {formatDate(n.createdAt)}
                                                     </small>
                                                 </div>
                                                 <Dropdown>
-                                                    <Dropdown.Toggle
-                                                        variant="link"
-                                                        size="sm"
-                                                        className="p-0"
-                                                    >
+                                                    <Dropdown.Toggle variant="link" size="sm" className="p-0">
                                                         <MoreVertical size={16} />
                                                     </Dropdown.Toggle>
                                                     <Dropdown.Menu>
-                                                        {!notification.isRead && (
-                                                            <Dropdown.Item
-                                                                onClick={() => handleMarkAsRead(notification.id)}
-                                                            >
+                                                        {!n.isRead && (
+                                                            <Dropdown.Item onClick={() => handleMarkAsRead(n.id)}>
                                                                 <Check size={16} className="me-2" />
                                                                 Đánh dấu đã đọc
                                                             </Dropdown.Item>
                                                         )}
                                                         <Dropdown.Item
-                                                            onClick={() => handleDeleteNotification(notification.id)}
+                                                            onClick={() => handleDeleteNotification(n.id)}
                                                             className="text-danger"
                                                         >
                                                             <Trash2 size={16} className="me-2" />
@@ -378,6 +343,7 @@ const NotificationDropdown = () => {
                 allNotifications={notifications}
                 handleMarkAsRead={handleMarkAsRead}
                 handleDeleteNotification={handleDeleteNotification}
+                getNotificationIcon={getNotificationIcon}
             />
         </>
     );
@@ -390,96 +356,76 @@ const NotificationModal = ({
     allNotifications,
     handleMarkAsRead,
     handleDeleteNotification,
-}) => {
-    return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
-            <Modal.Header closeButton>
-                <Modal.Title>Tất cả thông báo</Modal.Title>
-            </Modal.Header>
-            <Modal.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
-                {allNotifications.length === 0 ? (
-                    <div className="text-center p-4 text-muted">
-                        <Bell size={48} className="mb-2 opacity-50" />
-                        <div>Không có thông báo nào</div>
-                    </div>
-                ) : (
-                    <ListGroup variant="flush">
-                        {allNotifications.map((n) => (
-                            <ListGroup.Item
-                                key={n.id}
-                                className={`${!n.isRead ? "bg-light" : ""}`}
-                            >
-                                <div className="d-flex align-items-center">
-                                    {n.avatar ? (
-                                        <img
-                                            src={n.avatar}
-                                            alt="Avatar"
-                                            className="rounded-circle me-3"
-                                            style={{ width: "40px", height: "40px", objectFit: "cover" }}
-                                        />
-                                    ) : (
-                                        <div
-                                            className="me-3 rounded-circle bg-secondary d-flex align-items-center justify-content-center"
-                                            style={{ width: "40px", height: "40px" }}
-                                        >
-                                            <span style={{ color: "white" }}>
-                                                {getNotificationIcon(n)}
-                                            </span>
+    getNotificationIcon,
+}) => (
+    <Modal show={show} onHide={onHide} size="lg" centered>
+        <Modal.Header closeButton>
+            <Modal.Title>Tất cả thông báo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            {allNotifications.length === 0 ? (
+                <div className="text-center p-4 text-muted">
+                    <Bell size={48} className="mb-2 opacity-50" />
+                    <div>Không có thông báo nào</div>
+                </div>
+            ) : (
+                <ListGroup variant="flush">
+                    {allNotifications.map((n) => (
+                        <ListGroup.Item key={n.id} className={`${!n.isRead ? "bg-light" : ""}`}>
+                            <div className="d-flex align-items-center">
+                                {n.avatar ? (
+                                    <img
+                                        src={n.avatar}
+                                        alt="Avatar"
+                                        className="rounded-circle me-3"
+                                        style={{ width: "40px", height: "40px", objectFit: "cover" }}
+                                    />
+                                ) : (
+                                    <div
+                                        className="me-3 rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                        style={{ width: "40px", height: "40px" }}
+                                    >
+                                        <span style={{ color: "white" }}>
+                                            {getNotificationIcon(n)}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="flex-grow-1">
+                                    <div className="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 className="mb-1">{n.title}</h6>
+                                            <p className="mb-1 text-muted">{n.content}</p>
+                                            <small className="text-muted">
+                                                {formatDate(n.createdAt)}
+                                            </small>
                                         </div>
-                                    )}
-                                    <div className="flex-grow-1">
-                                        <div className="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 className="mb-1">{n.title}</h6>
-                                                <p className="mb-1 text-muted">{n.content}</p>
-                                                <small className="text-muted">
-                                                    {formatDate(n.createdAt)}
-                                                </small>
-                                            </div>
-                                            <div className="d-flex gap-2">
-                                                {!n.isRead && (
-                                                    <Button
-                                                        variant="outline-primary"
-                                                        size="sm"
-                                                        onClick={() => handleMarkAsRead(n.id)}
-                                                    >
-                                                        <Check size={16} />
-                                                    </Button>
-                                                )}
+                                        <div className="d-flex gap-2">
+                                            {!n.isRead && (
                                                 <Button
-                                                    variant="outline-danger"
+                                                    variant="outline-primary"
                                                     size="sm"
-                                                    onClick={() => handleDeleteNotification(n.id)}
+                                                    onClick={() => handleMarkAsRead(n.id)}
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Check size={16} />
                                                 </Button>
-                                            </div>
+                                            )}
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={() => handleDeleteNotification(n.id)}
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
-                            </ListGroup.Item>
-                        ))}
-                    </ListGroup>
-                )}
-            </Modal.Body>
-        </Modal>
-    );
-};
-
-// Map icon theo schema type
-const getNotificationIcon = (notification) => {
-    switch (notification.type) {
-        case "system":
-            return "🔔";
-        case "reminder":
-            return "⏰";
-        case "message":
-            return "💬";
-        case "alert":
-            return "⚠️";
-        default:
-            return "🔔";
-    }
-};
+                            </div>
+                        </ListGroup.Item>
+                    ))}
+                </ListGroup>
+            )}
+        </Modal.Body>
+    </Modal>
+);
 
 export default NotificationDropdown;
