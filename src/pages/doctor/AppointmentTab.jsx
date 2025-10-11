@@ -22,8 +22,6 @@ import { getLabelFromOptions } from "../../utils/apppointmentHelper";
 import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
 import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 import { useSelector } from "react-redux";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../firebase";
 import ApiNotification from "../../apis/ApiNotification";
 
 
@@ -69,22 +67,6 @@ export default function AppointmentTab() {
     const unsub = listenStatus(roomChats, async (signal) => {
       if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
         fetchAppointments();
-        let patientName = "";
-        let patientAvatar = signal?.patientUid?.userId?.avatar || null;
-
-        if (signal?.senderId) {
-          try {
-            const docRef = doc(db, "users", signal.senderId);
-            const docSnap = await getDoc(docRef);
-            console.log("DocSnap:", docSnap);
-            if (docSnap.exists()) {
-              patientName = docSnap.data().username;
-              patientAvatar = docSnap.data().avatar;
-            }
-          } catch (error) {
-            console.error("Lỗi lấy thông tin bệnh nhân:", error);
-          }
-        }
       }
     });
 
