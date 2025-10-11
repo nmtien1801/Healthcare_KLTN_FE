@@ -1204,14 +1204,14 @@ const BookingTabs = ({ handleStartCall }) => {
 
   return (
     <div className="row g-1">
-      <div className="col-12 col-md-4">
+      <div className="col-12 col-lg-4">
         <UpcomingAppointment
           handleStartCall={handleStartCall}
           refreshTrigger={refreshTrigger}
           onNewAppointment={newAppointment}
         />
       </div>
-      <div className="col-12 col-md-8">
+      <div className="col-12 col-lg-8">
         <BookingNew handleSubmit={handleSubmit} />
       </div>
     </div>

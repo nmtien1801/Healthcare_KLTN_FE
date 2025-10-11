@@ -34,3 +34,25 @@ html, body, #root {
 .formpatient .MuiInputLabel-root.Mui-focused{
   color: #6d28d9 !important;
 }
+
+/* Mặc định: Màn hình nhỏ (giống btn-sm) */
+.custom-responsive-btn {
+    padding: 3px 3px; /* Padding nhỏ */
+    font-size: 0.8rem; /* Cỡ chữ nhỏ */
+}
+
+/* Màn hình Medium (md) trở lên (giống nút mặc định) */
+@media (min-width: 768px) {
+    .custom-responsive-btn {
+        padding: 3px 3px; /* Padding vừa */
+        font-size: 8px; /* Cỡ chữ mặc định */
+    }
+}
+
+/* Màn hình Large (lg) trở lên (giống btn-lg) */
+@media (min-width: 992px) {
+    .custom-responsive-btn {
+        padding: 0.5rem 1rem; /* Padding lớn */
+        font-size: 12px; /* Cỡ chữ lớn hơn */
+    }
+}

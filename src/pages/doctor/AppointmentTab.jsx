@@ -339,8 +339,8 @@ export default function AppointmentTab() {
                   <td>{appointment.patientDisease}</td>
                   <td>
                     <div className="d-flex align-items-center gap-1">
-                      <Clock size={12} /> {appointment.time}
-                      <span className="ms-2"><CalendarDays size={12} /> {appointment.date}</span>
+                      <Clock size={12} /> <span className="ms-2">{appointment.date} - </span>
+                      <span className="fs-6 ms-1">{appointment.time}</span>
                     </div>
                   </td>
                   <td>{getLabelFromOptions(TYPE_OPTIONS, appointment.type)}</td>
@@ -390,31 +390,35 @@ export default function AppointmentTab() {
       {/* Hôm nay */}
       <Card className="shadow-sm mb-4">
         <Card.Body>
-          <Row className="mb-3 align-items-center">
-            <Col>
+          <div className="row mb-3 justify-content-between align-items-center">
+            <div className="col-12 col-lg-6">
               <h5>Lịch hẹn hôm nay</h5>
               <div className="text-primary small">{filteredToday.length} cuộc hẹn</div>
-            </Col>
-            <Col md="auto">
-              <InputGroup>
-                <InputGroup.Text><Search size={16} /></InputGroup.Text>
-                <Form.Control placeholder="Tìm kiếm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-              </InputGroup>
-            </Col>
-            <Col md="auto">
-              <DatePicker
-                selected={filterDate}
-                onChange={(date) => setFilterDate(date)}
-                dateFormat="dd/MM/yyyy"
-                className="form-control"
-                placeholderText="Chọn ngày"
-                locale={vi}
-              />
-            </Col>
-            <Col md="auto">
-              <Button onClick={() => setShowAddModal(true)}><Plus size={16} /> Thêm</Button>
-            </Col>
-          </Row>
+            </div>
+            <div className="row col-12 col-lg-6">
+              <div className="col-4 col-lg-4">
+                <InputGroup>
+                  <Form.Control placeholder="Tìm kiếm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <InputGroup.Text><Search size={16} /></InputGroup.Text>
+                </InputGroup>
+              </div>
+              <div className="col-4 col-lg-4">
+                <div className="d-flex">
+                  <DatePicker
+                    selected={filterDate}
+                    onChange={(date) => setFilterDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    className="form-control"
+                    placeholderText="Chọn ngày"
+                    locale={vi}
+                  />
+                </div>
+              </div>
+              <div className="col-4 col-lg-4">
+                <Button onClick={() => setShowAddModal(true)}><Plus size={16} /> Thêm</Button>
+              </div>
+            </div>
+          </div>
           {renderTable(todayAppointments, paginate(filteredToday, todayPage), Math.ceil(filteredToday.length / itemsPerPage), todayPage, setTodayPage)}
         </Card.Body>
       </Card>

@@ -105,16 +105,37 @@ const FormPatient = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        const infoText = `
+Hồ sơ bệnh nhân:    
+▸ Tuổi: ${formData.age}
+▸ Giới tính: ${formData.gender === "female" ? "Nữ" : "Nam"}
+▸ Khu vực: ${formData.location}
+▸ Huyết áp cao: ${formData.hypertension ? "Có" : "Không"}
+▸ Bệnh tim: ${formData.heart_disease ? "Có" : "Không"}
+▸ Hút thuốc: ${formData.smoking_history === "never" ? "Không" : "Có"}
+▸ BMI: ${formData.bmi}
+▸ HbA1c: ${formData.hbA1c_level}%
+▸ Đường huyết: ${formData.blood_glucose_level} mg/dL
+`;
+
+
         setMessages((prev) => [
             ...prev,
-            { sender: "user", text: "📤 Đã gửi thông tin bệnh nhân" },
+            { sender: "user", text: infoText.trim() },
         ]);
-
         try {
             const res = await api.post("/predict", formData);
-            const botMsg = `🔍 Kết quả: ${res.data.prediction === 1 ? "Có nguy cơ tiểu đường" : "Không nguy cơ tiểu đường"
-                }\n📊 Xác suất: ${(res.data.probability * 100).toFixed(2)}%`;
-            setMessages((prev) => [...prev, { sender: "bot", text: botMsg }]);
+
+            const botMsg = `
+🔍 Kết quả: ${res.data.prediction === 1 ? "Có nguy cơ tiểu đường" : "Không có nguy cơ tiểu đường"}
+📊 Xác suất: ${(res.data.probability).toFixed(2)}%
+🩺 Chẩn đoán: ${res.data.diagnosis || "Không có thông tin"}
+────────────────────────────
+👉 Lưu ý: Kết quả chỉ mang tính hỗ trợ tham khảo. Vui lòng trao đổi thêm với bác sĩ để được tư vấn và chẩn đoán chính xác.
+`;
+
+            setMessages((prev) => [...prev, { sender: "bot", text: botMsg.trim() }]);
+
         } catch (err) {
             console.error(err);
             setMessages((prev) => [
@@ -124,6 +145,7 @@ const FormPatient = () => {
         } finally {
             setLoading(false);
         }
+
     };
 
     const handleAsk = async () => {
@@ -192,18 +214,18 @@ const FormPatient = () => {
         const fetchMedicine = async () => {
             const today = new Date();
             const res = await dispatch(fetchMedicines({ userId: user.userId, date: today }));
-    
+
             if (res?.payload?.DT) {
                 const data = res.payload.DT;
-    
+
                 // ✅ Nếu DB đã có thuốc, coi như đơn đã được áp dụng
                 if (data.length > 0) {
                     setPrescriptionStatus("applied");
                 }
-    
+
                 const categorized = categorizeMedicines(data);
                 setMedicines(categorized);
-    
+
                 // Nếu chưa có thuốc, giữ logic cũ
                 if (data.length === 0) {
                     const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
@@ -606,8 +628,6 @@ const FormPatient = () => {
                         </Box>
                     </Paper>
                 </div>
-
-
 
                 {/* Chat Section */}
                 <div className="col-12 col-md-6 d-flex">
