@@ -106,6 +106,7 @@ const NotificationDropdown = () => {
     useEffect(() => {
         if (!user?.uid) return;
 
+        // Load ban đầu
         loadNotifications();
         loadUnreadCount();
 
@@ -116,100 +117,57 @@ const NotificationDropdown = () => {
         const patientUid = isDoctor ? patientHardcodeUid : user.uid;
         const roomChats = [doctorUid, patientUid].sort().join("_");
 
-        const STATUS_MAP = {
-            doctor: {
-                "Đặt lịch": {
-                    title: "Lịch hẹn mới",
-                    content: (name, date) => `Bệnh nhân ${name} đã đặt lịch vào ${date}`,
-                },
-                "Hủy lịch": {
-                    title: "Hủy lịch hẹn",
-                    content: (name, date) => `Bệnh nhân ${name} đã hủy lịch vào ${date}`,
-                },
-            },
-            patient: {
-                "Xác nhận": {
-                    title: "Lịch hẹn được xác nhận",
-                    content: (name, date) => `Bác sĩ ${name} đã xác nhận lịch hẹn vào ${date}`,
-                },
-                "Hủy bởi bác sĩ": {
-                    title: "Lịch hẹn bị hủy",
-                    content: (name, date) => `Bác sĩ ${name} đã hủy lịch hẹn vào ${date}`,
-                },
-                "Hoàn thành": {
-                    title: "Lịch hẹn hoàn tất",
-                    content: (name, date) => `Bác sĩ ${name} đã hoàn thành lịch hẹn vào ${date}`,
-                },
-                "Đang chờ": {
-                    title: "Lịch hẹn đang chờ",
-                    content: (name, date) => `Lịch hẹn với bác sĩ ${name} đang chờ xác nhận`,
-                },
-            },
-        };
-
         const unsub = listenStatus(roomChats, async (signal) => {
             if (!signal || signal.senderId === user.uid) return;
 
-            let senderName = "";
-            let senderAvatar = null;
+            try {
+                const res = await ApiNotification.getNotificationsByUser();
+                if (res?.data?.length > 0) {
+                    const latest = res.data[0]; // lấy thông báo mới nhất
+                    const normalized = res.data.map((n) => ({
+                        ...n,
+                        id: n.id || n._id,
+                    }));
+                    setNotifications(normalized);
+                    setUnreadCount(normalized.filter((n) => !n.isRead).length);
 
-            if (signal.senderId) {
-                try {
-                    const response = await ApiDoctor.getUserById(signal.senderId);
-                    if (response) {
-                        senderName = response.username || "";
-                        senderAvatar = response.avatar || null;
-                    }
-                } catch (err) {
-                    console.error("Lỗi lấy user:", err);
-                }
-            }
-
-            const dateStr = new Date().toLocaleDateString("vi-VN");
-            const roleKey = isDoctor ? "doctor" : "patient";
-            const entry = STATUS_MAP[roleKey][signal.status];
-            if (!entry) return;
-
-            const newNotification = {
-                id: Date.now().toString(),
-                title: entry.title,
-                content: entry.content(senderName, dateStr),
-                type: "system",
-                createdAt: new Date().toISOString(),
-                isRead: false,
-                avatar: senderAvatar,
-            };
-
-            setNotifications((prev) => [newNotification, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-
-            toast.success(
-                <div className="d-flex align-items-center">
-                    {senderAvatar ? (
-                        <img
-                            src={senderAvatar}
-                            alt="Avatar"
-                            className="rounded-circle me-2"
-                            style={{ width: "30px", height: "30px", objectFit: "cover" }}
-                        />
-                    ) : (
-                        <div
-                            className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
-                            style={{ width: "30px", height: "30px" }}
-                        >
-                            <span style={{ color: "white" }}>🔔</span>
+                    // 🔔 Hiện toast thông báo mới
+                    toast.success(
+                        <div className="d-flex align-items-center">
+                            {latest.avatar ? (
+                                <img
+                                    src={latest.avatar}
+                                    alt="Avatar"
+                                    className="rounded-circle me-2"
+                                    style={{
+                                        width: "30px",
+                                        height: "30px",
+                                        objectFit: "cover",
+                                    }}
+                                />
+                            ) : (
+                                <div
+                                    className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
+                                    style={{ width: "30px", height: "30px" }}
+                                >
+                                    <span style={{ color: "white" }}>🔔</span>
+                                </div>
+                            )}
+                            <div>
+                                <strong>{latest.title}</strong>
+                                <p style={{ margin: 0 }}>{latest.content}</p>
+                            </div>
                         </div>
-                    )}
-                    <div>
-                        <strong>{entry.title}</strong>
-                        <p style={{ margin: 0 }}>{entry.content(senderName, dateStr)}</p>
-                    </div>
-                </div>
-            );
+                    );
+                }
+            } catch (err) {
+                console.error("Lỗi khi load thông báo realtime:", err);
+            }
         });
 
         return () => unsub();
     }, [user?.uid]);
+
 
     return (
         <>
