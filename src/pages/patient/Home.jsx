@@ -147,7 +147,7 @@ const Home = () => {
                 <h6 className="fw-semibold mb-0">Đường huyết hôm nay</h6>
                 <button
                   onClick={() => navigate('/healthTabs')}
-                  className={`btn btn-sm btn-outline-primary`}
+                  className={`btn btn-sm btn-outline-primary custom-responsive-btn`}
                 >
                   Xem Chi tiết
                 </button>
