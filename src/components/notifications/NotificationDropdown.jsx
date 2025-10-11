@@ -19,8 +19,7 @@ import "./NotificationDropdown.css";
 import ApiNotification from "../../apis/ApiNotification";
 import { formatDate } from "../../utils/formatDate";
 import { listenStatus } from "../../utils/SetupSignFireBase";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../firebase";
+import ApiDoctor from "../../apis/ApiDoctor";
 
 const NotificationDropdown = () => {
     const user = useSelector((state) => state.auth.userInfo);
@@ -96,6 +95,7 @@ const NotificationDropdown = () => {
     // Lắng nghe realtime Firestore với phân biệt role
     useEffect(() => {
         if (!user?.uid) return;
+
         loadNotifications();
         loadUnreadCount();
 
@@ -106,58 +106,73 @@ const NotificationDropdown = () => {
         const doctorUid = isDoctor ? user.uid : doctorHardcodeUid;
         const patientUid = isDoctor ? patientHardcodeUid : user.uid;
 
+        console.debug("role debug:", { isDoctor, doctorUid, patientUid });
+
         const roomChats = [doctorUid, patientUid].sort().join("_");
 
+        const STATUS_MAP = {
+            doctor: {
+                "Đặt lịch": {
+                    title: "Lịch hẹn mới",
+                    content: (senderName, date) => `Bệnh nhân ${senderName} đã đặt lịch vào ${date}`,
+                },
+                "Hủy lịch": {
+                    title: "Hủy lịch hẹn",
+                    content: (senderName, date) => `Bệnh nhân ${senderName} đã hủy lịch vào ${date}`,
+                },
+            },
+            patient: {
+                "Xác nhận": {
+                    title: "Lịch hẹn được xác nhận",
+                    content: (senderName, date) => `Bác sĩ ${senderName} đã xác nhận lịch hẹn của bạn vào ${date}`,
+                },
+                "Hủy bởi bác sĩ": {
+                    title: "Lịch hẹn bị hủy",
+                    content: (senderName, date) => `Bác sĩ ${senderName} đã hủy lịch hẹn của bạn vào ${date}`,
+                },
+                "Hoàn thành": {
+                    title: "Lịch hẹn hoàn tất",
+                    content: (senderName, date) => `Bác sĩ ${senderName} đã hoàn thành lịch hẹn vào ${date}`,
+                },
+                "Đang chờ": {
+                    title: "Lịch hẹn đang chờ",
+                    content: (senderName, date) => `Lịch hẹn với bác sĩ ${senderName} đang chờ xác nhận`,
+                },
+            },
+        };
+
         const unsub = listenStatus(roomChats, async (signal) => {
-            if (!signal || signal.senderId === user.uid) return; // Bỏ qua nếu là status tự gửi
+            if (!signal || signal.senderId === user.uid) return; // bỏ qua status tự gửi
 
             let senderName = "";
             let senderAvatar = null;
+            console.log("Send signal:", signal.senderId, signal.status);
 
             if (signal.senderId) {
                 try {
-                    const patientRef = doc(db, "patients", signal.senderId);
-                    const patientSnap = await getDoc(patientRef);
-
-                    if (patientSnap.exists()) {
-                        senderName = patientSnap.data().username || "";
-                        senderAvatar = patientSnap.data().avatar || null;
-                    } else {
-                        const doctorRef = doc(db, "doctors", signal.senderId);
-                        const doctorSnap = await getDoc(doctorRef);
-                        if (doctorSnap.exists()) {
-                            senderName = doctorSnap.data().username || "";
-                            senderAvatar = doctorSnap.data().avatar || null;
-                        } else {
-                            console.warn("Không tìm thấy user trong Firestore:", signal.senderId);
-                        }
+                    const response = await ApiDoctor.getUserById(signal.senderId);
+                    console.log("User response:", response);
+                    if (response) {
+                        senderName = response.username || "";
+                        senderAvatar = response.avatar || null;
                     }
-                } catch (error) {
-                    console.error("Lỗi lấy thông tin người gửi:", error);
+                } catch (err) {
+                    console.error("Lỗi lấy user:", err);
                 }
             }
 
+            const dateStr = new Date().toLocaleDateString("vi-VN");
+            const roleKey = isDoctor ? "doctor" : "patient";
+            const entry = STATUS_MAP[roleKey][signal.status];
 
-            let title = "";
-            let content = "";
-
-            if (isDoctor) {
-                if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
-                    title = signal.status === "Hủy lịch" ? "Hủy lịch hẹn" : "Lịch hẹn mới";
-                    content = `Bệnh nhân ${senderName} đã ${signal.status.toLowerCase()} vào ${new Date().toLocaleDateString("vi-VN")}`;
-                } else {
-                    return; // Bỏ qua status không liên quan
-                }
-            } else {
-                if (signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
-                    title = signal.status === "Xác nhận" ? "Lịch hẹn được xác nhận" : "Lịch hẹn bị hủy";
-                    content = `Bác sĩ ${senderName} đã ${signal.status.toLowerCase()} lịch hẹn của bạn vào ${new Date().toLocaleDateString("vi-VN")}`;
-                } else {
-                    return; // Bỏ qua status không liên quan
-                }
+            if (!entry) {
+                // trạng thái không quan tâm => bỏ qua
+                return;
             }
 
-            // Thêm thông báo vào state (realtime)
+            const title = entry.title;
+            const content = entry.content(senderName, dateStr);
+
             const newNotification = {
                 id: Date.now().toString(),
                 title,
@@ -171,11 +186,27 @@ const NotificationDropdown = () => {
             setNotifications((prev) => [newNotification, ...prev]);
             setUnreadCount((prev) => prev + 1);
 
-            // Hiển thị thông báo bằng react-toastify
             toast.success(
-                <div>
-                    <strong>{title}</strong>
-                    <p>{content}</p>
+                <div className="d-flex align-items-center">
+                    {senderAvatar ? (
+                        <img
+                            src={senderAvatar}
+                            alt="Avatar"
+                            className="rounded-circle me-2"
+                            style={{ width: "30px", height: "30px", objectFit: "cover" }}
+                        />
+                    ) : (
+                        <div
+                            className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
+                            style={{ width: "30px", height: "30px" }}
+                        >
+                            <span style={{ color: "white" }}>🔔</span>
+                        </div>
+                    )}
+                    <div>
+                        <strong>{title}</strong>
+                        <p style={{ margin: 0 }}>{content}</p>
+                    </div>
                 </div>,
                 {
                     position: "top-right",
@@ -191,6 +222,7 @@ const NotificationDropdown = () => {
 
         return () => unsub();
     }, [user?.uid]);
+
 
     // Map icon theo schema type
     const getNotificationIcon = (notification) => {
@@ -263,10 +295,24 @@ const NotificationDropdown = () => {
                                     key={notification.id}
                                     className={`notification-item p-3 border-bottom ${!notification.isRead ? "unread" : ""}`}
                                 >
-                                    <div className="d-flex">
-                                        <div className="me-3" style={{ fontSize: "1.5rem" }}>
-                                            {getNotificationIcon(notification)}
-                                        </div>
+                                    <div className="d-flex align-items-center">
+                                        {notification.avatar ? (
+                                            <img
+                                                src={notification.avatar}
+                                                alt="Avatar"
+                                                className="rounded-circle me-3"
+                                                style={{ width: "40px", height: "40px", objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="me-3 rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                                style={{ width: "40px", height: "40px" }}
+                                            >
+                                                <span style={{ color: "white" }}>
+                                                    {getNotificationIcon(notification)}
+                                                </span>
+                                            </div>
+                                        )}
                                         <div className="flex-grow-1">
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <div>
@@ -363,31 +409,52 @@ const NotificationModal = ({
                                 key={n.id}
                                 className={`${!n.isRead ? "bg-light" : ""}`}
                             >
-                                <div className="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 className="mb-1">{n.title}</h6>
-                                        <p className="mb-1 text-muted">{n.content}</p>
-                                        <small className="text-muted">
-                                            {formatDate(n.createdAt)}
-                                        </small>
-                                    </div>
-                                    <div className="d-flex gap-2">
-                                        {!n.isRead && (
-                                            <Button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                onClick={() => handleMarkAsRead(n.id)}
-                                            >
-                                                <Check size={16} />
-                                            </Button>
-                                        )}
-                                        <Button
-                                            variant="outline-danger"
-                                            size="sm"
-                                            onClick={() => handleDeleteNotification(n.id)}
+                                <div className="d-flex align-items-center">
+                                    {n.avatar ? (
+                                        <img
+                                            src={n.avatar}
+                                            alt="Avatar"
+                                            className="rounded-circle me-3"
+                                            style={{ width: "40px", height: "40px", objectFit: "cover" }}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="me-3 rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                            style={{ width: "40px", height: "40px" }}
                                         >
-                                            <Trash2 size={16} />
-                                        </Button>
+                                            <span style={{ color: "white" }}>
+                                                {getNotificationIcon(n)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex-grow-1">
+                                        <div className="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 className="mb-1">{n.title}</h6>
+                                                <p className="mb-1 text-muted">{n.content}</p>
+                                                <small className="text-muted">
+                                                    {formatDate(n.createdAt)}
+                                                </small>
+                                            </div>
+                                            <div className="d-flex gap-2">
+                                                {!n.isRead && (
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        onClick={() => handleMarkAsRead(n.id)}
+                                                    >
+                                                        <Check size={16} />
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteNotification(n.id)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </ListGroup.Item>
@@ -397,6 +464,22 @@ const NotificationModal = ({
             </Modal.Body>
         </Modal>
     );
+};
+
+// Map icon theo schema type
+const getNotificationIcon = (notification) => {
+    switch (notification.type) {
+        case "system":
+            return "🔔";
+        case "reminder":
+            return "⏰";
+        case "message":
+            return "💬";
+        case "alert":
+            return "⚠️";
+        default:
+            return "🔔";
+    }
 };
 
 export default NotificationDropdown;

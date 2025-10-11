@@ -7,7 +7,6 @@ const ApiNotification = {
     deleteNotification: (notificationId) => ApiManager.delete(`/notifications/${notificationId}`),
     getUnreadCount: () => ApiManager.get("/notifications/unread-count"),
     markAllAsRead: () => ApiManager.patch("/notifications/mark-all-read"),
-
 };
 
 export default ApiNotification;
