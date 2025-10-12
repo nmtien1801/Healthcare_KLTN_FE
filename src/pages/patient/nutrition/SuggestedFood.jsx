@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import "./nutrition.scss";
 import { useSelector, useDispatch } from "react-redux";
 import { suggestFoodsByAi, updateMenuFood, getMenuFood } from '../../../redux/foodAiSlice'
-import { setWithExpiry, getWithExpiry } from '../../../components/customizeStorage'
+import { InsertFoods } from '../../../redux/foodSlice';
 
 export default function SuggestedFood() {
     const dispatch = useDispatch();
@@ -43,7 +43,7 @@ export default function SuggestedFood() {
         let res = await dispatch(updateMenuFood({ menuFoodId: item.id, userId: user.userId }))
         if (res.payload.EC === 0) {
             let data = res.payload.DT.menuFood
-            
+
             let response = await dispatch(suggestFoodsByAi({
                 min: data.caloMin,
                 max: data.caloMax,
@@ -52,8 +52,8 @@ export default function SuggestedFood() {
                 menuFoodId: data._id
             }))
 
-            if (response.payload) {
-                setWithExpiry("food", JSON.stringify(response.payload.result));
+            if (response.payload && response.payload.result) {
+                await dispatch(InsertFoods({ userId: user.userId, data: response?.payload?.result.chosen }));
             }
         }
     }

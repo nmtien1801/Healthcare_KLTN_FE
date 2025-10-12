@@ -50,7 +50,6 @@ import E_wallet from "./pages/payment/E_wallet";
 function App() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.userInfo);
-  console.log('Redux user:', user);
   const [isLoading, setIsLoading] = useState(true);
 
   const auth = getAuth();

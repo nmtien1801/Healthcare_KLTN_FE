@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { cache, useEffect, useState } from 'react';
 import { Check, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
-import { setWithExpiry, getWithExpiry } from '../../../components/customizeStorage'
+import { GetListFood } from '../../../redux/foodSlice';
+import { useDispatch, useSelector } from 'react-redux';
 
-const StatsGrid = (target, foods) => {
-    const targetCalo = target; // Mục tiêu calo
+const StatsGrid = (foods) => {
+    const targetCalo = useSelector((state) => state.food.totalCalo);
 
     const calculateTotals = () => {
         let totalCalo = 0;
@@ -144,7 +145,8 @@ const StatsGrid = (target, foods) => {
 
 
 export default function FoodTrackerApp() {
-    const food = JSON.parse(getWithExpiry("food"))
+    const dispatch = useDispatch();
+    const user = useSelector(state => state.auth.userInfo);
     const [foods, setFoods] = useState([]);
     const [expandedMeals, setExpandedMeals] = useState({
         sáng: true,
@@ -194,26 +196,33 @@ export default function FoodTrackerApp() {
     };
 
     useEffect(() => {
-        if (food && food?.chosen?.length > 0) {
-            const mappedFoods = food.chosen.map((food) => ({
-                image: food.image ?? '🍅',
-                name: food.name,
-                details: `${food.weight}g • ${food.calo}cal`,
-                macros: [
-                    `${food.chat_dam}g`,
-                    `${food.duong_bot}g`,
-                    `${food.chat_beo}g`
-                ],
-                colors: ['success', 'warning', 'danger'],
-                checked: false,
-                meal: 'sáng'
-            }));
+        const fetchFood = async () => {
+            let food = await dispatch(GetListFood(user.userId));
 
-            // Phân bổ thực phẩm vào bữa ăn hợp lý
-            const foodsWithMeals = assignMealsToFoods(mappedFoods);
+            if (food && food.payload.DT.length > 0) {
+                let data = food.payload.DT;
+                const mappedFoods = data.map((food) => ({
+                    image: food.image ?? '🍅',
+                    name: food.name,
+                    details: `${food.weight}g • ${food.calo}cal`,
+                    macros: [
+                        `${food.chat_dam}g`,
+                        `${food.duong_bot}g`,
+                        `${food.chat_beo}g`
+                    ],
+                    colors: ['success', 'warning', 'danger'],
+                    checked: false,
+                    meal: 'sáng'
+                }));
 
-            setFoods(foodsWithMeals);
+                // Phân bổ thực phẩm vào bữa ăn hợp lý
+                const foodsWithMeals = assignMealsToFoods(mappedFoods);
+
+                setFoods(foodsWithMeals);
+            }
         }
+
+        fetchFood();
     }, []);
 
     const toggleChecked = (index) => {
@@ -532,7 +541,7 @@ export default function FoodTrackerApp() {
                     <p className="text-muted fs-5">Quản lý chế độ ăn uống khoa học cho bệnh nhân tiểu đường</p>
                 </div>
 
-                {StatsGrid(food?.sum, foods)}
+                {StatsGrid(foods)}
 
                 {renderMeal('sáng')}
                 {renderMeal('trưa')}

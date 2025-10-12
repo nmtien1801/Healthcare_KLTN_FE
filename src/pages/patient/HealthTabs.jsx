@@ -5,10 +5,10 @@ import { api, get_advice } from "../../apis/assistant";
 import { useSelector, useDispatch } from "react-redux";
 import { suggestFoodsByAi, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
-import { setWithExpiry, getWithExpiry } from '../../components/customizeStorage'
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
 import { fetchMedicines } from '../../redux/medicineAiSlice';
+import { InsertFoods, GetListFood } from '../../redux/foodSlice';
 
 const Following = ({ user, nearestAppointment }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
@@ -329,6 +329,7 @@ const getYesterdayAvg = ({ dailyBloodSugar }) => {
 
 const Plan = ({ aiPlan, user, bloodSugar }) => {
   const [food, setFood] = useState([]);
+  const totalCalo = useSelector((state) => state.food.totalCalo);
   const [showAllFood, setShowAllFood] = useState(false);
   const [medicines, setMedicines] = useState({
     sang: [],
@@ -375,9 +376,10 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
   useEffect(() => {
     const fetchFood = async () => {
       // Check cache trước
-      const cached = JSON.parse(getWithExpiry("food"));
-      if (cached) {
-        setFood(cached);
+      const cached = await dispatch(GetListFood(user.userId));
+
+      if (cached.payload.DT && cached.payload.DT.length > 0) {
+        setFood(cached.payload.DT);
         return;
       }
       let dailyBloodSugar = bloodSugarDaily({ bloodSugar })
@@ -391,7 +393,7 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
         const response = await dispatch(suggestFoodsByAi({ min: data.caloMin, max: data.caloMax, mean: yesterday.avg, currentCalo: data.caloCurrent, menuFoodId: data._id }));
 
         if (response?.payload?.result) {
-          setWithExpiry("food", JSON.stringify(response.payload.result));
+          await dispatch(InsertFoods({ userId: user.userId, data: response?.payload?.result.chosen }));
         }
         setFood(response.payload.result);
       }
@@ -459,24 +461,24 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
         <h5 className="fw-medium text-warning mb-2">🥗 Kế hoạch dinh dưỡng</h5>
-        {food && food.chosen && food.chosen.length > 0 ? (
+        {food && food && food.length > 0 ? (
           <>
-            <div className="mb-2"><strong>Calo/ngày:</strong> {food?.sum} calo</div>
+            <div className="mb-2"><strong>Calo/ngày:</strong> {totalCalo} calo</div>
             <ul className="list-unstyled mt-2 small">
-              {food.chosen.slice(0, showAllFood ? undefined : 5).map((item, idx) => (
+              {food.slice(0, showAllFood ? undefined : 5).map((item, idx) => (
                 <li key={idx} className="mb-1">
                   <strong>{item.name}:</strong> ({item.calo} calo) - {item.weight}g
                 </li>
               ))}
             </ul>
 
-            {food.chosen.length > 5 && (
+            {food.length > 5 && (
               <div className="mt-2 d-flex justify-content-end">
                 <button
                   className="btn btn-sm btn-warning border-0"
                   onClick={() => setShowAllFood(!showAllFood)}
                 >
-                  {showAllFood ? 'Thu gọn' : `Xem thêm (${food.chosen.length - 5} món)`}
+                  {showAllFood ? 'Thu gọn' : `Xem thêm (${food.length - 5} món)`}
                 </button>
               </div>
             )}

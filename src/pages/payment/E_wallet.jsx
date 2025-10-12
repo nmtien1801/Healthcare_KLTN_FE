@@ -53,67 +53,70 @@ export default function WalletUIDesktop() {
     // ví bác sĩ
     useEffect(() => {
         let timeouts = [];
+        if (user.role === 'doctor') {
+            const fetchAppointments = async () => {
+                try {
+                    const resToday = await ApiDoctor.getAppointmentsToday();
+                    console.log('aaaa ', resToday);
 
-        const fetchAppointments = async () => {
-            try {
-                const resToday = await ApiDoctor.getAppointmentsToday();
-                // ✅ Chỉ lấy các lịch hẹn có status = "confirmed"
-                const confirmedAppointments = resToday.filter(
-                    (appointment) => appointment.status === "confirmed"
-                );
-                
-                const now = new Date();
-                for (const appointment of confirmedAppointments) {
-                    const baseDate = new Date(appointment.date);
-                    const [hours, minutes] = appointment.time.split(":").map(Number);
-
-                    // Tạo thời điểm lịch hẹn đầy đủ (theo giờ địa phương)
-                    const appointmentTime = new Date(
-                        baseDate.getFullYear(),
-                        baseDate.getMonth(),
-                        baseDate.getDate(),
-                        hours,
-                        minutes,
-                        0
+                    // ✅ Chỉ lấy các lịch hẹn có status = "confirmed"
+                    const confirmedAppointments = resToday.filter(
+                        (appointment) => appointment.status === "confirmed"
                     );
 
-                    // +30 phút
-                    const alertTime = new Date(appointmentTime.getTime() + 30 * 60 * 1000);
-                    const msUntilAlert = alertTime - now;
+                    const now = new Date();
+                    for (const appointment of confirmedAppointments) {
+                        const baseDate = new Date(appointment.date);
+                        const [hours, minutes] = appointment.time.split(":").map(Number);
 
-                    console.log(
-                        `Lịch hẹn ${appointment._id || ""} (confirmed) sẽ chạy sau ${Math.round(
-                            msUntilAlert / 60000
-                        )} phút`
-                    );
+                        // Tạo thời điểm lịch hẹn đầy đủ (theo giờ địa phương)
+                        const appointmentTime = new Date(
+                            baseDate.getFullYear(),
+                            baseDate.getMonth(),
+                            baseDate.getDate(),
+                            hours,
+                            minutes,
+                            0
+                        );
 
-                    if (msUntilAlert > 0) {
-                        // Hẹn dispatch đúng thời điểm
-                        const timeout = setTimeout(async () => {
+                        // +30 phút
+                        const alertTime = new Date(appointmentTime.getTime() + 30 * 60 * 1000);
+                        const msUntilAlert = alertTime - now;
+
+                        console.log(
+                            `Lịch hẹn ${appointment._id || ""} (confirmed) sẽ chạy sau ${Math.round(
+                                msUntilAlert / 60000
+                            )} phút`
+                        );
+
+                        if (msUntilAlert > 0) {
+                            // Hẹn dispatch đúng thời điểm
+                            const timeout = setTimeout(async () => {
+                                try {
+                                    await dispatch(deposit({ userId: user.userId, amount: 200000 }));
+                                    await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
+                                } catch (err) {
+                                    console.error("Lỗi dispatch deposit:", err);
+                                }
+                            }, msUntilAlert);
+                            timeouts.push(timeout);
+                        } else {
+                            // Nếu đã qua 30 phút thì thực hiện ngay
                             try {
                                 await dispatch(deposit({ userId: user.userId, amount: 200000 }));
                                 await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
                             } catch (err) {
                                 console.error("Lỗi dispatch deposit:", err);
                             }
-                        }, msUntilAlert);
-                        timeouts.push(timeout);
-                    } else {
-                        // Nếu đã qua 30 phút thì thực hiện ngay
-                        try {
-                            await dispatch(deposit({ userId: user.userId, amount: 200000 }));
-                            await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
-                        } catch (err) {
-                            console.error("Lỗi dispatch deposit:", err);
                         }
                     }
+                } catch (err) {
+                    console.error("Lỗi lấy appointments:", err);
                 }
-            } catch (err) {
-                console.error("Lỗi lấy appointments:", err);
-            }
-        };
+            };
 
-        fetchAppointments();
+            fetchAppointments();
+        }
 
         return () => {
             timeouts.forEach(clearTimeout);

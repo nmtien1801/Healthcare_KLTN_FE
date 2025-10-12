@@ -13,7 +13,7 @@ const initialState = {
 };
 
 export const suggestFoodsByAi = createAsyncThunk(
-  "auth/suggestFoodsByAi",
+  "foodAi/suggestFoodsByAi",
   async ({ min, max, mean, currentCalo, menuFoodId }, thunkAPI) => {
     const response = await suggestFoods(min, max, mean, currentCalo, menuFoodId);
     return response;
@@ -21,7 +21,7 @@ export const suggestFoodsByAi = createAsyncThunk(
 );
 
 export const GetCaloFood = createAsyncThunk(
-  "auth/GetCaloFood",
+  "foodAi/GetCaloFood",
   async (userId, thunkAPI) => {
     const response = await GetCaloFoodService(userId);
     return response;
@@ -29,7 +29,7 @@ export const GetCaloFood = createAsyncThunk(
 );
 
 export const updateMenuFood = createAsyncThunk(
-  "auth/updateMenuFood",
+  "foodAi/updateMenuFood",
   async ({ menuFoodId, userId }, thunkAPI) => {
     const response = await updateMenuFoodService(menuFoodId, userId);
     return response;
@@ -37,15 +37,15 @@ export const updateMenuFood = createAsyncThunk(
 );
 
 export const getMenuFood = createAsyncThunk(
-  "auth/getMenuFood",
+  "foodAi/getMenuFood",
   async (thunkAPI) => {
     const response = await getMenuFoodService();
     return response;
   }
 );
 
-const authSlice = createSlice({
-  name: "auth",
+const foodAiSlice = createSlice({
+  name: "foodAi",
   initialState,
 
   reducers: {
@@ -88,7 +88,7 @@ const authSlice = createSlice({
 });
 
 // Export actions
-export const { setMedicine, getMedicine } = authSlice.actions;
+export const { setMedicine, getMedicine } = foodAiSlice.actions;
 
 // Export reducer
-export default authSlice.reducer;
+export default foodAiSlice.reducer;
