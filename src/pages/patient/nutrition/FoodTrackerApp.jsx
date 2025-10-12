@@ -2,7 +2,7 @@ import { cache, useEffect, useState } from 'react';
 import { Check, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import './nutrition.scss';
-import { GetListFood } from '../../../redux/foodSlice';
+import { GetListFood, updateStatusFood } from '../../../redux/foodSlice';
 import { useDispatch, useSelector } from 'react-redux';
 
 const StatsGrid = (foods) => {
@@ -202,6 +202,7 @@ export default function FoodTrackerApp() {
             if (food && food.payload.DT.length > 0) {
                 let data = food.payload.DT;
                 const mappedFoods = data.map((food) => ({
+                    id: food?._id,
                     image: food.image ?? '🍅',
                     name: food.name,
                     details: `${food.weight}g • ${food.calo}cal`,
@@ -211,7 +212,7 @@ export default function FoodTrackerApp() {
                         `${food.chat_beo}g`
                     ],
                     colors: ['success', 'warning', 'danger'],
-                    checked: false,
+                    checked: food.checked || false,
                     meal: 'sáng'
                 }));
 
@@ -225,10 +226,12 @@ export default function FoodTrackerApp() {
         fetchFood();
     }, []);
 
-    const toggleChecked = (index) => {
+    const toggleChecked = async (index) => {
         const updatedFoods = [...foods];
         updatedFoods[index].checked = !updatedFoods[index].checked;
         setFoods(updatedFoods);
+
+        await dispatch(updateStatusFood({ id: updatedFoods[index].id, checked: updatedFoods[index].checked }))
     };
 
     const toggleMealExpansion = (mealLabel) => {
