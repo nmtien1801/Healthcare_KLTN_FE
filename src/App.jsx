@@ -75,7 +75,7 @@ function App() {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             username: userInfo.username || firebaseUser.displayName || 'User',
-            avatar: firebaseUser.avatar,
+            avatar: userInfo.avatar || firebaseUser.photoURL || '',
             role: userInfo.role || 'patient',
             address: userInfo.address || '',
             phone: userInfo.phone || '',
