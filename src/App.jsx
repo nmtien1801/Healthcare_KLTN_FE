@@ -50,6 +50,7 @@ import E_wallet from "./pages/payment/E_wallet";
 function App() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.userInfo);
+  console.log('Redux user:', user);
   const [isLoading, setIsLoading] = useState(true);
 
   const auth = getAuth();
@@ -74,7 +75,7 @@ function App() {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             username: userInfo.username || firebaseUser.displayName || 'User',
-            photoURL: firebaseUser.photoURL,
+            avatar: firebaseUser.avatar,
             role: userInfo.role || 'patient',
             address: userInfo.address || '',
             phone: userInfo.phone || '',
@@ -88,8 +89,6 @@ function App() {
           setIsLoading(false);
         } else {
           // Firebase user exists but no valid userInfo in localStorage
-          console.log('Firebase user exists but no valid userInfo in localStorage');
-          console.log('UserInfo:', userInfo);
           setIsLoading(false);
           dispatch(setUser(null));
           localStorage.clear();
@@ -312,18 +311,18 @@ function App() {
         />
       )}
 
-      {/* <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      /> */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </Router>
   );
 }

@@ -10,6 +10,7 @@ import { sendStatus } from "../../utils/SetupSignFireBase";
 import { listenStatus } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
 import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
+import ApiNotification from "../../apis/ApiNotification";
 
 // CSS cho phân trang
 const paginationStyles = `
@@ -194,7 +195,17 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       if (currentPage >= newTotalPages && newTotalPages > 0) {
         setCurrentPage(newTotalPages - 1);
       }
-
+      await ApiNotification.createNotification({
+        receiverId: receiverId,
+        title: "Bệnh nhân hủy lịch khám",
+        content: `Bệnh nhân ${user.username || ""} đã hủy lịch khám.`,
+        type: "system",
+        metadata: {
+          link: `/patient/appointments/${appointmentToCancel}`, // đường dẫn chi tiết lịch hẹn (nếu có)
+        },
+        avatar: user.avatar || "", // avatar người gửi (nếu có)
+      });
+      console.log("avatar:", user.avatar || "");
       // gửi tín hiệu trạng thái hủy lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Hủy lịch");
 
@@ -322,13 +333,12 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
     const unsub = listenStatus(roomChats, async (signal) => {
-      if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
+      if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
         fetchAppointments();
       }
     });
     return () => unsub();
   }, [doctorUid, patientUid]);
-
   return (
     <div className="container">
       <div className="bg-white rounded shadow border p-4">
@@ -779,6 +789,7 @@ const BookingNew = ({ handleSubmit }) => {
     }
 
     const selectedDoctorData = doctors.find((d) => d.id === selectedDoctor);
+    console.log("Selected Doctor Data:", selectedDoctorData);
     if (!selectedDoctorData) {
       console.log("Error: Invalid doctor", { selectedDoctor, doctors });
       setErrorMessage("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
@@ -838,6 +849,18 @@ const BookingNew = ({ handleSubmit }) => {
 
       const successMsg = `Đặt lịch khám thành công với bác sĩ ${selectedDoctorData.name} vào ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}!`;
       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
+
+      await ApiNotification.createNotification({
+        receiverId: receiverId,
+        title: "Bệnh nhân mới đặt lịch khám",
+        content: `Bệnh nhân ${user.username || ""} đã đặt lịch khám vào lúc ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}.`,
+        type: "system",
+        metadata: {
+          link: `/appointments/${response._id}`, // đường dẫn chi tiết lịch hẹn (nếu có)
+        },
+        avatar: user.avatar || "", // avatar người gửi (nếu có)
+      });
+
       await sendStatus(user?.uid, receiverId, "Đặt lịch");
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);

@@ -20,29 +20,10 @@ import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
 import { getLabelFromOptions } from "../../utils/apppointmentHelper";
 import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
-import { listenStatus } from "../../utils/SetupSignFireBase";
-import Notification from "../../components/booking/Notification";
+import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 import { useSelector } from "react-redux";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../firebase";
+import ApiNotification from "../../apis/ApiNotification";
 
-// CSS cho container thông báo
-const notificationContainerStyles = `
-  .notification-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-    max-width: 320px;
-  }
-`;
-
-// Inject CSS
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = notificationContainerStyles;
-  document.head.appendChild(style);
-}
 
 export default function AppointmentTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,7 +32,6 @@ export default function AppointmentTab() {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [todayPage, setTodayPage] = useState(1);
   const [upcomingPage, setUpcomingPage] = useState(1);
-  const [notifications, setNotifications] = useState([]);
   const itemsPerPage = 5;
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -85,39 +65,8 @@ export default function AppointmentTab() {
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
     const unsub = listenStatus(roomChats, async (signal) => {
-      if (signal?.status === "Hủy lịch" || signal?.status === "Đặt lịch") {
+      if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
         fetchAppointments();
-        let patientName = "";
-        let patientAvatar = signal?.patientUid?.userId?.avatar || null;
-
-        if (signal?.senderId) {
-          try {
-            const docRef = doc(db, "users", signal.senderId);
-            const docSnap = await getDoc(docRef);
-            console.log("DocSnap:", docSnap);
-            if (docSnap.exists()) {
-              patientName = docSnap.data().username;
-              patientAvatar = docSnap.data().avatar;
-            }
-          } catch (error) {
-            console.error("Lỗi lấy thông tin bệnh nhân:", error);
-          }
-        }
-        const message =
-          signal.status === "Hủy lịch"
-            ? `Bệnh nhân ${patientName} đã hủy lịch hẹn vào ${new Date().toLocaleDateString("vi-VN")}`
-            : `Bệnh nhân ${patientName} vừa đặt lịch hẹn mới vào ${new Date().toLocaleDateString("vi-VN")}`;
-        const type = signal.status === "Hủy lịch" ? "danger" : "success";
-
-        setNotifications((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            message,
-            type,
-            avatar: patientAvatar,
-          },
-        ]);
       }
     });
 
@@ -218,6 +167,28 @@ export default function AppointmentTab() {
 
       await ApiDoctor.updateAppointment(updatedAppointment.id, payload);
 
+      const doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+      const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // Hardcode như code gốc
+      if (payload.status === "confirmed") {
+        await sendStatus(doctorUid, patientUid, "Xác nhận");
+      } else if (payload.status === "canceled") {
+        await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
+      }
+      else if (payload.status === "completed") {
+        await sendStatus(doctorUid, patientUid, "Hoàn thành");
+      }
+      else if (payload.status === "pending") {
+        await sendStatus(doctorUid, patientUid, "Đang chờ");
+      }
+      await ApiNotification.createNotification({
+        receiverId: patientUid,
+        title: "Cập nhật lịch hẹn",
+        content: `Lịch hẹn của bạn vào ngày ${new Date(updatedAppointment.date).toLocaleDateString("vi-VN")} lúc ${updatedAppointment.time} đã được cập nhật.`,
+        metadata: {
+          link: `/patient/appointments/${updatedAppointment.id}`
+        },
+        avatar: user?.avatar || null,
+      });
       // Chuyển đổi lại date sang DD/MM/YYYY khi cập nhật state
       const updatedAppointmentWithFormattedDate = {
         ...updatedAppointment,
@@ -253,6 +224,10 @@ export default function AppointmentTab() {
 
       await ApiDoctor.deleteAppointment(appointmentToDelete.id);
 
+      const doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+      const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // Hardcode
+      await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
+
       setUpcomingAppointments((prev) =>
         prev.filter((app) => app.id !== appointmentToDelete.id)
       );
@@ -262,6 +237,15 @@ export default function AppointmentTab() {
 
       setShowDeleteModal(false);
       setAppointmentToDelete(null);
+      await ApiNotification.createNotification({
+        receiverId: patientUid,
+        avatar: user?.avatar || null,
+        title: "Lịch hẹn bị hủy",
+        content: `Lịch hẹn của bạn vào ngày ${appointmentToDelete.date} lúc ${appointmentToDelete.time} đã bị hủy.`,
+        metadata: {
+          link: `/patient/appointments/${appointmentToDelete.id}`
+        },
+      });
     } catch (error) {
       console.error("Lỗi khi xóa lịch hẹn:", error);
       alert("Xóa lịch hẹn thất bại. Vui lòng thử lại.");
@@ -362,9 +346,6 @@ export default function AppointmentTab() {
       {totalPages > 1 && renderPagination(page, totalPages, setPage)}
     </>
   );
-  const removeNotification = (id) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
-  };
   return (
     <div className="m-2">
       <h3 className="mb-4">Lịch hẹn khám bệnh</h3>
@@ -412,20 +393,6 @@ export default function AppointmentTab() {
           {renderTable(upcomingAppointments, paginate(filteredUpcoming, upcomingPage), Math.ceil(filteredUpcoming.length / itemsPerPage), upcomingPage, setUpcomingPage)}
         </Card.Body>
       </Card>
-
-      {/* Container cho thông báo */}
-      <div className="notification-container">
-        {notifications.map((notif) => (
-          <Notification
-            key={notif.id}
-            message={notif.message}
-            type={notif.type}
-            avatar={notif.avatar}
-            onClose={() => removeNotification(notif.id)}
-          />
-        ))}
-      </div>
-
 
       {/* Modals */}
       <AddAppointmentModal show={showAddModal} onHide={() => setShowAddModal(false)} onSave={handleAddAppointment} />

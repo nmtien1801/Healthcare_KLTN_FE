@@ -1,10 +1,11 @@
-import React, { useState, forwardRef } from "react";
-import { Container, Row, Col, Badge, Image, Dropdown } from "react-bootstrap";
-import { FaHeartbeat, FaBell } from "react-icons/fa";
+import React, { forwardRef } from "react";
+import { Container, Row, Col, Image, Dropdown } from "react-bootstrap";
+import { FaHeartbeat } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
+import NotificationDropdown from "../components/notifications/NotificationDropdown";
 
 const CustomToggle = forwardRef(({ onClick, user }, ref) => (
   <div
@@ -18,8 +19,8 @@ const CustomToggle = forwardRef(({ onClick, user }, ref) => (
     <div className="position-relative">
       <Image
         src={
-          user?.photoURL
-            ? user.photoURL
+          user?.avatar
+            ? user.avatar
             : "https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=50&height=50&seq=doctor1&orientation=squarish"
         }
         roundedCircle
@@ -38,11 +39,10 @@ const CustomToggle = forwardRef(({ onClick, user }, ref) => (
 
 const Header = () => {
   const auth = getAuth();
-  const [notifications, setNotifications] = useState(5);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   let user = useSelector((state) => state.auth.userInfo);
-
   const handleLogout = async () => {
     try {
       await signOut(auth); // Firebase sign out
@@ -61,9 +61,9 @@ const Header = () => {
   };
 
   const handleInfo = () => {
-    if(user.role === 'doctor'){
+    if (user.role === 'doctor') {
       navigate("/informationTab");
-    }else{
+    } else {
       navigate("/personalTabs");
     }
   }
@@ -83,23 +83,9 @@ const Header = () => {
 
           {/* Notifications & Info */}
           <Col xs="auto" className="d-flex align-items-center">
-            {/* Bell Icon */}
-            <div className="position-relative me-4">
-              <FaBell size={20} className="text-secondary" />
-              {notifications > 0 && (
-                <Badge
-                  bg="danger"
-                  pill
-                  className="position-absolute top-0 start-100 translate-middle"
-                  style={{
-                    fontSize: "0.6rem",
-                    width: "1.2rem",
-                    height: "1.2rem",
-                  }}
-                >
-                  {notifications}
-                </Badge>
-              )}
+            {/* Notification Dropdown */}
+            <div className="me-4">
+              <NotificationDropdown />
             </div>
 
             <div className="me-4 text-end">
