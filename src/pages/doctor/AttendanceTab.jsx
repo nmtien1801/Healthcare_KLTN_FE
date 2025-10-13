@@ -571,9 +571,11 @@ const AttendanceTab = () => {
         const unsub = listenStatus(roomChats, async (signal) => {
             console.log("Received signal:", signal, "from room:", roomChats); // Debug log
             if (!signal) return;
-            if (["createWorkShifts", "deleteManyWorkShifts", "checkInWorkShift", "checkOutWorkShift"].includes(signal)) {
+            if (["createWorkShifts", "deleteManyWorkShifts", "checkInWorkShift", "checkOutWorkShift"].includes(signal.status)) {
                 try {
-                    await fetchShifts(); // Fetch lại data trên receiver devices
+                    await fetchDoctorInfo();
+                    await fetchShifts();
+
                 } catch (error) {
                     console.error("Error syncing on signal:", error);
                 }
