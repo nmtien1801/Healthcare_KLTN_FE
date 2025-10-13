@@ -13,8 +13,7 @@ import { useSelector } from "react-redux";
 import "./NotificationDropdown.css";
 import ApiNotification from "../../apis/ApiNotification";
 import { formatDate } from "../../utils/formatDate";
-import { listenStatus } from "../../utils/SetupSignFireBase";
-import ApiDoctor from "../../apis/ApiDoctor";
+import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 
 const NotificationDropdown = () => {
     const user = useSelector((state) => state.auth.userInfo);
@@ -23,7 +22,15 @@ const NotificationDropdown = () => {
     const [loading, setLoading] = useState(false);
     const [showAllModal, setShowAllModal] = useState(false);
 
-    // Load danh sách thông báo từ API
+    // Tạm thời hardcode uid bác sĩ & bệnh nhân
+    const doctorHardcodeUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+    const patientHardcodeUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+    const isDoctor = user.uid === doctorHardcodeUid;
+    const doctorUid = isDoctor ? user.uid : doctorHardcodeUid;
+    const patientUid = isDoctor ? patientHardcodeUid : user.uid;
+    const roomChats = [doctorUid, patientUid].sort().join("_");
+
+    // Load danh sách thông báo
     const loadNotifications = async () => {
         try {
             setLoading(true);
@@ -42,7 +49,7 @@ const NotificationDropdown = () => {
         }
     };
 
-    // Đếm số thông báo chưa đọc
+    // Load số lượng thông báo chưa đọc
     const loadUnreadCount = async () => {
         try {
             const res = await ApiNotification.getUnreadCount();
@@ -60,6 +67,7 @@ const NotificationDropdown = () => {
                 prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
             );
             setUnreadCount((prev) => Math.max(prev - 1, 0));
+            sendStatus(doctorUid, patientUid, "notification_update");
         } catch (error) {
             console.error("Không thể đánh dấu đã đọc", error);
         }
@@ -70,6 +78,7 @@ const NotificationDropdown = () => {
         try {
             await ApiNotification.deleteNotification(id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
+            sendStatus(doctorUid, patientUid, "notification_delete");
         } catch (error) {
             console.error("Không thể xóa thông báo", error);
         }
@@ -81,12 +90,13 @@ const NotificationDropdown = () => {
             await ApiNotification.markAllAsRead();
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             setUnreadCount(0);
+            sendStatus(doctorUid, patientUid, "notification_read_all");
         } catch (error) {
             console.error("Không thể đánh dấu tất cả đã đọc", error);
         }
     };
 
-    // Map icon theo schema type
+    // Map icon
     const getNotificationIcon = (notification) => {
         switch (notification.type) {
             case "system":
@@ -102,7 +112,7 @@ const NotificationDropdown = () => {
         }
     };
 
-    // Lắng nghe realtime Firestore
+    // 🔥 Lắng nghe tín hiệu Firestore
     useEffect(() => {
         if (!user?.uid) return;
 
@@ -110,20 +120,22 @@ const NotificationDropdown = () => {
         loadNotifications();
         loadUnreadCount();
 
-        const doctorHardcodeUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-        const patientHardcodeUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
-        const isDoctor = user.uid === doctorHardcodeUid;
-        const doctorUid = isDoctor ? user.uid : doctorHardcodeUid;
-        const patientUid = isDoctor ? patientHardcodeUid : user.uid;
-        const roomChats = [doctorUid, patientUid].sort().join("_");
-
         const unsub = listenStatus(roomChats, async (signal) => {
-            if (!signal || signal.senderId === user.uid) return;
+            if (!signal) return;
 
             try {
+                // Nếu chỉ là cập nhật, xóa hoặc đánh dấu đọc → reload mà không hiện toast
+                if (
+                    typeof signal === "string" &&
+                    ["notification_update", "notification_delete", "notification_read_all"].includes(signal)
+                ) {
+                    await Promise.all([loadNotifications(), loadUnreadCount()]);
+                    return;
+                }
+
+                // Ngược lại, nếu là tín hiệu mới thực sự → load và hiện toast
                 const res = await ApiNotification.getNotificationsByUser();
                 if (res?.data?.length > 0) {
-                    const latest = res.data[0]; // lấy thông báo mới nhất
                     const normalized = res.data.map((n) => ({
                         ...n,
                         id: n.id || n._id,
@@ -131,7 +143,7 @@ const NotificationDropdown = () => {
                     setNotifications(normalized);
                     setUnreadCount(normalized.filter((n) => !n.isRead).length);
 
-                    // 🔔 Hiện toast thông báo mới
+                    const latest = res.data[0];
                     toast.success(
                         <div className="d-flex align-items-center">
                             {latest.avatar ? (
@@ -167,7 +179,6 @@ const NotificationDropdown = () => {
 
         return () => unsub();
     }, [user?.uid]);
-
 
     return (
         <>
@@ -230,7 +241,11 @@ const NotificationDropdown = () => {
                                                 src={n.avatar}
                                                 alt="Avatar"
                                                 className="rounded-circle me-3"
-                                                style={{ width: "40px", height: "40px", objectFit: "cover" }}
+                                                style={{
+                                                    width: "40px",
+                                                    height: "40px",
+                                                    objectFit: "cover",
+                                                }}
                                             />
                                         ) : (
                                             <div
@@ -248,7 +263,10 @@ const NotificationDropdown = () => {
                                                     <h6 className="mb-1" style={{ fontSize: "0.9rem" }}>
                                                         {n.title}
                                                     </h6>
-                                                    <p className="mb-1 text-muted" style={{ fontSize: "0.8rem" }}>
+                                                    <p
+                                                        className="mb-1 text-muted"
+                                                        style={{ fontSize: "0.8rem" }}
+                                                    >
                                                         {n.content}
                                                     </p>
                                                     <small className="text-muted">
@@ -261,7 +279,9 @@ const NotificationDropdown = () => {
                                                     </Dropdown.Toggle>
                                                     <Dropdown.Menu>
                                                         {!n.isRead && (
-                                                            <Dropdown.Item onClick={() => handleMarkAsRead(n.id)}>
+                                                            <Dropdown.Item
+                                                                onClick={() => handleMarkAsRead(n.id)}
+                                                            >
                                                                 <Check size={16} className="me-2" />
                                                                 Đánh dấu đã đọc
                                                             </Dropdown.Item>
@@ -336,7 +356,11 @@ const NotificationModal = ({
                                         src={n.avatar}
                                         alt="Avatar"
                                         className="rounded-circle me-3"
-                                        style={{ width: "40px", height: "40px", objectFit: "cover" }}
+                                        style={{
+                                            width: "40px",
+                                            height: "40px",
+                                            objectFit: "cover",
+                                        }}
                                     />
                                 ) : (
                                     <div
