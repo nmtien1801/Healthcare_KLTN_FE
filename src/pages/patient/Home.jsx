@@ -3,7 +3,7 @@ import { Check, MessageCircleMore } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from "react-redux";
 import ApiBooking from '../../apis/ApiBooking'
-import { fetchMedicines } from '../../redux/medicineAiSlice';
+import { fetchMedicines, updateStatusMedicine } from '../../redux/medicineAiSlice';
 import moment from "moment";
 
 const Home = () => {
@@ -76,10 +76,12 @@ const Home = () => {
   // thuốc
   const [medications, setMedications] = useState([]);
 
-  const handleMedicationToggle = (index) => {
+  const handleMedicationToggle = async (index) => {
     const updated = [...medications];
-    updated[index].taken = !updated[index].taken;
+    updated[index].status = !updated[index].status;
     setMedications(updated);
+
+    await dispatch(updateStatusMedicine({ id: updated[index]._id, status: updated[index].status }))
   };
 
   useEffect(() => {
@@ -175,9 +177,9 @@ const Home = () => {
                     </div>
                     <button
                       onClick={() => handleMedicationToggle(idx)}
-                      className={`btn btn-sm rounded-pill ${med.taken ? "btn-success text-white" : "btn-outline-primary"}`}
+                      className={`btn btn-sm rounded-pill ${med.status ? "btn-success text-white" : "btn-outline-primary"}`}
                     >
-                      {med.taken ? <><Check size={16} className="me-1" /> Đã uống</> : "Đánh dấu"}
+                      {med.status ? <><Check size={16} className="me-1" /> Đã uống</> : "Đánh dấu"}
                     </button>
                   </div>
                 ))}

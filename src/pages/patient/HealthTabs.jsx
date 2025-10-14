@@ -378,7 +378,7 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
       // Check cache trước
       const cached = await dispatch(GetListFood(user.userId));
 
-      if (cached.payload.DT && cached.payload.DT.length > 0) {
+      if (cached && cached?.payload?.DT && cached?.payload?.DT.length > 0) {
         setFood(cached.payload.DT);
         return;
       }
