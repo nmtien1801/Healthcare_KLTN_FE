@@ -14,7 +14,7 @@ import { Button, Badge, Avatar } from "../common-ui-components";
 import PastAppointmentsModal from "./PastAppointmentsModal";
 import { useSelector } from "react-redux";
 import { listenStatus } from "../../../utils/SetupSignFireBase";
-import ApiDoctor from "../../../apis/ApiDoctor";
+import ApiPatient from "../../../apis/ApiPatient";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component (tái sử dụng từ PatientTab)
 const mapPatientData = (apiPatient, pastAppointments = []) => {
@@ -110,15 +110,20 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
     // Lắng nghe tín hiệu cập nhật realtime từ Firebase
     useEffect(() => {
         if (!roomChats || !patient?.id) {
-            console.warn("roomChats hoặc patient.id không hợp lệ:", roomChats, patient?.id);
             return;
         }
 
         const unsub = listenStatus(roomChats, async (signal) => {
             if (signal?.status === "update_patient_info") {
                 try {
-                    const res = await ApiDoctor.getPatientById(patient.id);
-                    const updatedPatient = mapPatientData(res.data || res);
+                    const res = await ApiPatient.getAllPatients();
+                    const allPatients = res.data || res;
+                    const updatedApiPatient = allPatients.find(p => p._id === patient.id);
+                    if (!updatedApiPatient) {
+                        console.warn("Không tìm thấy bệnh nhân với ID:", patient.id);
+                        return;
+                    }
+                    const updatedPatient = mapPatientData(updatedApiPatient);
                     setPatientData(updatedPatient);
                 } catch (err) {
                     console.error("Lỗi khi tải lại thông tin bệnh nhân:", err);
