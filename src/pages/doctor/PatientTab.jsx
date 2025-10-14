@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { db } from "../../../firebase";
 import ApiPatient from "../../apis/ApiPatient";
 import ApiDoctor from "../../apis/ApiDoctor";
-import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
+import { listenStatus } from "../../utils/SetupSignFireBase";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component
 const mapPatientData = (apiPatient, pastAppointments = []) => {
