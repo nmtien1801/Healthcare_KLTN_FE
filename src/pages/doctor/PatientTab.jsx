@@ -350,9 +350,6 @@ export default function PatientTab({ handleStartCall }) {
           ? { ...msg, id: docRef.id, isTemp: false }
           : msg
       ));
-
-      // Gửi tín hiệu update_patient_list để thông báo thay đổi
-      sendStatus(senderId, receiverId, "update_patient_list");
     } catch (err) {
       console.error('Lỗi gửi tin nhắn:', err);
       setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
@@ -382,9 +379,6 @@ export default function PatientTab({ handleStartCall }) {
       setPatientList((prev) =>
         prev.map((p) => (p.id === updated.id ? updated : p))
       );
-
-      // Gửi tín hiệu update_patient_list để thông báo thay đổi
-      sendStatus(senderId, receiverId, "update_patient_list");
 
       // Làm mới danh sách từ API
       await fetchPatientsAndAppointments();
