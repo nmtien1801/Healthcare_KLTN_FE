@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { db } from "../../../firebase";
 import ApiPatient from "../../apis/ApiPatient";
 import ApiDoctor from "../../apis/ApiDoctor";
+import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component
 const mapPatientData = (apiPatient, pastAppointments = []) => {
@@ -85,7 +86,7 @@ const mapPatientData = (apiPatient, pastAppointments = []) => {
   };
 };
 
-// Custom Components (giữ nguyên)
+// Custom Components
 const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
   const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
 
@@ -195,7 +196,6 @@ export default function PatientTab({ handleStartCall }) {
   const [sortBy, setSortBy] = useState("name");
   const [patientList, setPatientList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const patientsPerPage = 5;
 
@@ -204,62 +204,212 @@ export default function PatientTab({ handleStartCall }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
+  // Chat states
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [messageInput, setMessageInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const user = useSelector((state) => state.auth.userInfo);
+  const senderId = user?.uid;
+  const receiverId = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+  const roomChats = [senderId, receiverId].sort().join('_');
+
   // Lấy dữ liệu bệnh nhân và lịch hẹn gần nhất từ API
-  useEffect(() => {
-    const fetchPatientsAndAppointments = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Lấy danh sách bệnh nhân
-        const response = await ApiPatient.getAllPatients();
-        console.log("Dữ liệu API thô (bệnh nhân):", response); // Debug
-        let patients;
-        if (Array.isArray(response)) {
-          patients = response;
-        } else {
-          patients = response.data || [];
-        }
-        console.log("patients extracted:", patients); // Debug
+  const fetchPatientsAndAppointments = async () => {
+    setError(null);
+    try {
+      const response = await ApiPatient.getAllPatients();
+      let patients = Array.isArray(response) ? response : response.data || [];
 
-        if (!Array.isArray(patients)) {
-          console.warn("Dữ liệu API không đúng định dạng:", response);
-          setError("Dữ liệu không hợp lệ từ server. Vui lòng kiểm tra định dạng dữ liệu API.");
-          setLoading(false);
-          return;
-        }
-
-        // Lấy lịch hẹn gần nhất cho từng bệnh nhân
-        const patientsWithAppointments = await Promise.all(
-          patients.map(async (patient) => {
-            try {
-              const appointmentsResponse = await ApiDoctor.getPatientPastAppointments(patient._id);
-              const appointments = Array.isArray(appointmentsResponse)
-                ? appointmentsResponse
-                : appointmentsResponse.data || [];
-              console.log(`Lịch hẹn của bệnh nhân ${patient._id}:`, appointments); // Debug
-              return mapPatientData(patient, appointments);
-            } catch (err) {
-              console.error(`Lỗi khi lấy lịch hẹn cho bệnh nhân ${patient._id}:`, err.message);
-              return mapPatientData(patient, []); // Nếu lỗi, trả về bệnh nhân với lịch hẹn rỗng
-            }
-          })
-        );
-
-        setPatientList(patientsWithAppointments);
-      } catch (err) {
-        console.error("Lỗi khi gọi API bệnh nhân:", err.message, err.response?.data);
-        setError(err.response?.data?.message || "Không thể tải danh sách bệnh nhân. Vui lòng thử lại sau.");
-      } finally {
-        setLoading(false);
+      if (!Array.isArray(patients)) {
+        console.warn("Dữ liệu API không đúng định dạng:", response);
+        setError("Dữ liệu không hợp lệ từ server.");
+        return;
       }
+
+      const patientsWithAppointments = await Promise.all(
+        patients.map(async (patient) => {
+          try {
+            const appointmentsResponse = await ApiDoctor.getPatientPastAppointments(patient._id);
+            const appointments = Array.isArray(appointmentsResponse)
+              ? appointmentsResponse
+              : appointmentsResponse.data || [];
+            return mapPatientData(patient, appointments);
+          } catch (err) {
+            console.error(`Lỗi khi lấy lịch hẹn của ${patient._id}:`, err.message);
+            return mapPatientData(patient, []);
+          }
+        })
+      );
+
+      setPatientList(patientsWithAppointments);
+    } catch (err) {
+      console.error("Lỗi khi gọi API bệnh nhân:", err.message, err.response?.data);
+      setError("Không thể tải danh sách bệnh nhân.");
+    }
+  };
+
+  // Lắng nghe tín hiệu realtime từ Firebase
+  useEffect(() => {
+    if (!roomChats) {
+      console.warn("roomChats không hợp lệ:", roomChats);
+      return;
+    }
+    const unsub = listenStatus(roomChats, (signal) => {
+      console.log("Nhận tín hiệu:", signal);
+      if (!signal?.status) return;
+      if (
+        signal.status === "update_patient_info" ||
+        signal.status === "update_patient_list"
+      ) {
+        console.log("Cập nhật danh sách bệnh nhân...");
+        fetchPatientsAndAppointments();
+      }
+    });
+    return () => unsub && unsub();
+  }, [roomChats]);
+
+  // Lắng nghe tin nhắn realtime từ Firebase
+  useEffect(() => {
+    if (!senderId || !roomChats) {
+      console.warn("senderId hoặc roomChats không hợp lệ:", senderId, roomChats);
+      return;
+    }
+    const q = query(
+      collection(db, 'chats', roomChats, 'messages'),
+      orderBy('timestamp', 'asc')
+    );
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const messages = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            text: data.message || data.text || '',
+            sender: data.senderId === senderId ? "doctor" : "patient",
+            timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+            originalData: data
+          };
+        });
+        console.log("Tin nhắn mới:", messages);
+        setChatMessages(messages);
+      },
+      (error) => {
+        console.error('Lỗi lắng nghe tin nhắn:', error);
+      }
+    );
+    return () => unsub();
+  }, [senderId, roomChats]);
+
+  // Tự động cuộn xuống tin nhắn mới nhất
+  useEffect(() => {
+    if (showChatbot && chatMessages.length > 0) {
+      const chatContainer = document.querySelector('.chat-messages');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
+  }, [chatMessages, showChatbot]);
+
+  // Gửi tin nhắn
+  const sendMessage = async () => {
+    if (messageInput.trim() === "") return;
+
+    setIsSending(true);
+    const userMessage = messageInput.trim();
+    setMessageInput("");
+
+    const tempMessage = {
+      id: Date.now().toString(),
+      text: userMessage,
+      sender: "doctor",
+      timestamp: new Date(),
+      isTemp: true
     };
 
-    fetchPatientsAndAppointments();
-  }, []);
+    setChatMessages((prev) => [...prev, tempMessage]);
+
+    try {
+      const docRef = await addDoc(collection(db, "chats", roomChats, "messages"), {
+        senderId,
+        receiverId,
+        message: userMessage,
+        timestamp: serverTimestamp()
+      });
+      console.log("Tin nhắn đã gửi:", docRef.id);
+
+      setChatMessages((prev) => prev.map(msg =>
+        msg.isTemp && msg.text === userMessage
+          ? { ...msg, id: docRef.id, isTemp: false }
+          : msg
+      ));
+
+      // Gửi tín hiệu update_patient_list để thông báo thay đổi
+      sendStatus(senderId, receiverId, "update_patient_list");
+    } catch (err) {
+      console.error('Lỗi gửi tin nhắn:', err);
+      setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Cập nhật bệnh nhân
+  const handleUpdatePatient = async (updatedPatient) => {
+    try {
+      const statusColors = {
+        "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
+        "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
+        "Ổn định": { color: "bg-success", textColor: "text-white" },
+      };
+
+      const updated = {
+        ...updatedPatient,
+        patientCount: `${updatedPatient.age || 0} tuổi`,
+        statusColor: statusColors[updatedPatient.status]?.color || "bg-secondary",
+        statusTextColor: statusColors[updatedPatient.status]?.textColor || "text-white",
+      };
+
+      // Cập nhật danh sách bệnh nhân
+      setPatientList((prev) =>
+        prev.map((p) => (p.id === updated.id ? updated : p))
+      );
+
+      // Gửi tín hiệu update_patient_list để thông báo thay đổi
+      sendStatus(senderId, receiverId, "update_patient_list");
+
+      // Làm mới danh sách từ API
+      await fetchPatientsAndAppointments();
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật bệnh nhân:", error);
+    }
+  };
+
+  // Xem chi tiết bệnh nhân
+  const handleViewPatient = (patient) => {
+    setSelectedPatient(patient);
+    setShowViewModal(true);
+  };
+
+  // Chỉnh sửa bệnh nhân
+  const handleEditPatient = (patient) => {
+    setSelectedPatient(patient);
+    setShowViewModal(false);
+    setShowEditModal(true);
+  };
+
+  // Điều hướng trang
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   // Lọc và sắp xếp bệnh nhân
   const filteredAndSortedPatients = useMemo(() => {
-    if (loading || error) return [];
+    if (error) return [];
     const filtered = patientList.filter((patient) => {
       const matchesSearch =
         (patient.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -287,7 +437,7 @@ export default function PatientTab({ handleStartCall }) {
     });
 
     return filtered;
-  }, [patientList, searchTerm, statusFilter, sortBy, loading, error]);
+  }, [patientList, searchTerm, statusFilter, sortBy, error]);
 
   // Phân trang
   const totalPages = Math.ceil(filteredAndSortedPatients.length / patientsPerPage);
@@ -295,147 +445,6 @@ export default function PatientTab({ handleStartCall }) {
     (currentPage - 1) * patientsPerPage,
     currentPage * patientsPerPage
   );
-
-  // Cập nhật bệnh nhân
-  const handleUpdatePatient = (updatedPatient) => {
-    const statusColors = {
-      "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
-      "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
-      "Ổn định": { color: "bg-success", textColor: "text-white" },
-    };
-
-    const updated = {
-      ...updatedPatient,
-      patientCount: `${updatedPatient.age || 0} tuổi`,
-      statusColor: statusColors[updatedPatient.status]?.color || "bg-secondary",
-      statusTextColor: statusColors[updatedPatient.status]?.textColor || "text-white",
-    };
-
-    setPatientList(patientList.map((p) => (p.id === updated.id ? updated : p)));
-    setShowEditModal(false);
-  };
-
-  // Xem chi tiết bệnh nhân
-  const handleViewPatient = (patient) => {
-    console.log("Selected Patient:", patient); // Debug
-    setSelectedPatient(patient);
-    setShowViewModal(true);
-  };
-
-  // Chỉnh sửa bệnh nhân
-  const handleEditPatient = (patient) => {
-    setSelectedPatient(patient);
-    setShowViewModal(false);
-    setShowEditModal(true);
-  };
-
-  // Điều hướng trang
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  // Nhắn tin cho bệnh nhân
-  const [showChatbot, setShowChatbot] = useState(false);
-  const [messageInput, setMessageInput] = useState("");
-  const [chatMessages, setChatMessages] = useState([]);
-  const [isSending, setIsSending] = useState(false);
-  const user = useSelector((state) => state.auth.userInfo);
-  const dispatch = useDispatch();
-  const senderId = user?.uid;
-  const receiverId = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
-
-  const roomChats = [senderId, receiverId].sort().join('_');
-
-  useEffect(() => {
-    if (!senderId) return;
-
-    const q = query(
-      collection(db, 'chats', roomChats, 'messages'),
-      orderBy('timestamp', 'asc')
-    );
-
-    const unsub = onSnapshot(q, (snapshot) => {
-      const messages = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          text: data.message || data.text || '',
-          sender: data.senderId === senderId ? "doctor" : "patient",
-          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-          originalData: data
-        };
-      });
-      setChatMessages(messages);
-    }, (error) => {
-      console.error('Firebase listener error:', error);
-    });
-
-    return () => unsub();
-  }, [senderId, roomChats]);
-
-  useEffect(() => {
-    if (showChatbot && chatMessages.length > 0) {
-      const chatContainer = document.querySelector('.chat-messages');
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    }
-  }, [chatMessages, showChatbot]);
-
-  const sendMessage = async () => {
-    if (messageInput.trim() === "") return;
-
-    setIsSending(true);
-    const userMessage = messageInput.trim();
-    setMessageInput("");
-
-    const tempMessage = {
-      id: Date.now().toString(),
-      text: userMessage,
-      sender: "doctor",
-      timestamp: new Date(),
-      isTemp: true
-    };
-
-    setChatMessages((prev) => [...prev, tempMessage]);
-
-    try {
-      const docRef = await addDoc(collection(db, "chats", roomChats, "messages"), {
-        senderId,
-        receiverId,
-        message: userMessage,
-        timestamp: serverTimestamp()
-      });
-
-      setChatMessages((prev) => prev.map(msg =>
-        msg.isTemp && msg.text === userMessage
-          ? { ...msg, id: docRef.id, isTemp: false }
-          : msg
-      ));
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  // Hiển thị loading
-  if (loading) {
-    return (
-      <div className="m-2">
-        <h1 className="mb-4">Quản lý bệnh nhân</h1>
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Đang tải danh sách bệnh nhân...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Hiển thị lỗi
   if (error) {
     return (
@@ -447,9 +456,7 @@ export default function PatientTab({ handleStartCall }) {
           <button
             className="btn btn-sm btn-outline-danger ms-2"
             onClick={() => {
-              setLoading(true);
               setError(null);
-              // Gọi lại hàm fetch
               fetchPatientsAndAppointments();
             }}
           >
@@ -462,15 +469,10 @@ export default function PatientTab({ handleStartCall }) {
 
   return (
     <div className="m-2">
-
       {/* Search and Filters */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        {/* Title bên trái */}
         <h3 className="mb-0">Quản lý bệnh nhân</h3>
-
-        {/* Bộ lọc + search bên phải */}
         <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
-          {/* Filter select */}
           <div className="position-relative">
             <Filter
               className="position-absolute top-50 translate-middle-y text-muted"
@@ -484,16 +486,12 @@ export default function PatientTab({ handleStartCall }) {
               <option value="Ổn định">Ổn định</option>
             </Select>
           </div>
-
-          {/* Sort select */}
           <Select value={sortBy} onChange={setSortBy}>
             <option value="name">Sắp xếp theo tên</option>
             <option value="age">Sắp xếp theo tuổi</option>
             <option value="lastVisit">Lần khám gần nhất</option>
             <option value="status">Tình trạng</option>
           </Select>
-
-          {/* Search input */}
           <div className="position-relative">
             <Search
               className="position-absolute top-50 translate-middle-y text-muted"
@@ -618,7 +616,6 @@ export default function PatientTab({ handleStartCall }) {
               <X size={16} />
             </button>
           </div>
-
           <div className="p-2 chat-messages" style={{ height: 340, overflowY: "auto" }}>
             {chatMessages.length === 0 ? (
               <div className="text-center text-muted mt-4">
@@ -642,7 +639,6 @@ export default function PatientTab({ handleStartCall }) {
               ))
             )}
           </div>
-
           <div className="border-top d-flex p-3 align-items-center">
             <input
               type="text"
@@ -703,7 +699,7 @@ export default function PatientTab({ handleStartCall }) {
       )}
 
       {/* Empty State */}
-      {filteredAndSortedPatients.length === 0 && !loading && !error && (
+      {filteredAndSortedPatients.length === 0 && !error && (
         <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
           <div className="card-body text-center py-5">
             <div className="text-muted mb-2">Không tìm thấy bệnh nhân nào</div>
