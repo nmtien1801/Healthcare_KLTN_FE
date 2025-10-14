@@ -247,7 +247,7 @@ export default function DoctorProfile() {
   const [loading, setLoading] = useState(true);
   const user = useSelector((state) => state.auth.userInfo);
   const doctorUid = user.uid;
-  const patientUid = user.uid;
+  const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // UID cố định của patient
   const roomChats = [doctorUid, patientUid].sort().join("_");
 
   // Fetch doctor info

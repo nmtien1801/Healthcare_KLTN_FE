@@ -115,7 +115,6 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
         }
 
         const unsub = listenStatus(roomChats, async (signal) => {
-            console.log("Nhận tín hiệu trong ViewPatientModal:", signal);
             if (signal?.status === "update_patient_info") {
                 try {
                     const res = await ApiDoctor.getPatientById(patient.id);

@@ -256,13 +256,11 @@ export default function PatientTab({ handleStartCall }) {
       return;
     }
     const unsub = listenStatus(roomChats, (signal) => {
-      console.log("Nhận tín hiệu:", signal);
       if (!signal?.status) return;
       if (
         signal.status === "update_patient_info" ||
         signal.status === "update_patient_list"
       ) {
-        console.log("Cập nhật danh sách bệnh nhân...");
         fetchPatientsAndAppointments();
       }
     });
@@ -292,7 +290,6 @@ export default function PatientTab({ handleStartCall }) {
             originalData: data
           };
         });
-        console.log("Tin nhắn mới:", messages);
         setChatMessages(messages);
       },
       (error) => {
@@ -337,7 +334,6 @@ export default function PatientTab({ handleStartCall }) {
         message: userMessage,
         timestamp: serverTimestamp()
       });
-      console.log("Tin nhắn đã gửi:", docRef.id);
 
       setChatMessages((prev) => prev.map(msg =>
         msg.isTemp && msg.text === userMessage

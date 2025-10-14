@@ -563,7 +563,7 @@ const AttendanceTab = () => {
     const firebaseUid = user?.uid || "doctor-firebase-uid";
     // Sửa: Sử dụng cùng UID cho doctor và patient để tạo room self-signaling
     const doctorUid = user.uid;
-    const patientUid = user.uid; // Sử dụng cùng UID để đồng bộ trong cùng tài khoản
+    const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // UID cố định của patient
     const roomChats = [doctorUid, patientUid].sort().join("_"); // Room sẽ là uid_uid để lắng nghe tín hiệu tự gửi
 
     useEffect(() => {
@@ -619,8 +619,6 @@ const AttendanceTab = () => {
         const fetchShifts = async () => {
             try {
                 const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
-                console.log("Shifts from API:", shifts);
-
                 const groupedSchedules = {};
                 shifts.forEach((shift) => {
                     const date = new Date(shift.date);
@@ -657,7 +655,6 @@ const AttendanceTab = () => {
                 setSavedSchedules(Object.values(groupedSchedules));
 
                 const todayShifts = await ApiWorkShift.getTodayWorkShifts();
-                console.log("Today Shifts:", todayShifts);
                 const current = todayShifts.find(
                     (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
                 );
