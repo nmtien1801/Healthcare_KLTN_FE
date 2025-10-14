@@ -197,6 +197,7 @@ export default function PatientTab({ handleStartCall }) {
   const [patientList, setPatientList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Thêm state isLoading
   const patientsPerPage = 5;
 
   // Modal states
@@ -216,6 +217,7 @@ export default function PatientTab({ handleStartCall }) {
 
   // Lấy dữ liệu bệnh nhân và lịch hẹn gần nhất từ API
   const fetchPatientsAndAppointments = async () => {
+    setIsLoading(true); // Bật loading
     setError(null);
     try {
       const response = await ApiPatient.getAllPatients();
@@ -246,6 +248,8 @@ export default function PatientTab({ handleStartCall }) {
     } catch (err) {
       console.error("Lỗi khi gọi API bệnh nhân:", err.message, err.response?.data);
       setError("Không thể tải danh sách bệnh nhân.");
+    } finally {
+      setIsLoading(false); // Tắt loading
     }
   };
 
@@ -253,14 +257,18 @@ export default function PatientTab({ handleStartCall }) {
   useEffect(() => {
     if (!roomChats) {
       console.warn("roomChats không hợp lệ:", roomChats);
+      setIsLoading(false);
       return;
     }
+    fetchPatientsAndAppointments(); // Gọi lần đầu khi component mount
     const unsub = listenStatus(roomChats, (signal) => {
+      console.log("Nhận tín hiệu:", signal);
       if (!signal?.status) return;
       if (
         signal.status === "update_patient_info" ||
         signal.status === "update_patient_list"
       ) {
+        console.log("Cập nhật danh sách bệnh nhân...");
         fetchPatientsAndAppointments();
       }
     });
@@ -290,6 +298,7 @@ export default function PatientTab({ handleStartCall }) {
             originalData: data
           };
         });
+        console.log("Tin nhắn mới:", messages);
         setChatMessages(messages);
       },
       (error) => {
@@ -334,6 +343,7 @@ export default function PatientTab({ handleStartCall }) {
         message: userMessage,
         timestamp: serverTimestamp()
       });
+      console.log("Tin nhắn đã gửi:", docRef.id);
 
       setChatMessages((prev) => prev.map(msg =>
         msg.isTemp && msg.text === userMessage
@@ -353,6 +363,7 @@ export default function PatientTab({ handleStartCall }) {
 
   // Cập nhật bệnh nhân
   const handleUpdatePatient = async (updatedPatient) => {
+    setIsLoading(true); // Bật loading khi cập nhật
     try {
       const statusColors = {
         "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
@@ -380,6 +391,9 @@ export default function PatientTab({ handleStartCall }) {
       setShowEditModal(false);
     } catch (error) {
       console.error("Lỗi khi cập nhật bệnh nhân:", error);
+      setError("Cập nhật bệnh nhân thất bại.");
+    } finally {
+      setIsLoading(false); // Tắt loading
     }
   };
 
@@ -441,6 +455,21 @@ export default function PatientTab({ handleStartCall }) {
     (currentPage - 1) * patientsPerPage,
     currentPage * patientsPerPage
   );
+
+  // Hiển thị loading
+  if (isLoading) {
+    return (
+      <div className="m-2 d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status" style={{ width: "3rem", height: "3rem" }}>
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+          <div className="mt-2 text-muted">Đang tải dữ liệu...</div>
+        </div>
+      </div>
+    );
+  }
+
   // Hiển thị lỗi
   if (error) {
     return (
