@@ -569,7 +569,6 @@ const AttendanceTab = () => {
     useEffect(() => {
 
         const unsub = listenStatus(roomChats, async (signal) => {
-            console.log("Received signal:", signal, "from room:", roomChats); // Debug log
             if (!signal) return;
             if (["createWorkShifts", "deleteManyWorkShifts", "checkInWorkShift", "checkOutWorkShift"].includes(signal.status)) {
                 try {
