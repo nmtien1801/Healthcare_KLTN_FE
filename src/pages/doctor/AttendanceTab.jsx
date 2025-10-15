@@ -17,6 +17,7 @@ import {
 import ApiWorkShift from "../../apis/ApiWorkShift";
 import ApiDoctor from "../../apis/ApiDoctor";
 import { formatDate } from "../../utils/formatDate";
+import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
 
 // Shift options
 const shiftOptions = [
@@ -560,8 +561,25 @@ const AttendanceTab = () => {
     const [loadingDoctor, setLoadingDoctor] = useState(true);
 
     const firebaseUid = user?.uid || "doctor-firebase-uid";
+    // Sửa: Sử dụng cùng UID cho doctor và patient để tạo room self-signaling
+    const doctorUid = user.uid;
+    const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // UID cố định của patient
+    const roomChats = [doctorUid, patientUid].sort().join("_"); // Room sẽ là uid_uid để lắng nghe tín hiệu tự gửi
 
     useEffect(() => {
+
+        const unsub = listenStatus(roomChats, async (signal) => {
+            if (!signal) return;
+            if (["createWorkShifts", "deleteManyWorkShifts", "checkInWorkShift", "checkOutWorkShift"].includes(signal.status)) {
+                try {
+                    await fetchDoctorInfo();
+                    await fetchShifts();
+
+                } catch (error) {
+                    console.error("Error syncing on signal:", error);
+                }
+            }
+        })
         const fetchDoctorInfo = async () => {
             if (!firebaseUid) {
                 setInfoModalTitle("Thông báo");
@@ -597,11 +615,10 @@ const AttendanceTab = () => {
         };
 
         fetchDoctorInfo();
+
         const fetchShifts = async () => {
             try {
                 const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
-                console.log("Shifts from API:", shifts);
-
                 const groupedSchedules = {};
                 shifts.forEach((shift) => {
                     const date = new Date(shift.date);
@@ -638,7 +655,6 @@ const AttendanceTab = () => {
                 setSavedSchedules(Object.values(groupedSchedules));
 
                 const todayShifts = await ApiWorkShift.getTodayWorkShifts();
-                console.log("Today Shifts:", todayShifts);
                 const current = todayShifts.find(
                     (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
                 );
@@ -692,12 +708,10 @@ const AttendanceTab = () => {
 
         fetchShifts();
 
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [firebaseUid]);
-
+        return () => {
+            unsub(); // Cleanup listener
+        };
+    }, [user.uid, roomChats]);
     // Thêm useEffect để tự động load lịch làm việc đã có cho tuần được chọn khi modal mở hoặc tuần thay đổi
     useEffect(() => {
         if (showScheduleFormModal) {
@@ -797,17 +811,20 @@ const AttendanceTab = () => {
                 const editingSchedule = savedSchedules.find((s) => s.weekStartDate === weekStartDate);
                 if (editingSchedule && editingSchedule.shiftIds.length > 0) {
                     await ApiWorkShift.deleteManyWorkShifts(editingSchedule.shiftIds);
+                    sendStatus(doctorUid, patientUid, "deleteManyWorkShifts");
                 }
                 await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
+                sendStatus(doctorUid, patientUid, "createWorkShifts");
                 successMessage = "Lịch làm việc đã được cập nhật!";
                 setIsEditing(false); // Reset editing mode
             } else {
                 // Create mới
                 await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
+                sendStatus(doctorUid, patientUid, "createWorkShifts");
                 successMessage = "Lịch làm việc đã được lưu!";
             }
 
-
+            // Fetch lại để cập nhật state
             const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
             const groupedSchedules = {};
             shifts.forEach((shift) => {
@@ -844,7 +861,7 @@ const AttendanceTab = () => {
 
             setSavedSchedules(Object.values(groupedSchedules));
             setInfoModalTitle("Thành công");
-            setInfoModalMessage("Lịch làm việc đã được lưu!");
+            setInfoModalMessage(successMessage);
             setShowInfoModal(true);
             resetScheduleForm();
         } catch (error) {
@@ -869,7 +886,6 @@ const AttendanceTab = () => {
         setShowScheduleFormModal(true);
     };
 
-
     const handleDeleteSchedule = async (weekStartDate) => {
         try {
             const schedule = savedSchedules.find((s) => s.weekStartDate === weekStartDate);
@@ -892,6 +908,9 @@ const AttendanceTab = () => {
         if (scheduleToDelete && scheduleToDelete.length > 0) {
             try {
                 const response = await ApiWorkShift.deleteManyWorkShifts(scheduleToDelete);
+                sendStatus(doctorUid, patientUid, "deleteManyWorkShifts");
+
+                // Fetch lại để cập nhật state
                 const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
                 const groupedSchedules = {};
                 shifts.forEach((shift) => {
@@ -953,6 +972,7 @@ const AttendanceTab = () => {
                 minute: "2-digit",
             });
             const shift = await ApiWorkShift.checkInWorkShift("webcam");
+            sendStatus(doctorUid, patientUid, "checkInWorkShift");
 
             setCheckInTime(checkInTimeStr);
             setAttendanceHistory((prev) => {
@@ -1006,6 +1026,7 @@ const AttendanceTab = () => {
                 minute: "2-digit",
             });
             const shift = await ApiWorkShift.checkOutWorkShift("webcam");
+            sendStatus(doctorUid, patientUid, "checkOutWorkShift");
 
             setCheckOutTime(checkOutTimeStr);
             setAttendanceHistory((prev) => {
