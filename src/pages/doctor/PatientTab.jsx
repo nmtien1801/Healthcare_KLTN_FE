@@ -53,6 +53,7 @@ const mapPatientData = (apiPatient, pastAppointments = []) => {
 
   return {
     id: apiPatient._id || `temp-${Date.now()}`,
+    uid: apiPatient.userId.uid,
     name: userId.username || apiPatient.name || "Không xác định",
     age: apiPatient.age || 0,
     patientCount: `${apiPatient.age || 0} tuổi`,
@@ -212,7 +213,7 @@ export default function PatientTab({ handleStartCall }) {
   const [isSending, setIsSending] = useState(false);
   const user = useSelector((state) => state.auth.userInfo);
   const senderId = user?.uid;
-  const receiverId = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+  const [receiverId, setReceiverId] = useState()
   const roomChats = [senderId, receiverId].sort().join('_');
 
   // Lấy dữ liệu bệnh nhân và lịch hẹn gần nhất từ API
@@ -236,7 +237,9 @@ export default function PatientTab({ handleStartCall }) {
             const appointments = Array.isArray(appointmentsResponse)
               ? appointmentsResponse
               : appointmentsResponse.data || [];
+
             return mapPatientData(patient, appointments);
+
           } catch (err) {
             console.error(`Lỗi khi lấy lịch hẹn của ${patient._id}:`, err.message);
             return mapPatientData(patient, []);
@@ -262,7 +265,6 @@ export default function PatientTab({ handleStartCall }) {
     }
     fetchPatientsAndAppointments(); // Gọi lần đầu khi component mount
     const unsub = listenStatus(roomChats, (signal) => {
-      console.log("Nhận tín hiệu:", signal);
       if (!signal?.status) return;
       if (
         signal.status === "update_patient_info" ||
@@ -298,7 +300,6 @@ export default function PatientTab({ handleStartCall }) {
             originalData: data
           };
         });
-        console.log("Tin nhắn mới:", messages);
         setChatMessages(messages);
       },
       (error) => {
@@ -486,6 +487,11 @@ export default function PatientTab({ handleStartCall }) {
     );
   }
 
+  const handleShowChat = async (patient) => {
+    setShowChatbot(true)
+    setReceiverId(patient.uid)
+  }
+
   return (
     <div className="m-2">
       {/* Search and Filters */}
@@ -596,7 +602,7 @@ export default function PatientTab({ handleStartCall }) {
                           variant="primary"
                           size="sm"
                           className="p-2"
-                          onClick={() => setShowChatbot(true)}
+                          onClick={() => handleShowChat(patient)}
                           title="Nhắn tin"
                         >
                           <MessageSquare size={16} />
@@ -605,7 +611,7 @@ export default function PatientTab({ handleStartCall }) {
                           variant="warning"
                           size="sm"
                           className="p-2"
-                          onClick={() => handleStartCall(user, { uid: receiverId }, "doctor")}
+                          onClick={() => handleStartCall(user, { uid: patient.uid }, "doctor")}
                           title="Gọi điện"
                         >
                           <Phone size={16} />

@@ -7,7 +7,7 @@ import { listenStatus, sendStatus } from "../../../utils/SetupSignFireBase";
 const EditPatientModal = ({ show, onHide, patient, onSave }) => {
     const user = useSelector((state) => state.auth.userInfo);
     const doctorUid = user?.uid;
-    const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+    const patientUid = user?.uid;
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
     // State form

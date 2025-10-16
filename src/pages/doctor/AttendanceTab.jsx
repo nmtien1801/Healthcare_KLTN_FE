@@ -561,11 +561,10 @@ const AttendanceTab = () => {
     const [loadingDoctor, setLoadingDoctor] = useState(true);
 
     const firebaseUid = user?.uid || "doctor-firebase-uid";
-    // Sửa: Sử dụng cùng UID cho doctor và patient để tạo room self-signaling
     const doctorUid = user.uid;
-    const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // UID cố định của patient
-    const roomChats = [doctorUid, patientUid].sort().join("_"); // Room sẽ là uid_uid để lắng nghe tín hiệu tự gửi
-
+    const patientUid = user.uid;
+    const roomChats = [doctorUid, patientUid].sort().join("_"); 
+    
     useEffect(() => {
 
         const unsub = listenStatus(roomChats, async (signal) => {

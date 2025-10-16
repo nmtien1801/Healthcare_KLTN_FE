@@ -42,6 +42,8 @@ export default function AppointmentTab() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const user = useSelector((state) => state.auth.userInfo);
+  const doctorUid = user.uid;
+  const [patientUid, setPatientUid] = useState('cq6SC0A1RZXdLwFE1TKGRJG8fgl2');
 
   const fetchAppointments = async () => {
     try {
@@ -59,8 +61,6 @@ export default function AppointmentTab() {
   }, []);
 
   // Lắng nghe tín hiệu hủy lịch qua Firestore (status message) trong chats
-  let doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-  let patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
   useEffect(() => {
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
@@ -75,6 +75,7 @@ export default function AppointmentTab() {
 
   const mapAppointment = (item) => ({
     id: item._id,
+    uid: item.patientId?.userId?.uid || "",
     patientName: item.patientId?.userId?.username || "",
     patientEmail: item.patientId?.userId?.email || "",
     patientAge: item.patientId?.age || "",
@@ -134,6 +135,7 @@ export default function AppointmentTab() {
 
   const handleViewAppointment = async (appointment) => {
     try {
+      setPatientUid(appointment.uid)
       const data = await ApiDoctor.getAppointmentById(appointment.id);
       const mapped = mapAppointment(data);
       setSelectedAppointment(mapped);
@@ -146,6 +148,7 @@ export default function AppointmentTab() {
 
   const handleEditAppointment = async (appointment) => {
     try {
+      setPatientUid(appointment.uid);
       const data = await ApiDoctor.getAppointmentById(appointment.id);
       const mapped = mapAppointment(data);
       setSelectedAppointment(mapped);
@@ -167,8 +170,6 @@ export default function AppointmentTab() {
 
       await ApiDoctor.updateAppointment(updatedAppointment.id, payload);
 
-      const doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-      const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // Hardcode như code gốc
       if (payload.status === "confirmed") {
         await sendStatus(doctorUid, patientUid, "Xác nhận");
       } else if (payload.status === "canceled") {
@@ -214,6 +215,7 @@ export default function AppointmentTab() {
     }
   };
   const handleDeleteAppointment = (appointment) => {
+    setPatientUid(appointment.uid)
     setAppointmentToDelete(appointment);
     setShowDeleteModal(true);
   };
@@ -224,8 +226,6 @@ export default function AppointmentTab() {
 
       await ApiDoctor.deleteAppointment(appointmentToDelete.id);
 
-      const doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-      const patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2"; // Hardcode
       await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
 
       setUpcomingAppointments((prev) =>

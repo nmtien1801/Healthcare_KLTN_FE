@@ -56,7 +56,7 @@ const mapPatientData = (apiPatient, pastAppointments = []) => {
 
     return {
         id: apiPatient._id || `temp-${Date.now()}`,
-        uid: userId._id || apiPatient.uid || "cq6SC0A1RZXdLwFE1TKGRJG8fgl2",
+        uid: userId._id || apiPatient.uid,
         name: userId.username || apiPatient.name || "Không xác định",
         age: apiPatient.age || 0,
         patientCount: `${apiPatient.age || 0} tuổi`,
@@ -97,7 +97,7 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
 
     // Lấy uid để tạo roomChats
     const doctorUid = user?.uid;
-    const patientUid = patient?.uid || "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
+    const patientUid = patient?.uid;
     const roomChats = [doctorUid, patientUid].sort().join("_");
 
     // Khi mở modal hoặc patient thay đổi -> set lại state

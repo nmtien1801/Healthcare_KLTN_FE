@@ -115,7 +115,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [cancelErrorMessage, setCancelErrorMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const senderId = user?.uid;
-  const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
+  const [receiverId, setReceiverId] = useState();
   const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
 
   // Fetch appointments từ API
@@ -172,8 +172,10 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   };
 
   // Hủy lịch hẹn
-  const handleCancelBooking = (appointmentId) => {
-    setAppointmentToCancel(appointmentId);
+  const handleCancelBooking = (appointment) => {
+    setReceiverId(appointment.doctorId.userId.uid)
+
+    setAppointmentToCancel(appointment._id);
     setShowCancelModal(true);
   };
 
@@ -327,10 +329,8 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   };
 
   // nhận tín hiệu firebase
-  let doctorUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-  let patientUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
   useEffect(() => {
-    const roomChats = [doctorUid, patientUid].sort().join("_");
+    const roomChats = [receiverId, senderId].sort().join("_");
 
     const unsub = listenStatus(roomChats, async (signal) => {
       if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
@@ -338,7 +338,13 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
       }
     });
     return () => unsub();
-  }, [doctorUid, patientUid]);
+  }, [receiverId, senderId]);
+
+  const handleShowChat = async (appointment) => {
+    setShowChatbot(true)
+    setReceiverId(appointment.doctorId.userId.uid)
+  }
+
   return (
     <div className="container">
       <div className="bg-white rounded shadow border p-4">
@@ -406,7 +412,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                             variant="primary"
                             size="sm"
                             className="p-1"
-                            onClick={() => setShowChatbot(true)}
+                            onClick={() => handleShowChat(appointment)}
                             title="Nhắn tin"
                             style={{ minWidth: "32px", height: "32px" }}
                           >
@@ -470,7 +476,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                       </div>
                       <button
                         className="btn btn-sm rounded-pill px-3 py-1 btn-outline-danger"
-                        onClick={() => handleCancelBooking(appointment._id || appointment.id)}
+                        onClick={() => handleCancelBooking(appointment)}
                         disabled={cancelling}
                       >
                         {cancelling ? "Đang hủy..." : "Hủy"}
@@ -717,7 +723,6 @@ const BookingNew = ({ handleSubmit }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const user = useSelector((state) => state.auth.userInfo);
   const navigate = useNavigate();
-  const receiverId = "1HwseYsBwxby5YnsLUWYzvRtCw53";
   const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
   useEffect(() => {
     if (error || success) {
@@ -758,8 +763,6 @@ const BookingNew = ({ handleSubmit }) => {
     fetchDoctors();
   }, [selectedDate]);
   const onSubmit = useCallback(async () => {
-    console.log("onSubmit called");
-
     if (!user?.uid) {
       console.log("Error: User not logged in", user);
       setErrorMessage("Vui lòng đăng nhập để đặt lịch.");
@@ -789,7 +792,6 @@ const BookingNew = ({ handleSubmit }) => {
     }
 
     const selectedDoctorData = doctors.find((d) => d.id === selectedDoctor);
-    console.log("Selected Doctor Data:", selectedDoctorData);
     if (!selectedDoctorData) {
       console.log("Error: Invalid doctor", { selectedDoctor, doctors });
       setErrorMessage("Bác sĩ không hợp lệ. Vui lòng chọn lại.");
@@ -851,7 +853,7 @@ const BookingNew = ({ handleSubmit }) => {
       // gửi tín hiệu trạng thái đặt lịch tới bác sĩ qua Firestore
 
       await ApiNotification.createNotification({
-        receiverId: receiverId,
+        receiverId: selectedDoctorData.uid,
         title: "Bệnh nhân mới đặt lịch khám",
         content: `Bệnh nhân ${user.username || ""} đã đặt lịch khám vào lúc ${selectedTime} ngày ${new Date(selectedDate).toLocaleDateString("vi-VN")}.`,
         type: "system",
@@ -861,7 +863,7 @@ const BookingNew = ({ handleSubmit }) => {
         avatar: user.avatar || "", // avatar người gửi (nếu có)
       });
 
-      await sendStatus(user?.uid, receiverId, "Đặt lịch");
+      await sendStatus(user?.uid, selectedDoctorData?.uid, "Đặt lịch");
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
 
