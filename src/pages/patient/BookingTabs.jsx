@@ -457,6 +457,12 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                         <Clock className="text-primary me-2" size={14} />
                         <span className="text-dark" style={{ fontSize: "13px" }}>{appointment.time}</span>
                       </div>
+                      <div className="d-flex align-items-center">
+                        <MapPin className="text-primary me-2" size={14} />
+                        <span className="text-dark" style={{ fontSize: "13px" }}>
+                          {appointment.isFollowUp === true ? "Tái khám" : "Khám mới"}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="d-flex align-items-center justify-content-between">
