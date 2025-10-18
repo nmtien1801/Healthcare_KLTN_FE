@@ -7,20 +7,21 @@ import { suggestFoodsByAi, GetCaloFood } from '../../redux/foodAiSlice'
 import { useNavigate } from "react-router-dom";
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
-import { fetchMedicines } from '../../redux/medicineAiSlice';
 import { InsertFoods, GetListFood } from '../../redux/foodSlice';
 
-const Following = ({ user, nearestAppointment }) => {
+const Following = ({ user, nearestAppointment, warning }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
   const latestReading = bloodSugar?.DT?.bloodSugarData[0]?.value;
+  const safeWarning = Array.isArray(warning) ? warning : [];
+  const warningCount = safeWarning.length;
 
   const readingStatus = {
-    status: latestReading < 6 ? 'normal' : latestReading < 7 ? 'prediabetes' : 'danger',
-    color: latestReading < 6 ? 'text-success' : latestReading < 7 ? 'text-warning' : 'text-danger',
-    bg: latestReading < 6 ? 'bg-success bg-opacity-10' : latestReading < 7 ? 'bg-warning bg-opacity-10' : 'bg-danger bg-opacity-10',
-    border: latestReading < 6 ? 'border-success' : latestReading < 7 ? 'border-warning' : 'border-danger'
+    status: warningCount > 1 ? 'danger' : 'normal',
+    color: warningCount > 1 ? 'text-danger' : 'text-success',
+    bg: warningCount > 1 ? 'bg-danger bg-opacity-10' : 'bg-success bg-opacity-10',
+    border: warningCount > 1 ? 'border-danger' : 'border-success',
+    content: warningCount > 1 ? safeWarning.join('\n\n') + '\n\n Vui lòng tham khảo ý kiến bác sĩ!' : "Chỉ số đường huyết trong mức bình thường"
   };
-
   return <div className="py-3">
     {/* Header */}
     <div className="bg-white rounded shadow-sm border p-3 mb-3">
@@ -134,13 +135,11 @@ const Following = ({ user, nearestAppointment }) => {
                 <AlertTriangle size={18} className="text-warning" />
               )}
               <strong className={readingStatus.color}>
-                {readingStatus.status === 'normal' ? 'Bình thường' : readingStatus.status === 'prediabetes' ? 'Tiền tiểu đường' : 'Cần chú ý'}
+                {readingStatus.status === 'normal' ? 'Bình thường' : 'Cần chú ý'}
               </strong>
             </div>
             <div className="small text-muted">
-              {readingStatus.status === 'normal' ? 'Chỉ số đường huyết trong mức bình thường' :
-                readingStatus.status === 'prediabetes' ? 'Chỉ số cao hơn bình thường, cần theo dõi' :
-                  'Chỉ số cao, cần tham khảo ý kiến bác sĩ'}
+              {readingStatus.content}
             </div>
           </div>
         </div>
@@ -188,7 +187,32 @@ const bloodSugarDaily = ({ bloodSugar }) => {
   return { dates, fastingData, postMealData }
 }
 
-const Chart = ({ bloodSugar }) => {
+// ✅ Kiểm tra ngưỡng cao và hiển thị alert
+const checkHighThreshold = (dailyBloodSugar, setWarning) => {
+  const todayIndex = dailyBloodSugar.dates.length - 1;
+  const todayDate = dailyBloodSugar.dates[todayIndex];
+  const todayFastingValue = dailyBloodSugar.fastingData[todayIndex];
+  const todayPostMealValue = dailyBloodSugar.postMealData[todayIndex];
+
+  const warnings = [];
+  warnings.push(`Ngày ${todayDate}: `)
+  // 2. Kiểm tra chỉ số lúc đói của ngày hôm nay (ngưỡng >= 7.0)
+  if (todayFastingValue !== null && todayFastingValue >= 7.0) {
+    warnings.push(`Đường huyết lúc đói cao (${todayFastingValue.toFixed(3)} mmol/L).`);
+  }
+
+  // 3. Kiểm tra chỉ số sau ăn của ngày hôm nay (ngưỡng >= 11.1)
+  if (todayPostMealValue !== null && todayPostMealValue >= 11.1) {
+    warnings.push(` - Đường huyết sau ăn cao (${todayPostMealValue.toFixed(3)} mmol/L).`);
+  }
+
+  // 4. Hiển thị alert nếu có cảnh báo
+  if (warnings.length > 0) {
+    setWarning(warnings)
+  }
+};
+
+const Chart = ({ bloodSugar, setWarning }) => {
   // biểu đồ
   useEffect(() => {
     const chartDom = document.getElementById("health-chart");
@@ -203,6 +227,8 @@ const Chart = ({ bloodSugar }) => {
     if (bloodSugar && bloodSugar.length > 0) {
       try {
         dailyBloodSugar = bloodSugarDaily({ bloodSugar });
+        // Gọi hàm cảnh báo
+        checkHighThreshold(dailyBloodSugar, setWarning);
       } catch (error) {
         console.error('Error processing bloodSugar data:', error);
       }
@@ -254,12 +280,12 @@ const Chart = ({ bloodSugar }) => {
               {
                 yAxis: 5.6,
                 lineStyle: { color: "#10b981" },
-                label: { formatter: "Ngưỡng bình thường (đói)" },
+                label: { formatter: "Trước ăn" },
               },
               {
                 yAxis: 7.0,
                 lineStyle: { color: "#ef4444" },
-                label: { formatter: "Ngưỡng cao" },
+                label: { formatter: "Ngưỡng cao (đói)" },
               },
             ],
           },
@@ -277,12 +303,12 @@ const Chart = ({ bloodSugar }) => {
               {
                 yAxis: 7.8,
                 lineStyle: { color: "#10b981" },
-                label: { formatter: "Ngưỡng bình thường (sau ăn)" },
+                label: { formatter: "Sau ăn" },
               },
               {
                 yAxis: 11.1,
                 lineStyle: { color: "#ef4444" },
-                label: { formatter: "Ngưỡng cao" },
+                label: { formatter: "Ngưỡng cao (sau ăn)" },
               },
             ],
           },
@@ -331,46 +357,8 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
   const [food, setFood] = useState([]);
   const totalCalo = useSelector((state) => state.food.totalCalo);
   const [showAllFood, setShowAllFood] = useState(false);
-  const [medicines, setMedicines] = useState({
-    sang: [],
-    trua: [],
-    toi: [],
-  });
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  // Hàm phân loại thuốc theo giờ
-  const groupMedicinesByTime = (data) => {
-    const result = { sang: [], trua: [], toi: [] };
-
-    data.forEach((item) => {
-      const hour = new Date(item.time).getHours(); // lấy giờ từ time
-
-      if (hour >= 5 && hour < 11) {
-        result.sang.push(`${item.name} (${item.lieu_luong})`);
-      } else if (hour >= 11 && hour < 17) {
-        result.trua.push(`${item.name} (${item.lieu_luong})`);
-      } else {
-        result.toi.push(`${item.name} (${item.lieu_luong})`);
-      }
-    });
-
-    return result;
-  };
-
-
-  useEffect(() => {
-    const fetchMedicine = async () => {
-      try {
-        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date().toISOString() }));
-        setMedicines(groupMedicinesByTime(res.payload.DT));
-      } catch (error) {
-        console.error('Lỗi khi lấy lịch hẹn:', error);
-      }
-    };
-
-    fetchMedicine();
-  }, []);
 
   // kiểm tra calo hiện tại
   useEffect(() => {
@@ -413,50 +401,6 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
           — {aiPlan.assistant_name || "AI Assistant"}
         </small>
       </div >
-
-      {/* KẾ HOẠCH THUỐC */}
-      <div className={`rounded-4 shadow-sm p-3 mt-3 bg-success bg-opacity-10 border border-success`}      >
-        <h6 className={`fw-semibold mb-2 text-success`}        >
-          📋 Kế hoạch dùng thuốc
-        </h6>
-
-        {(!medicines || (medicines.sang?.length === 0 && medicines.trua?.length === 0 && medicines.toi?.length === 0)) && (
-          <p className="text-muted small mb-2">
-            Chưa có đơn thuốc. Vui lòng khởi tạo để có thể áp dụng theo dõi.
-          </p>
-        )}
-
-        <ul className="list-unstyled small mb-2" style={{ paddingLeft: "1rem", fontSize: "0.95rem" }}>
-          <li>
-            <strong>Sáng:</strong>{" "}
-            {medicines?.sang?.length > 0 ? medicines.sang.join(", ") : "Không dùng"}
-          </li>
-          <li>
-            <strong>Trưa:</strong>{" "}
-            {medicines?.trua?.length > 0 ? medicines.trua.join(", ") : "Không dùng"}
-          </li>
-          <li>
-            <strong>Tối:</strong>{" "}
-            {medicines?.toi?.length > 0 ? medicines.toi.join(", ") : "Không dùng"}
-          </li>
-        </ul>
-
-        <div className="d-flex justify-content-end gap-2">
-          {(!medicines || (medicines.sang?.length === 0 && medicines.trua?.length === 0 && medicines.toi?.length === 0)) && (
-            <button className="btn btn-sm btn-success" style={{ textTransform: "none", borderRadius: "8px" }} onClick={() => navigate('/assitant')}>
-              Chuẩn đoán
-            </button>
-          )}
-          {medicines && (medicines.sang?.length > 0 || medicines.trua?.length > 0 || medicines.toi?.length > 0) && (
-            <button
-              className="btn btn-success btn-sm rounded-pill px-3"
-              disabled
-            >
-              Đã áp dụng
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
@@ -501,6 +445,7 @@ const HealthTabs = () => {
   const [measurementType, setMeasurementType] = useState("before");
   const [bloodSugar, setBloodSugar] = useState([]);
   const [nearestAppointment, setNearestAppointment] = useState(null);
+  const [warning, setWarning] = useState();   // chỉ số cảnh báo
 
   // get bloodSugar
   useEffect(() => {
@@ -513,55 +458,18 @@ const HealthTabs = () => {
       try {
         // Lấy cả dữ liệu lúc đói và sau ăn
         const [postMealRes, fastingRes] = await Promise.all([
-          dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 7 })),
-          dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 7 }))
+          dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 6 })),
+          dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 6 }))
         ]);
 
-        // Gộp dữ liệu từ cả hai API calls
-        const allData = [];
-
         // Kiểm tra response structure - thử nhiều format khác nhau
-        let postMealData = null;
-        let fastingData = null;
+        let postMealData = postMealRes.payload.DT.bloodSugarData;
+        let fastingData = fastingRes.payload.DT.bloodSugarData;
 
-        // Thử format 1: payload.DT.bloodSugarData
-        if (postMealRes?.payload?.DT?.bloodSugarData) {
-          postMealData = postMealRes.payload.DT.bloodSugarData;
-        }
-        // Thử format 2: payload.DT
-        else if (postMealRes?.payload?.DT && Array.isArray(postMealRes.payload.DT)) {
-          postMealData = postMealRes.payload.DT;
-        }
-        // Thử format 3: payload trực tiếp
-        else if (postMealRes?.payload && Array.isArray(postMealRes.payload)) {
-          postMealData = postMealRes.payload;
-        }
+        // Gộp dữ liệu từ cả hai API calls
+        const allBloodSugarData = [...postMealData, ...fastingData];
 
-        if (fastingRes?.payload?.DT?.bloodSugarData) {
-          fastingData = fastingRes.payload.DT.bloodSugarData;
-        }
-        else if (fastingRes?.payload?.DT && Array.isArray(fastingRes.payload.DT)) {
-          fastingData = fastingRes.payload.DT;
-        }
-        else if (fastingRes?.payload && Array.isArray(fastingRes.payload)) {
-          fastingData = fastingRes.payload;
-        }
-
-        // Thêm data vào allData nếu có
-        if (postMealData && Array.isArray(postMealData)) {
-          console.log('Adding postMeal data:', postMealData);
-          allData.push(...postMealData);
-        } else {
-          console.log('No postMeal data found in response');
-        }
-
-        if (fastingData && Array.isArray(fastingData)) {
-          allData.push(...fastingData);
-        } else {
-          console.log('No fasting data found in response');
-        }
-
-        setBloodSugar(allData);
+        setBloodSugar(allBloodSugarData);
       } catch (error) {
         console.error('Error fetching blood sugar data:', error);
       }
@@ -681,10 +589,10 @@ const HealthTabs = () => {
   return (
     <div className="d-flex flex-column gap-4">
       {/* tiêu đề */}
-      <Following user={user} nearestAppointment={nearestAppointment} />
+      <Following user={user} nearestAppointment={nearestAppointment} warning={warning} />
 
       {/* Biểu đồ */}
-      <Chart bloodSugar={bloodSugar} />
+      <Chart bloodSugar={bloodSugar} setWarning={setWarning} />
 
       <div className="d-flex flex-column flex-lg-row gap-4">
         {/* Nhập chỉ số mới */}
