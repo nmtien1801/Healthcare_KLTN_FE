@@ -1,13 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, Filter, Eye, Edit, MessageSquare, Phone, ChevronDown, X, Bot, Send } from "lucide-react";
+import { Search, Filter, Eye, Edit, MessageSquare, Phone, X, Bot, Send } from "lucide-react";
 import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal";
 import EditPatientModal from "../../components/doctor/patient/EditPatientModal";
+import CreateFollowUpModal from "../../components/doctor/appointment/CreateFollowUpModal";
 import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { db } from "../../../firebase";
 import ApiPatient from "../../apis/ApiPatient";
 import ApiDoctor from "../../apis/ApiDoctor";
 import { listenStatus } from "../../utils/SetupSignFireBase";
+import { Button, Input, Select, Badge } from "../../components/doctor/common-ui-components";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component
 const mapPatientData = (apiPatient, pastAppointments = []) => {
@@ -86,84 +88,6 @@ const mapPatientData = (apiPatient, pastAppointments = []) => {
     healthRecords,
   };
 };
-
-// Custom Components
-const Button = ({ children, className = "", variant = "primary", size = "md", onClick, disabled, ...props }) => {
-  const baseClasses = "btn d-inline-flex align-items-center justify-content-center fw-medium transition-all border-0 shadow-sm";
-
-  const variants = {
-    primary: "btn-primary text-white",
-    secondary: "btn-light text-dark border",
-    success: "btn-success text-white",
-    danger: "btn-danger text-white",
-    warning: "btn-warning text-dark",
-    info: "btn-info text-white",
-    light: "btn-light text-dark",
-    dark: "btn-dark text-white",
-    outline: "btn-outline-primary",
-    ghost: "btn-light text-muted border-0 shadow-none",
-  };
-
-  const sizes = {
-    sm: "btn-sm px-2 py-1",
-    md: "btn-md px-3 py-2",
-    lg: "btn-lg px-4 py-3",
-  };
-
-  return (
-    <button
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
-      onClick={onClick}
-      disabled={disabled}
-      style={{ borderRadius: "8px" }}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Input = ({ className = "", ...props }) => {
-  return (
-    <input
-      className={`form-control border-0 shadow-sm ${className}`}
-      style={{ borderRadius: "8px", backgroundColor: "#f8f9fa" }}
-      {...props}
-    />
-  );
-};
-
-const Select = ({ children, value, onChange, className = "" }) => {
-  return (
-    <div className={`position-relative ${className}`}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="form-select border-0 shadow-sm"
-        style={{ borderRadius: "8px", backgroundColor: "#f8f9fa", paddingRight: "2.5rem", paddingLeft: "2.5rem" }}
-      >
-        {children}
-      </select>
-      <ChevronDown
-        className="position-absolute top-50 translate-middle-y text-muted"
-        size={16}
-        style={{ right: "12px", pointerEvents: "none" }}
-      />
-    </div>
-  );
-};
-
-const Badge = ({ children, className = "" }) => {
-  return (
-    <span
-      className={`badge ${className}`}
-      style={{ borderRadius: "6px", fontSize: "0.75rem", padding: "0.375rem 0.75rem" }}
-    >
-      {children}
-    </span>
-  );
-};
-
 const Avatar = ({ src, alt, fallback, className = "", size = 50 }) => {
   const [imageError, setImageError] = useState(false);
 
@@ -204,6 +128,7 @@ export default function PatientTab({ handleStartCall }) {
   // Modal states
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
   // Chat states
@@ -492,6 +417,18 @@ export default function PatientTab({ handleStartCall }) {
     setReceiverId(patient.uid)
   }
 
+  // Hàm mở modal tái khám
+  const handleCreateFollowUp = (patient) => {
+    setSelectedPatient(patient);
+    setShowFollowUpModal(true);
+  };
+
+  // Hàm xử lý sau khi tạo lịch hẹn thành công
+  const handleFollowUpCreated = async () => {
+    setShowFollowUpModal(false);
+    await fetchPatientsAndAppointments(); // Làm mới danh sách bệnh nhân để cập nhật lần khám gần nhất
+  };
+
   return (
     <div className="m-2">
       {/* Search and Filters */}
@@ -499,11 +436,6 @@ export default function PatientTab({ handleStartCall }) {
         <h3 className="mb-0">Quản lý bệnh nhân</h3>
         <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <div className="position-relative">
-            <Filter
-              className="position-absolute top-50 translate-middle-y text-muted"
-              size={16}
-              style={{ left: "12px", zIndex: 10 }}
-            />
             <Select value={statusFilter} onChange={setStatusFilter} style={{ paddingLeft: "2rem" }}>
               <option value="all">Tất cả tình trạng</option>
               <option value="Cần theo dõi">Cần theo dõi</option>
@@ -578,43 +510,37 @@ export default function PatientTab({ handleStartCall }) {
                     <td className="py-3 border-0">
                       <div className="text-dark">{patient.lastVisit}</div>
                     </td>
-                    <td className="py-3 border-0">
-                      <div className="d-flex align-items-center gap-1">
+                    <td className="py-3 border-0 text-center">
+                      <div className="d-flex flex-column align-items-start gap-2">
+                        {/* Hàng 1 */}
+                        <div className="d-flex  gap-2">
+                          <Button variant="info" size="sm" className="p-2" onClick={() => handleViewPatient(patient)}
+                            title="Xem chi tiết"><Eye size={16} /></Button>
+                          <Button variant="success" size="sm" className="p-2" onClick={() => handleEditPatient(patient)}
+                            title="Chỉnh sửa"><Edit size={16} /></Button>
+                        </div>
+
+                        {/* Hàng 2 */}
+                        <div className="d-flex gap-2">
+                          <Button variant="primary" size="sm" className="p-2" onClick={() => handleShowChat(patient)}
+                            title="Nhắn tin"><MessageSquare size={16} /></Button>
+                          <Button variant="warning" size="sm" className="p-2"><Phone size={16} onClick={() => handleStartCall(user, { uid: patient.uid }, "doctor")}
+                            title="Gọi điện" /></Button>
+                        </div>
+
+                        {/* Hàng 3 */}
                         <Button
-                          variant="info"
                           size="sm"
-                          className="p-2"
-                          onClick={() => handleViewPatient(patient)}
-                          title="Xem chi tiết"
-                        >
-                          <Eye size={16} />
-                        </Button>
-                        <Button
-                          variant="success"
-                          size="sm"
-                          className="p-2"
-                          onClick={() => handleEditPatient(patient)}
-                          title="Chỉnh sửa"
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button
                           variant="primary"
-                          size="sm"
-                          className="p-2"
-                          onClick={() => handleShowChat(patient)}
-                          title="Nhắn tin"
+                          className="px-3 py-1 fw-semibold text-white"
+                          style={{
+
+                            borderRadius: "6px",
+                          }}
+                          onClick={() => handleCreateFollowUp(patient)}
+                          title="Tái khám"
                         >
-                          <MessageSquare size={16} />
-                        </Button>
-                        <Button
-                          variant="warning"
-                          size="sm"
-                          className="p-2"
-                          onClick={() => handleStartCall(user, { uid: patient.uid }, "doctor")}
-                          title="Gọi điện"
-                        >
-                          <Phone size={16} />
+                          Tái khám
                         </Button>
                       </div>
                     </td>
@@ -745,6 +671,12 @@ export default function PatientTab({ handleStartCall }) {
         onHide={() => setShowEditModal(false)}
         patient={selectedPatient}
         onSave={handleUpdatePatient}
+      />
+      <CreateFollowUpModal
+        show={showFollowUpModal}
+        onHide={() => setShowFollowUpModal(false)}
+        patient={selectedPatient}
+        onSave={handleFollowUpCreated}
       />
     </div>
   );
