@@ -87,7 +87,7 @@ const Home = () => {
   useEffect(() => {
     const fetchMedicine = async () => {
       try {
-        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date().toISOString() }));
+        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date()}));
         setMedications(res.payload.DT);
       } catch (error) {
         console.error('Lỗi khi lấy lịch hẹn:', error);
@@ -173,7 +173,7 @@ const Home = () => {
                   <div key={idx} className="d-flex justify-content-between align-items-center p-2 bg-light rounded-3">
                     <div>
                       <strong>{med.name} {med.dosage}</strong>
-                      <div className="text-muted small">{moment(med.time).format("HH:mm:ss")}</div>
+                      <div className="text-muted small">{moment(med.time).utc().format("HH:mm:ss")}</div>
                     </div>
                     <button
                       onClick={() => handleMedicationToggle(idx)}

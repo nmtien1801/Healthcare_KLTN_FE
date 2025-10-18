@@ -295,17 +295,12 @@ Hồ sơ bệnh nhân:
 
     const applyPrescriptionOneWeek = async () => {
         if (prescriptionStatus !== "created") return;
-
-        let data = {
-            email: user.email,
-            medicinePlan: medicines,
-        }
-
+        
         Object.entries(medicines).forEach(([time, arr]) => {
             arr.forEach(item => {
                 const parsed = parseMedicine(item, time, user?.userId);
                 console.log("=> parse:", parsed);
-                dispatch(applyMedicines(parsed));
+                // dispatch(applyMedicines(parsed));
             });
         });
 

@@ -53,6 +53,7 @@ const mapPatientData = (apiPatient, pastAppointments = []) => {
 
   return {
     id: apiPatient._id || `temp-${Date.now()}`,
+    userId: apiPatient.userId,
     uid: apiPatient.userId.uid,
     name: userId.username || apiPatient.name || "Không xác định",
     age: apiPatient.age || 0,
@@ -740,12 +741,14 @@ export default function PatientTab({ handleStartCall }) {
         patient={selectedPatient}
         onEdit={handleEditPatient}
       />
-      <EditPatientModal
-        show={showEditModal}
-        onHide={() => setShowEditModal(false)}
-        patient={selectedPatient}
-        onSave={handleUpdatePatient}
-      />
+      {showEditModal &&
+        <EditPatientModal
+          show={showEditModal}
+          onHide={() => setShowEditModal(false)}
+          patient={selectedPatient}
+          onSave={handleUpdatePatient}
+        />
+      }
     </div>
   );
 }
