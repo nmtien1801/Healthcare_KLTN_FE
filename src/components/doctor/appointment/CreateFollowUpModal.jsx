@@ -12,7 +12,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
     const user = useSelector((state) => state.auth.userInfo);
     const [formData, setFormData] = useState({
         date: null,
-        time: null,
+        time: "",
         type: "onsite",
         reason: "",
         notes: "",
@@ -30,6 +30,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
 
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [showTimeList, setShowTimeList] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -38,10 +39,6 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
 
     const handleDateChange = (date) => {
         setFormData((prev) => ({ ...prev, date }));
-    };
-
-    const handleTimeChange = (time) => {
-        setFormData((prev) => ({ ...prev, time }));
     };
 
     const handleSubmit = async (e) => {
@@ -53,9 +50,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
             const formattedDate = formData.date
                 ? formData.date.toISOString().split("T")[0]
                 : "";
-            const formattedTime = formData.time
-                ? formData.time.toTimeString().slice(0, 5)
-                : "";
+            const formattedTime = formData.time;
 
             if (!formattedDate || !formattedTime) {
                 throw new Error("Vui lòng chọn ngày và giờ tái khám.");
@@ -70,6 +65,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
                 reason: formData.reason,
                 notes: formData.notes,
             });
+
             await ApiNotification.createNotification({
                 receiverId: patient.uid,
                 title: "Bác sĩ đặt lịch tái khám",
@@ -78,19 +74,18 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
                 metadata: {
                     link: `/patient/appointments/${response.id}`,
                 },
-                avatar: user.avatar || "", // avatar người gửi (nếu có)
+                avatar: user.avatar || "",
             });
+
             await sendStatus(patient.uid, user?.uid, "Đặt lịch");
-            await book_appointment.post(
-                "/create-calendar-schedule",
-                {
-                    email_Patient: patient.email,
-                    email_Docter: user.email,
-                    period: 30,
-                    time: formattedTime,
-                    location: formData.type
-                }
-            );
+            await book_appointment.post("/create-calendar-schedule", {
+                email_Patient: patient.email,
+                email_Docter: user.email,
+                period: 30,
+                time: formattedTime,
+                location: formData.type,
+            });
+
             setSuccessMessage("Đặt lịch hẹn tái khám thành công!");
             setShowSuccessModal(true);
             onSave(response);
@@ -107,15 +102,16 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
         }
     };
 
-    // Tạo danh sách giờ từ 8:00 đến 16:30
+    // Danh sách giờ
     const availableTimes = [];
     for (let hour = 8; hour <= 16; hour++) {
-        availableTimes.push(new Date().setHours(hour, 0, 0, 0));
-        if (hour < 16) {
-            availableTimes.push(new Date().setHours(hour, 30, 0, 0));
-        } else if (hour === 16) {
-            availableTimes.push(new Date().setHours(hour, 30, 0, 0));
+        const h = hour.toString().padStart(2, "0");
+        if (hour === 12) {
+            availableTimes.push(`${h}:00`);
+            continue;
         }
+        availableTimes.push(`${h}:00`);
+        availableTimes.push(`${h}:30`);
     }
 
     if (!show) return null;
@@ -123,7 +119,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
     return (
         <>
             <div
-                className="modal fade show d-block"
+                className="modal fade show d-block mt-5"
                 style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
                 onClick={onHide}
             >
@@ -156,19 +152,19 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
 
                             <form onSubmit={handleSubmit}>
                                 <div className="d-flex flex-column gap-3">
+                                    {/* Bệnh nhân */}
                                     <div>
                                         <label className="form-label fw-semibold">
                                             Bệnh nhân
                                         </label>
-                                        <div>
-                                            <Input
-                                                value={patient?.name || ""}
-                                                disabled
-                                                className="bg-light shadow-sm"
-                                            />
-                                        </div>
+                                        <Input
+                                            value={patient?.name || ""}
+                                            disabled
+                                            className="bg-light shadow-sm"
+                                        />
                                     </div>
 
+                                    {/* Ngày tái khám */}
                                     <div>
                                         <label className="form-label fw-semibold">
                                             Ngày tái khám
@@ -183,102 +179,146 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
                                                 style={{
                                                     borderRadius: "8px",
                                                     backgroundColor: "#f8f9fa",
-                                                    width: "100%",
                                                 }}
                                                 required
                                             />
                                         </div>
                                     </div>
 
+                                    {/* Giờ tái khám */}
                                     <div>
                                         <label className="form-label fw-semibold">
                                             Giờ tái khám
                                         </label>
-                                        <div>
-                                            <DatePicker
-                                                selected={formData.time}
-                                                onChange={handleTimeChange}
-                                                showTimeSelect
-                                                showTimeSelectOnly
-                                                includeTimes={availableTimes}
-                                                dateFormat="HH:mm"
-                                                placeholderText="Chọn giờ (08:00 - 16:30)"
-                                                className="form-control shadow-sm"
+                                        <div style={{ position: "relative", width: "60%" }}>
+                                            <div
+                                                onClick={() =>
+                                                    setShowTimeList((prev) => !prev)
+                                                }
+                                                className="shadow-sm bg-light"
                                                 style={{
                                                     borderRadius: "8px",
-                                                    backgroundColor: "#f8f9fa",
-                                                    width: "100%",
+                                                    padding: "8px",
+                                                    cursor: "pointer",
+                                                    border: "1px solid #ced4da",
                                                 }}
-                                                required
-                                            />
+                                            >
+                                                {formData.time || "-- Chọn giờ --"}
+                                            </div>
+
+                                            {showTimeList && (
+                                                <div
+                                                    style={{
+                                                        position: "absolute",
+                                                        top: "100%",
+                                                        left: 0,
+                                                        right: 0,
+                                                        zIndex: 1000,
+                                                        background: "#fff",
+                                                        border: "1px solid #ccc",
+                                                        borderRadius: "8px",
+                                                        maxHeight: "150px", // 👈 chỉ hiển thị ~5 dòng
+                                                        overflowY: "auto",
+                                                    }}
+                                                >
+                                                    {availableTimes.map((time) => (
+                                                        <div
+                                                            key={time}
+                                                            onClick={() => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    time,
+                                                                }));
+                                                                setShowTimeList(false);
+                                                            }}
+                                                            style={{
+                                                                padding: "6px 10px",
+                                                                cursor: "pointer",
+                                                                backgroundColor:
+                                                                    formData.time === time
+                                                                        ? "#e9ecef"
+                                                                        : "white",
+                                                            }}
+                                                            onMouseEnter={(e) =>
+                                                            (e.currentTarget.style.backgroundColor =
+                                                                "#f1f3f5")
+                                                            }
+                                                            onMouseLeave={(e) =>
+                                                            (e.currentTarget.style.backgroundColor =
+                                                                formData.time === time
+                                                                    ? "#e9ecef"
+                                                                    : "white")
+                                                            }
+                                                        >
+                                                            {time}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
+                                    {/* Loại lịch hẹn */}
                                     <div>
                                         <label className="form-label fw-semibold">
                                             Loại lịch hẹn
                                         </label>
-                                        <div>
-                                            <Select
-                                                name="type"
-                                                value={formData.type}
-                                                onChange={(value) =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        type: value,
-                                                    }))
-                                                }
-                                                className="shadow-sm"
-                                            >
-                                                <option value="onsite">Tại phòng khám</option>
-                                                <option value="online">Trực tuyến</option>
-                                            </Select>
-                                        </div>
+                                        <Select
+                                            name="type"
+                                            value={formData.type}
+                                            onChange={(value) =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    type: value,
+                                                }))
+                                            }
+                                            className="shadow-sm"
+                                        >
+                                            <option value="onsite">Tại phòng khám</option>
+                                            <option value="online">Trực tuyến</option>
+                                        </Select>
                                     </div>
 
+                                    {/* Lý do tái khám */}
                                     <div>
                                         <label className="form-label fw-semibold">
                                             Lý do tái khám
                                         </label>
-                                        <div>
-                                            <textarea
-                                                className="form-control shadow-sm"
-                                                name="reason"
-                                                value={formData.reason}
-                                                onChange={handleChange}
-                                                placeholder="Nhập lý do tái khám..."
-                                                rows={3}
-                                                style={{
-                                                    borderRadius: "8px",
-                                                    backgroundColor: "#f8f9fa",
-                                                    width: "100%",
-                                                }}
-                                            />
-                                        </div>
+                                        <textarea
+                                            className="form-control shadow-sm"
+                                            name="reason"
+                                            value={formData.reason}
+                                            onChange={handleChange}
+                                            placeholder="Nhập lý do tái khám..."
+                                            rows={3}
+                                            style={{
+                                                borderRadius: "8px",
+                                                backgroundColor: "#f8f9fa",
+                                            }}
+                                        />
                                     </div>
 
+                                    {/* Ghi chú */}
                                     <div>
                                         <label className="form-label fw-semibold">
                                             Ghi chú
                                         </label>
-                                        <div>
-                                            <textarea
-                                                className="form-control shadow-sm"
-                                                name="notes"
-                                                value={formData.notes}
-                                                onChange={handleChange}
-                                                placeholder="Nhập ghi chú (nếu có)..."
-                                                rows={3}
-                                                style={{
-                                                    borderRadius: "8px",
-                                                    backgroundColor: "#f8f9fa",
-                                                    width: "100%",
-                                                }}
-                                            />
-                                        </div>
+                                        <textarea
+                                            className="form-control shadow-sm"
+                                            name="notes"
+                                            value={formData.notes}
+                                            onChange={handleChange}
+                                            placeholder="Nhập ghi chú (nếu có)..."
+                                            rows={3}
+                                            style={{
+                                                borderRadius: "8px",
+                                                backgroundColor: "#f8f9fa",
+                                            }}
+                                        />
                                     </div>
                                 </div>
 
+                                {/* Buttons */}
                                 <div className="d-flex justify-content-end gap-2 mt-4">
                                     <Button
                                         variant="light"
