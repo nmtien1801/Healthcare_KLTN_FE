@@ -1,6 +1,7 @@
 
 
 import { useState } from "react"
+import { Phone, Video, Calendar, Clock, MapPin, Star, CheckCircle, Shield, Award, ClockIcon as Clock24, MessageSquare, X, Bot, Send, Trash2, CheckCircle2 } from 'lucide-react';
 import { ChevronDown } from "lucide-react"
 
 // Custom Button Component
@@ -109,4 +110,43 @@ const Avatar = ({ src, alt, fallback, className = "" }) => {
     )
 }
 
-export { Button, Input, Select, Badge, Avatar }
+// Modal Component
+const Modal = ({ show, onClose, title, children, type = "info" }) => {
+    if (!show) return null;
+
+    const getIcon = () => {
+        switch (type) {
+            case "success":
+                return <CheckCircle2 size={48} className="text-success mb-3" />;
+            case "danger":
+                return <Clock size={48} className="text-danger mb-3" />;
+            case "warning":
+                return <Clock size={48} className="text-warning mb-3" />;
+            default:
+                return <Calendar size={48} className="text-primary mb-3" />;
+        }
+    };
+
+    return (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content">
+                    <div className="modal-header border-0 pb-0">
+                        <button
+                            type="button"
+                            className="btn-close"
+                            onClick={onClose}
+                        ></button>
+                    </div>
+                    <div className="modal-body text-center py-4">
+                        {getIcon()}
+                        <h4 className="modal-title mb-3">{title}</h4>
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export { Button, Input, Select, Badge, Avatar, Modal };
