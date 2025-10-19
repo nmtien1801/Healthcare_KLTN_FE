@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import "./NotificationDropdown.css";
 import ApiNotification from "../../apis/ApiNotification";
 import { formatDate } from "../../utils/formatDate";
-import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
+import { listenStatusByReceiver, sendStatus } from "../../utils/SetupSignFireBase";
 
 const NotificationDropdown = () => {
     const user = useSelector((state) => state.auth.userInfo);
@@ -22,13 +22,12 @@ const NotificationDropdown = () => {
     const [loading, setLoading] = useState(false);
     const [showAllModal, setShowAllModal] = useState(false);
 
-    // Tạm thời hardcode uid bác sĩ & bệnh nhân
-    const doctorHardcodeUid = "1HwseYsBwxby5YnsLUWYzvRtCw53";
-    const patientHardcodeUid = "cq6SC0A1RZXdLwFE1TKGRJG8fgl2";
-    const isDoctor = user.uid === doctorHardcodeUid;
-    const doctorUid = isDoctor ? user.uid : doctorHardcodeUid;
-    const patientUid = isDoctor ? patientHardcodeUid : user.uid;
-    const roomChats = [doctorUid, patientUid].sort().join("_");
+    // Xác định vai trò
+    const isDoctor = user?.role === "doctor";
+
+    // Lấy uid
+    const senderUid = isDoctor ? user?.uid : user?.doctorId;
+    const receiverUid = isDoctor ? user?.patientId : user?.uid;
 
     // Load danh sách thông báo
     const loadNotifications = async () => {
@@ -67,7 +66,7 @@ const NotificationDropdown = () => {
                 prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
             );
             setUnreadCount((prev) => Math.max(prev - 1, 0));
-            sendStatus(doctorUid, patientUid, "notification_update");
+            sendStatus(senderUid, receiverUid, "notification_update");
         } catch (error) {
             console.error("Không thể đánh dấu đã đọc", error);
         }
@@ -78,7 +77,7 @@ const NotificationDropdown = () => {
         try {
             await ApiNotification.deleteNotification(id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
-            sendStatus(doctorUid, patientUid, "notification_delete");
+            sendStatus(senderUid, receiverUid, "notification_delete");
         } catch (error) {
             console.error("Không thể xóa thông báo", error);
         }
@@ -90,7 +89,7 @@ const NotificationDropdown = () => {
             await ApiNotification.markAllAsRead();
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             setUnreadCount(0);
-            sendStatus(doctorUid, patientUid, "notification_read_all");
+            sendStatus(senderUid, receiverUid, "notification_read_all");
         } catch (error) {
             console.error("Không thể đánh dấu tất cả đã đọc", error);
         }
@@ -112,7 +111,6 @@ const NotificationDropdown = () => {
         }
     };
 
-    // 🔥 Lắng nghe tín hiệu Firestore
     useEffect(() => {
         if (!user?.uid) return;
 
@@ -120,7 +118,7 @@ const NotificationDropdown = () => {
         loadNotifications();
         loadUnreadCount();
 
-        const unsub = listenStatus(roomChats, async (signal) => {
+        const unsub = listenStatusByReceiver(user?.uid, async (signal) => {
             if (!signal) return;
 
             try {

@@ -559,14 +559,12 @@ const AttendanceTab = () => {
     const user = useSelector((state) => state.auth.userInfo);
     const [doctorInfo, setDoctorInfo] = useState(null);
     const [loadingDoctor, setLoadingDoctor] = useState(true);
+    const [receiverId, setReceiverId] = useState();
+    const senderId = user.uid;
+    const roomChats = [senderId, receiverId].sort().join("_");
 
-    const firebaseUid = user?.uid || "doctor-firebase-uid";
-    const doctorUid = user.uid;
-    const patientUid = user.uid;
-    const roomChats = [doctorUid, patientUid].sort().join("_"); 
-    
     useEffect(() => {
-        const unsub = listenStatus(roomChats, async (signal) => {
+        const unsub = listenStatusByReceiver(senderId, async (signal) => {
             if (!signal) return;
             if (["createWorkShifts", "deleteManyWorkShifts", "checkInWorkShift", "checkOutWorkShift"].includes(signal.status)) {
                 try {
@@ -579,7 +577,7 @@ const AttendanceTab = () => {
             }
         })
         const fetchDoctorInfo = async () => {
-            if (!firebaseUid) {
+            if (!senderId) {
                 setInfoModalTitle("Thông báo");
                 setInfoModalMessage("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
                 setShowInfoModal(true);
@@ -697,7 +695,7 @@ const AttendanceTab = () => {
             }
         };
 
-        if (!firebaseUid) {
+        if (!senderId) {
             setInfoModalTitle("Thông báo");
             setInfoModalMessage("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
             setShowInfoModal(true);
@@ -810,16 +808,16 @@ const AttendanceTab = () => {
                 const editingSchedule = savedSchedules.find((s) => s.weekStartDate === weekStartDate);
                 if (editingSchedule && editingSchedule.shiftIds.length > 0) {
                     await ApiWorkShift.deleteManyWorkShifts(editingSchedule.shiftIds);
-                    sendStatus(doctorUid, patientUid, "deleteManyWorkShifts");
+                    sendStatus(senderId, receiverId, "deleteManyWorkShifts");
                 }
                 await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
-                sendStatus(doctorUid, patientUid, "createWorkShifts");
+                sendStatus(senderId, receiverId, "createWorkShifts");
                 successMessage = "Lịch làm việc đã được cập nhật!";
                 setIsEditing(false); // Reset editing mode
             } else {
                 // Create mới
                 await ApiWorkShift.createWorkShifts({ shifts: shiftsData });
-                sendStatus(doctorUid, patientUid, "createWorkShifts");
+                sendStatus(senderId, receiverId, "createWorkShifts");
                 successMessage = "Lịch làm việc đã được lưu!";
             }
 
@@ -907,7 +905,7 @@ const AttendanceTab = () => {
         if (scheduleToDelete && scheduleToDelete.length > 0) {
             try {
                 const response = await ApiWorkShift.deleteManyWorkShifts(scheduleToDelete);
-                sendStatus(doctorUid, patientUid, "deleteManyWorkShifts");
+                sendStatus(senderId, receiverId, "deleteManyWorkShifts");
 
                 // Fetch lại để cập nhật state
                 const shifts = await ApiWorkShift.getWorkShiftsByDoctor();
@@ -971,7 +969,7 @@ const AttendanceTab = () => {
                 minute: "2-digit",
             });
             const shift = await ApiWorkShift.checkInWorkShift("webcam");
-            sendStatus(doctorUid, patientUid, "checkInWorkShift");
+            sendStatus(senderId, receiverId, "checkInWorkShift");
 
             setCheckInTime(checkInTimeStr);
             setAttendanceHistory((prev) => {
@@ -1025,7 +1023,7 @@ const AttendanceTab = () => {
                 minute: "2-digit",
             });
             const shift = await ApiWorkShift.checkOutWorkShift("webcam");
-            sendStatus(doctorUid, patientUid, "checkOutWorkShift");
+            sendStatus(senderId, receiverId, "checkOutWorkShift");
 
             setCheckOutTime(checkOutTimeStr);
             setAttendanceHistory((prev) => {
