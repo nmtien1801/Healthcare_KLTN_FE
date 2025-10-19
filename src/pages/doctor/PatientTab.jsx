@@ -8,7 +8,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { db } from "../../../firebase";
 import ApiPatient from "../../apis/ApiPatient";
 import ApiDoctor from "../../apis/ApiDoctor";
-import { listenStatus } from "../../utils/SetupSignFireBase";
+import { listenStatusByReceiver } from "../../utils/SetupSignFireBase";
 import { Button, Input, Select, Badge } from "../../components/doctor/common-ui-components";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component
@@ -184,24 +184,26 @@ export default function PatientTab({ handleStartCall }) {
 
   // Lắng nghe tín hiệu realtime từ Firebase
   useEffect(() => {
-    if (!roomChats) {
-      console.warn("roomChats không hợp lệ:", roomChats);
+    if (!doctorUid) {
+      console.warn("doctorUid không hợp lệ:", doctorUid);
       setIsLoading(false);
       return;
     }
     fetchPatientsAndAppointments(); // Gọi lần đầu khi component mount
-    const unsub = listenStatus(roomChats, (signal) => {
-      if (!signal?.status) return;
-      if (
-        signal.status === "update_patient_info" ||
-        signal.status === "update_patient_list"
-      ) {
-        console.log("Cập nhật danh sách bệnh nhân...");
-        fetchPatientsAndAppointments();
+
+    const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+      const statusCode = [
+        "update_patient_info",
+        "update_patient_list"
+      ];
+
+      if (statusCode.includes(signal?.status)) {
+        await fetchPatientsAndAppointments();
       }
     });
-    return () => unsub && unsub();
-  }, [roomChats]);
+
+    return () => unsub();
+  }, [doctorUid]);
 
   // Lắng nghe tin nhắn realtime từ Firebase
   useEffect(() => {

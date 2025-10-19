@@ -13,7 +13,7 @@ import {
 import { Button, Badge, Avatar } from "../common-ui-components";
 import PastAppointmentsModal from "./PastAppointmentsModal";
 import { useSelector } from "react-redux";
-import { listenStatus } from "../../../utils/SetupSignFireBase";
+import { listenStatusByReceiver } from "../../../utils/SetupSignFireBase";
 import ApiPatient from "../../../apis/ApiPatient";
 
 // Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component (tái sử dụng từ PatientTab)
@@ -107,14 +107,14 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
         }
     }, [patient]);
 
-    // Lắng nghe tín hiệu cập nhật realtime từ Firebase
+    // Lắng nghe tín hiệu realtime từ Firebase
     useEffect(() => {
-        if (!roomChats || !patient?.id) {
-            return;
-        }
+        const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+            const statusCode = [
+                "update_patient_info",
+            ];
 
-        const unsub = listenStatus(roomChats, async (signal) => {
-            if (signal?.status === "update_patient_info") {
+            if (statusCode.includes(signal?.status)) {
                 try {
                     const res = await ApiPatient.getAllPatients();
                     const allPatients = res.data || res;
@@ -131,8 +131,8 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
             }
         });
 
-        return () => unsub && unsub();
-    }, [roomChats, patient?.id]);
+        return () => unsub();
+    }, [doctorUid]);
 
     if (!show || !patientData) return null;
 

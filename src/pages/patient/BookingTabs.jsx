@@ -7,7 +7,7 @@ import ApiBooking from "../../apis/ApiBooking";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { sendStatus } from "../../utils/SetupSignFireBase";
-import { listenStatus } from "../../utils/SetupSignFireBase";
+import { listenStatusByReceiver } from "../../utils/SetupSignFireBase";
 import { useNavigate } from "react-router-dom";
 import { getBalanceService, withdrawService, depositService } from "../../apis/paymentService";
 import ApiNotification from "../../apis/ApiNotification";
@@ -330,15 +330,23 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
 
   // nhận tín hiệu firebase
   useEffect(() => {
-    const roomChats = [receiverId, senderId].sort().join("_");
+    const unsub = listenStatusByReceiver(senderId, async (signal) => {
+      const appointmentStatuses = [
+        "Đặt lịch",
+        "Hủy lịch",
+        "Xác nhận",
+        "Hủy bởi bác sĩ",
+        "Hoàn thành",
+        "Đang chờ"
+      ];
 
-    const unsub = listenStatus(roomChats, async (signal) => {
-      if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
-        fetchAppointments();
+      if (appointmentStatuses.includes(signal?.status)) {
+        await fetchAppointments();
       }
     });
+
     return () => unsub();
-  }, [receiverId, senderId]);
+  }, [senderId]);
 
   const handleShowChat = async (appointment) => {
     setShowChatbot(true)

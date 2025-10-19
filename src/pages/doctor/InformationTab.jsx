@@ -7,7 +7,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
 import { formatDate } from "../../utils/formatDate";
-import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
+import { listenStatusByReceiver, sendStatus } from "../../utils/SetupSignFireBase";
 
 // ProfileHeader
 const ProfileHeader = ({ doctor }) => (
@@ -324,16 +324,21 @@ export default function DoctorProfile() {
 
   const handleCancel = () => setIsEditing(false);
 
-  // Realtime sync
+  // Lắng nghe tín hiệu realtime từ Firebase
   useEffect(() => {
     fetchDoctorInfo();
-    const unsub = listenStatus(roomChats, (signal) => {
-      if (signal && signal.status === "update_info") {
-        fetchDoctorInfo();
+    const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+      const statusCode = [
+        "update_info",
+      ];
+
+      if (statusCode.includes(signal?.status)) {
+        await fetchDoctorInfo();
       }
     });
-    return () => unsub && unsub();
-  }, [roomChats]);
+
+    return () => unsub();
+  }, [doctorUid]);
 
   // Render
   if (loading) {

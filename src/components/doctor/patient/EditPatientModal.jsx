@@ -3,7 +3,7 @@ import { Button, Input, Select } from "../common-ui-components";
 import { Plus, Trash2 } from "lucide-react";
 import ApiDoctor from "../../../apis/ApiDoctor";
 import { useDispatch, useSelector } from "react-redux";
-import { listenStatus, sendStatus } from "../../../utils/SetupSignFireBase";
+import { listenStatusByReceiver, sendStatus } from "../../../utils/SetupSignFireBase";
 import { applyMedicines, fetchMedicines } from "../../../redux/medicineAiSlice";
 
 const EditPatientModal = ({ show, onHide, patient, onSave }) => {
@@ -58,7 +58,7 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
     useEffect(() => {
         const fetchMedicine = async () => {
             const today = new Date();
-            
+
             const res = await dispatch(fetchMedicines({ userId: patient.userId._id, date: today }));
 
             if (res?.payload?.DT) {
@@ -87,19 +87,23 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
         }
     }, [patient, show]);
 
-    // Lắng nghe realtime từ Firebase
+    // Lắng nghe tín hiệu realtime từ Firebase
     useEffect(() => {
-        if (!roomChats) return;
-        const unsubscribe = listenStatus(roomChats, (signal) => {
-            if (signal?.status === "update_patient_info") {
+        const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+            const statusCode = [
+                "update_patient_info",
+            ];
+
+            if (statusCode.includes(signal?.status)) {
                 setFormData((prev) => ({
                     ...prev,
                     ...patient,
                 }));
             }
         });
-        return () => unsubscribe && unsubscribe();
-    }, [roomChats, patient]);
+
+        return () => unsub();
+    }, [doctorUid, patient]);
 
     // Hàm thêm thuốc mới
     const addMedicine = (time) => {

@@ -20,7 +20,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
 import { getLabelFromOptions } from "../../utils/apppointmentHelper";
 import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
-import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
+import { sendStatus, listenStatusByReceiver } from "../../utils/SetupSignFireBase";
 import { useSelector } from "react-redux";
 import ApiNotification from "../../apis/ApiNotification";
 
@@ -43,7 +43,7 @@ export default function AppointmentTab() {
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const user = useSelector((state) => state.auth.userInfo);
   const doctorUid = user.uid;
-  const [patientUid, setPatientUid] = useState('cq6SC0A1RZXdLwFE1TKGRJG8fgl2');
+  const [patientUid, setPatientUid] = useState();
 
   const fetchAppointments = async () => {
     try {
@@ -62,16 +62,24 @@ export default function AppointmentTab() {
 
   // Lắng nghe tín hiệu hủy lịch qua Firestore (status message) trong chats
   useEffect(() => {
-    const roomChats = [doctorUid, patientUid].sort().join("_");
+    const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+      // Chỉ xử lý các status liên quan đến appintments
+      const appointmentStatuses = [
+        "Đặt lịch",
+        "Hủy lịch",
+        "Xác nhận",
+        "Hủy bởi bác sĩ",
+        "Hoàn thành",
+        "Đang chờ"
+      ];
 
-    const unsub = listenStatus(roomChats, async (signal) => {
-      if (signal?.status === "Đặt lịch" || signal?.status === "Hủy lịch" || signal?.status === "Xác nhận" || signal?.status === "Hủy bởi bác sĩ" || signal?.status === "Hoàn thành" || signal?.status === "Đang chờ") {
-        fetchAppointments();
+      if (appointmentStatuses.includes(signal?.status)) {
+        await fetchAppointments();
       }
     });
 
     return () => unsub();
-  }, [doctorUid, patientUid]);
+  }, [doctorUid]);
 
   const mapAppointment = (item) => ({
     id: item._id,

@@ -17,7 +17,7 @@ import {
 import ApiWorkShift from "../../apis/ApiWorkShift";
 import ApiDoctor from "../../apis/ApiDoctor";
 import { formatDate } from "../../utils/formatDate";
-import { listenStatus, sendStatus } from "../../utils/SetupSignFireBase";
+import { listenStatusByReceiver, sendStatus } from "../../utils/SetupSignFireBase";
 
 // Shift options
 const shiftOptions = [
@@ -566,7 +566,6 @@ const AttendanceTab = () => {
     const roomChats = [doctorUid, patientUid].sort().join("_"); 
     
     useEffect(() => {
-
         const unsub = listenStatus(roomChats, async (signal) => {
             if (!signal) return;
             if (["createWorkShifts", "deleteManyWorkShifts", "checkInWorkShift", "checkOutWorkShift"].includes(signal.status)) {
@@ -711,6 +710,7 @@ const AttendanceTab = () => {
             unsub(); // Cleanup listener
         };
     }, [user.uid, roomChats]);
+
     // Thêm useEffect để tự động load lịch làm việc đã có cho tuần được chọn khi modal mở hoặc tuần thay đổi
     useEffect(() => {
         if (showScheduleFormModal) {
