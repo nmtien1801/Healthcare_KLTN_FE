@@ -94,6 +94,7 @@ export default function AppointmentTab() {
     date: new Date(item.date).toLocaleDateString("vi-VN"),
     time: item.time,
     type: item.type,
+    isFollowUp: item.isFollowUp,
     reason: item.reason || "Tạm thời chưa có",
     doctor: item.doctorId?.userId?.username || "Tạm thời chưa có",
     notes: item.notes || "Tạm thời chưa có",
@@ -285,6 +286,7 @@ export default function AppointmentTab() {
               <th>Bệnh nhân</th>
               <th>Chẩn đoán</th>
               <th>Thời gian</th>
+              <th>Địa điểm</th>
               <th>Loại</th>
               <th>Trạng thái</th>
               <th>Hành động</th>
@@ -318,6 +320,7 @@ export default function AppointmentTab() {
                     </div>
                   </td>
                   <td>{getLabelFromOptions(TYPE_OPTIONS, appointment.type)}</td>
+                  <td>{appointment.isFollowUp == true ? "Tái khám" : "Khám mới"}</td>
                   <td>
                     <span
                       className={`badge bg-${STATUS_COLORS[appointment.status]?.bg} text-${STATUS_COLORS[appointment.status]?.text}`}
