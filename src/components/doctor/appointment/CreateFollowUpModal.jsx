@@ -77,7 +77,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
                 avatar: user.avatar || "",
             });
 
-            await sendStatus(patient.uid, user?.uid, "Đặt lịch");
+            await sendStatus(user?.uid, patient.uid, "Đặt lịch");
             await book_appointment.post("/create-calendar-schedule", {
                 email_Patient: patient.email,
                 email_Docter: user.email,
