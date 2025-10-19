@@ -184,14 +184,14 @@ export default function PatientTab({ handleStartCall }) {
 
   // Lắng nghe tín hiệu realtime từ Firebase
   useEffect(() => {
-    if (!doctorUid) {
-      console.warn("doctorUid không hợp lệ:", doctorUid);
+    if (!senderId) {
+      console.warn("senderId không hợp lệ:", senderId);
       setIsLoading(false);
       return;
     }
     fetchPatientsAndAppointments(); // Gọi lần đầu khi component mount
 
-    const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+    const unsub = listenStatusByReceiver(senderId, async (signal) => {
       const statusCode = [
         "update_patient_info",
         "update_patient_list"
@@ -203,7 +203,7 @@ export default function PatientTab({ handleStartCall }) {
     });
 
     return () => unsub();
-  }, [doctorUid]);
+  }, [senderId]);
 
   // Lắng nghe tin nhắn realtime từ Firebase
   useEffect(() => {

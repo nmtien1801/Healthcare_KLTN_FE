@@ -26,8 +26,8 @@ const mapPatientData = (apiPatient, pastAppointments = []) => {
 
     const hasHealthRecords = apiPatient.healthRecords && Array.isArray(apiPatient.healthRecords) && apiPatient.healthRecords.length > 0;
     const healthRecords = hasHealthRecords
-        ? apiPatient.healthRecords.map(record => ({
-            id: record._id || `temp-${Date.now()}`,
+        ? apiPatient.healthRecords.map((record, index) => ({
+            id: record._id || `${apiPatient._id || "patient"}-record-${index}`,
             date: record.date
                 ? new Date(record.date).toLocaleDateString("vi-VN", {
                     day: "2-digit",
@@ -97,9 +97,6 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
 
     // Lấy uid để tạo roomChats
     const doctorUid = user?.uid;
-    const patientUid = patient?.uid;
-    const roomChats = [doctorUid, patientUid].sort().join("_");
-
     // Khi mở modal hoặc patient thay đổi -> set lại state
     useEffect(() => {
         if (patient) {
@@ -110,15 +107,20 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
     // Lắng nghe tín hiệu realtime từ Firebase
     useEffect(() => {
         const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
-            const statusCode = [
-                "update_patient_info",
-            ];
+            const statusCode = ["update_patient_info"];
 
             if (statusCode.includes(signal?.status)) {
                 try {
+                    if (!patient || !patient.id) {
+                        return;
+                    }
+
                     const res = await ApiPatient.getAllPatients();
                     const allPatients = res.data || res;
-                    const updatedApiPatient = allPatients.find(p => p._id === patient.id);
+                    const updatedApiPatient = allPatients.find(
+                        (p) => p._id === patient.id
+                    );
+
                     if (!updatedApiPatient) {
                         console.warn("Không tìm thấy bệnh nhân với ID:", patient.id);
                         return;
@@ -132,7 +134,7 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
         });
 
         return () => unsub();
-    }, [doctorUid]);
+    }, [doctorUid, patient]);
 
     if (!show || !patientData) return null;
 
@@ -411,9 +413,9 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {patientData.healthRecords.map((record) => (
+                                                        {patientData.healthRecords.map((record, index) => (
                                                             <tr
-                                                                key={record.id}
+                                                                key={`${record.id}-${index}`}
                                                                 style={{ transition: "background-color 0.2s" }}
                                                                 onMouseEnter={(e) =>
                                                                     (e.currentTarget.style.backgroundColor = "#f0f7ff")
@@ -429,6 +431,7 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
                                                                 <td style={{ padding: "12px" }}>{record.recordedAt}</td>
                                                             </tr>
                                                         ))}
+
                                                     </tbody>
                                                 </table>
                                             </div>
