@@ -47,15 +47,13 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
         setIsSubmitting(true);
 
         try {
-            const formattedDate = formData.date
-                ? formData.date.toISOString().split("T")[0]
-                : "";
+            const formattedDate = formData.date.toISOString().split("T")[0];
             const formattedTime = formData.time;
+            const fullDateTime = `${formattedDate}T${formattedTime}`; // 👈 chỉ dùng cho calendar
 
             if (!formattedDate || !formattedTime) {
                 throw new Error("Vui lòng chọn ngày và giờ tái khám.");
             }
-
             const response = await ApiBooking.createFollowUpAppointment({
                 firebaseUid: user.uid,
                 patientId: patient.id,
@@ -69,7 +67,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
             await ApiNotification.createNotification({
                 receiverId: patient.uid,
                 title: "Bác sĩ đặt lịch tái khám",
-                content: `Bác sĩ ${user.username || ""} đã đặt lịch tái khám cho bạn vào ngày ${formattedDate} lúc ${formattedTime}. Vui lòng kiểm tra chi tiết lịch hẹn.`,
+                content: `Bác sĩ ${user.username || ""} đã đặt lịch tái khám vào ${formattedDate} lúc ${formattedTime}.`,
                 type: "system",
                 metadata: {
                     link: `/patient/appointments/${response.id}`,
@@ -82,21 +80,18 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
                 email_Patient: patient.email,
                 email_Docter: user.email,
                 period: 30,
-                time: formattedTime,
+                time: fullDateTime,
                 location: formData.type,
             });
 
-            setSuccessMessage("Đặt lịch hẹn tái khám thành công!");
+            setSuccessMessage(`Đặt lịch hẹn tái khám thành công với bệnh nhân ${patient.name} vào ${formattedDate} lúc ${formattedTime}!`);
             setShowSuccessModal(true);
             onSave(response);
             onHide();
         } catch (err) {
-            const errorMsg =
-                err.response?.data?.message ||
-                err.message ||
-                "Không thể tạo lịch. Vui lòng thử lại sau.";
-            setCancelErrorMessage(errorMsg);
-            setShowCancelErrorModal(true);
+            const msg = err.message || "Không thể tạo lịch, vui lòng thử lại.";
+            setErrorMessage(msg);
+            setShowErrorModal(true);
         } finally {
             setIsSubmitting(false);
         }
