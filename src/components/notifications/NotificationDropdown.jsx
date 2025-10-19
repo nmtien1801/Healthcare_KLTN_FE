@@ -114,63 +114,84 @@ const NotificationDropdown = () => {
     useEffect(() => {
         if (!user?.uid) return;
 
-        // Load ban đầu
-        loadNotifications();
-        loadUnreadCount();
+        let previousIds = new Set(); // lưu danh sách id cũ để so sánh
+        let isFirstLoad = true;
+
+        const initLoad = async () => {
+            const res = await ApiNotification.getNotificationsByUser();
+            if (res?.data) {
+                const normalized = res.data.map((n) => ({
+                    ...n,
+                    id: n.id || n._id,
+                }));
+                setNotifications(normalized);
+                setUnreadCount(normalized.filter((n) => !n.isRead).length);
+                previousIds = new Set(normalized.map((n) => n.id));
+            }
+            isFirstLoad = false;
+        };
+        initLoad();
 
         const unsub = listenStatusByReceiver(user?.uid, async (signal) => {
             if (!signal) return;
 
+            // Nếu chỉ là cập nhật hoặc xóa → reload mà không hiện toast
+            if (
+                typeof signal === "string" &&
+                ["notification_update", "notification_delete", "notification_read_all"].includes(signal)
+            ) {
+                await Promise.all([loadNotifications(), loadUnreadCount()]);
+                return;
+            }
+
+            // Khi có tín hiệu mới thực sự
             try {
-                // Nếu chỉ là cập nhật, xóa hoặc đánh dấu đọc → reload mà không hiện toast
-                if (
-                    typeof signal === "string" &&
-                    ["notification_update", "notification_delete", "notification_read_all"].includes(signal)
-                ) {
-                    await Promise.all([loadNotifications(), loadUnreadCount()]);
-                    return;
-                }
-
-                // Ngược lại, nếu là tín hiệu mới thực sự → load và hiện toast
                 const res = await ApiNotification.getNotificationsByUser();
-                if (res?.data?.length > 0) {
-                    const normalized = res.data.map((n) => ({
-                        ...n,
-                        id: n.id || n._id,
-                    }));
-                    setNotifications(normalized);
-                    setUnreadCount(normalized.filter((n) => !n.isRead).length);
+                if (!res?.data?.length) return;
 
-                    const latest = res.data[0];
-                    if (!latest.isRead) {
-                        toast.success(
-                            <div className="d-flex align-items-center">
-                                {latest.avatar ? (
-                                    <img
-                                        src={latest.avatar}
-                                        alt="Avatar"
-                                        className="rounded-circle me-2"
-                                        style={{
-                                            width: "30px",
-                                            height: "30px",
-                                            objectFit: "cover",
-                                        }}
-                                    />
-                                ) : (
-                                    <div
-                                        className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
-                                        style={{ width: "30px", height: "30px" }}
-                                    >
-                                        <span style={{ color: "white" }}>🔔</span>
-                                    </div>
-                                )}
-                                <div>
-                                    <strong>{latest.title}</strong>
-                                    <p style={{ margin: 0 }}>{latest.content}</p>
+                const normalized = res.data.map((n) => ({
+                    ...n,
+                    id: n.id || n._id,
+                }));
+                setNotifications(normalized);
+                setUnreadCount(normalized.filter((n) => !n.isRead).length);
+
+                // Tìm những thông báo mới chưa có trong previousIds
+                const newOnes = normalized.filter((n) => !previousIds.has(n.id));
+
+                // Cập nhật lại previousIds
+                previousIds = new Set(normalized.map((n) => n.id));
+
+                // Nếu có thông báo mới và không phải lần load đầu → show toast
+                if (!isFirstLoad && newOnes.length > 0) {
+                    const latest = newOnes[0];
+                    toast.success(
+                        <div className="d-flex align-items-center">
+                            {latest.avatar ? (
+                                <img
+                                    src={latest.avatar}
+                                    alt="Avatar"
+                                    className="rounded-circle me-2"
+                                    style={{
+                                        width: "30px",
+                                        height: "30px",
+                                        objectFit: "cover",
+                                    }}
+                                />
+                            ) : (
+                                <div
+                                    className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
+                                    style={{ width: "30px", height: "30px" }}
+                                >
+                                    <span style={{ color: "white" }}>🔔</span>
                                 </div>
+                            )}
+                            <div>
+                                <strong>{latest.title}</strong>
+                                <p style={{ margin: 0 }}>{latest.content}</p>
                             </div>
-                        );
-                    }
+                        </div>
+                    );
                 }
             } catch (err) {
                 console.error("Lỗi khi load thông báo realtime:", err);
