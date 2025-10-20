@@ -207,7 +207,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
         },
         avatar: user.avatar || "", // avatar người gửi (nếu có)
       });
-      console.log("avatar:", user.avatar || "");
+
       // gửi tín hiệu trạng thái hủy lịch tới bác sĩ qua Firestore
       await sendStatus(user?.uid, receiverId, "Hủy lịch");
 

@@ -20,15 +20,11 @@ import SendIcon from "@mui/icons-material/Send";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatBox from "./ChatBox";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTrendMedicine, selectMedicineLoading, selectTrendMedicine, selectMedicineError, applyMedicines, fetchMedicines } from "../../../redux/medicineAiSlice";
 
 const FormPatient = () => {
     const currentYear = new Date().getFullYear();
     const dispatch = useDispatch();
     let user = useSelector((state) => state.auth.userInfo);
-    const medicineLoading = useSelector(selectMedicineLoading);
-    const trendMedicine = useSelector(selectTrendMedicine);
-    const medicineError = useSelector(selectMedicineError);
 
     const [formData, setFormData] = useState({
         year: currentYear,
@@ -48,15 +44,6 @@ const FormPatient = () => {
         blood_glucose_level: 125,
     });
 
-    const [medicines, setMedicines] = useState({
-        sang: [],
-        trua: [],
-        toi: [],
-    });
-
-    // Đơn thuốc: not_created | created | applied
-    const [prescriptionStatus, setPrescriptionStatus] = useState("not_created");
-
     const [loading, setLoading] = useState(false);
     const [loadingAsk, setLoadingAsk] = useState(false);
     const [question, setQuestion] = useState("");
@@ -66,32 +53,6 @@ const FormPatient = () => {
             text: "💉 Xin chào! Vui lòng nhập thông tin bệnh nhân để dự đoán hoặc đặt câu hỏi.",
         },
     ]);
-
-    // Monitor medicine data changes
-    useEffect(() => {
-        if (trendMedicine && prescriptionStatus === "created") {
-            let medicineText = "💊 Đã nhận được khuyến nghị thuốc từ AI:\n";
-            if (trendMedicine.data) {
-                medicineText += `📋 ${trendMedicine.data}`;
-            } else {
-                medicineText += `📋 ${JSON.stringify(trendMedicine)}`;
-            }
-            setMessages((prev) => [...prev, {
-                sender: "bot",
-                text: medicineText
-            }]);
-        }
-    }, [trendMedicine, prescriptionStatus]);
-
-    // Monitor medicine errors
-    useEffect(() => {
-        if (medicineError) {
-            setMessages((prev) => [...prev, {
-                sender: "bot",
-                text: `❌ Lỗi khi lấy dữ liệu thuốc: ${medicineError}`
-            }]);
-        }
-    }, [medicineError]);
 
     const handleChange = (e) => {
         const { name, value, checked, type } = e.target;
@@ -166,146 +127,6 @@ Hồ sơ bệnh nhân:
         } finally {
             setLoadingAsk(false);
         }
-    };
-
-    // Cập nhật trạng thái đơn thuốc theo dữ liệu hiện có
-    React.useEffect(() => {
-        const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
-        const anyMedicines = hasAny(medicines.sang) || hasAny(medicines.trua) || hasAny(medicines.toi);
-        if (prescriptionStatus !== "applied") {
-            if (anyMedicines) {
-                setPrescriptionStatus("created");
-            } else {
-                setPrescriptionStatus("not_created");
-            }
-        }
-    }, [medicines, prescriptionStatus]);
-
-
-    // lấy thuốc 
-    const categorizeMedicines = (list) => {
-        const sang = [];
-        const trua = [];
-        const toi = [];
-
-        const instructions = {
-            sang: "uống sau ăn",
-            trua: "uống trước ăn",
-            toi: "tiêm trước khi đi ngủ",
-        };
-
-        list.forEach((m) => {
-            const hour = m.time.split("T")[1].split(":")[0];
-            const hourNum = parseInt(hour, 10);
-
-            if (hourNum >= 5 && hourNum < 11) {
-                sang.push(`${m.name} ${m.lieu_luong} - ${instructions.sang}`);
-            } else if (hourNum >= 11 && hourNum < 17) {
-                trua.push(`${m.name} ${m.lieu_luong} - ${instructions.trua}`);
-            } else if (hourNum >= 17 && hourNum <= 22) {
-                toi.push(`${m.name} ${m.lieu_luong} - ${instructions.toi}`);
-            }
-        });
-
-        return { sang, trua, toi };
-    };
-
-    useEffect(() => {
-        const fetchMedicine = async () => {
-            const today = new Date();
-            const res = await dispatch(fetchMedicines({ userId: user.userId, date: today }));
-
-            if (res?.payload?.DT) {
-                const data = res.payload.DT;
-
-                // ✅ Nếu DB đã có thuốc, coi như đơn đã được áp dụng
-                if (data.length > 0) {
-                    setPrescriptionStatus("applied");
-                }
-
-                const categorized = categorizeMedicines(data);
-                setMedicines(categorized);
-
-                // Nếu chưa có thuốc, giữ logic cũ
-                if (data.length === 0) {
-                    const hasAny = (arr) => Array.isArray(arr) && arr.length > 0;
-                    if (hasAny(categorized.sang) || hasAny(categorized.trua) || hasAny(categorized.toi)) {
-                        setPrescriptionStatus("created");
-                    } else {
-                        setPrescriptionStatus("not_created");
-                    }
-                }
-            }
-        };
-
-        fetchMedicine();
-    }, [dispatch, user.userId]);
-
-    const createPrescription = async () => {
-        try {
-            const medicineData = {
-                age: formData.age,
-                gender: formData.gender === "female" ? "female" : "male",
-                BMI: formData.bmi,
-                HbA1c: formData.hbA1c_level,
-                bloodSugar: formData.blood_glucose_level
-            };
-
-            let res = await dispatch(fetchTrendMedicine(medicineData)).unwrap();
-
-            // 🚀 cập nhật medicines
-            setMedicines(res);
-
-            setPrescriptionStatus("created");
-            setMessages((prev) => [
-                ...prev,
-                { sender: "bot", text: "📝 Đã tạo đơn thuốc dựa trên thông tin bệnh nhân và AI phân tích." }
-            ]);
-        } catch (error) {
-            console.error("Lỗi khi tạo đơn thuốc:", error);
-            setMessages((prev) => [
-                ...prev,
-                { sender: "bot", text: "⚠️ Có lỗi xảy ra khi tạo đơn thuốc. Vui lòng thử lại!" }
-            ]);
-        }
-    };
-
-    function parseMedicine(item, time, userId) {
-        const [thuocLieu, cachDung] = item.split(" - ");
-        const parts = thuocLieu?.trim().split(" ") || [];
-        const idx = parts.findIndex(p => /\d/.test(p));
-
-        let thuoc = thuocLieu || "";
-        let lieuluong = "";
-
-        if (idx !== -1) {
-            thuoc = parts.slice(0, idx).join(" ");
-            lieuluong = parts.slice(idx).join(" ");
-        }
-
-        return {
-            userId,
-            name: thuoc.trim(),
-            lieu_luong: lieuluong.trim(),
-            Cachdung: cachDung?.trim(),
-            time: time,
-            status: false
-        };
-    }
-
-    const applyPrescriptionOneWeek = async () => {
-        if (prescriptionStatus !== "created") return;
-        
-        Object.entries(medicines).forEach(([time, arr]) => {
-            arr.forEach(item => {
-                const parsed = parseMedicine(item, time, user?.userId);
-                console.log("=> parse:", parsed);
-                // dispatch(applyMedicines(parsed));
-            });
-        });
-
-        setPrescriptionStatus("applied");
-        setMessages((prev) => [...prev, { sender: "bot", text: "✅ Đã áp dụng đơn thuốc trong 1 tuần. Hãy theo dõi chỉ số thường xuyên." }]);
     };
 
     return (
@@ -509,95 +330,6 @@ Hồ sơ bệnh nhân:
                                     </FormControl>
                                 </div>
                             </div>
-
-                            {/* Medicine Plan */}
-                            <Paper
-                                elevation={2}
-                                sx={{
-                                    p: 2,
-                                    mt: 3,
-                                    borderRadius: 3,
-                                    bgcolor: prescriptionStatus === "not_created" ? "rgba(245, 158, 11, 0.08)" : "rgba(46, 125, 50, 0.05)",
-                                }}
-                            >
-                                <Typography
-                                    variant="h6"
-                                    sx={{ fontWeight: "bold", color: prescriptionStatus === "not_created" ? "warning.main" : "success.main" }}
-                                >
-                                    📋 Kế hoạch dùng thuốc
-                                </Typography>
-                                {prescriptionStatus === "not_created" && (
-                                    <Typography variant="body2" sx={{ mb: 1.5, color: "text.secondary" }}>
-                                        Chưa có đơn thuốc. Vui lòng khởi tạo để có thể áp dụng theo dõi.
-                                    </Typography>
-                                )}
-                                <ul
-                                    style={{
-                                        paddingLeft: "1rem",
-                                        marginBottom: "0.3rem",
-                                        fontSize: "0.95rem",
-                                    }}
-                                >
-                                    <li>
-                                        <strong>Sáng:</strong>{" "}
-                                        {medicines?.sang?.length > 0
-                                            ? medicines.sang.join(", ")
-                                            : "Không dùng"}
-                                    </li>
-                                    <li>
-                                        <strong>Trưa:</strong>{" "}
-                                        {medicines?.trua?.length > 0
-                                            ? medicines.trua.join(", ")
-                                            : "Không dùng"}
-                                    </li>
-                                    <li>
-                                        <strong>Tối:</strong>{" "}
-                                        {medicines?.toi?.length > 0
-                                            ? medicines.toi.join(", ")
-                                            : "Không dùng"}
-                                    </li>
-                                </ul>
-                                <Box display="flex" justifyContent="flex-end" gap={1.5}>
-                                    {prescriptionStatus === "not_created" && (
-                                        <Button
-                                            variant="contained"
-                                            color="warning"
-                                            size="small"
-                                            onClick={createPrescription}
-                                            disabled={medicineLoading}
-                                            sx={{ textTransform: "none", borderRadius: 2 }}
-                                        >
-                                            {medicineLoading ? (
-                                                <CircularProgress size={20} color="inherit" />
-                                            ) : (
-                                                "Tạo đơn thuốc"
-                                            )}
-                                        </Button>
-                                    )}
-                                    {prescriptionStatus === "created" && (
-                                        <Button
-                                            variant="contained"
-                                            color="success"
-                                            size="small"
-                                            onClick={applyPrescriptionOneWeek}
-                                            sx={{ textTransform: "none", borderRadius: 2 }}
-                                        >
-                                            Áp dụng 1 tuần
-                                        </Button>
-                                    )}
-                                    {prescriptionStatus === "applied" && (
-                                        <Button
-                                            variant="contained"
-                                            color="inherit"
-                                            size="small"
-                                            disabled
-                                            sx={{ textTransform: "none", borderRadius: 2 }}
-                                        >
-                                            Đã áp dụng
-                                        </Button>
-                                    )}
-                                </Box>
-                            </Paper>
 
                             <Button
                                 type="submit"

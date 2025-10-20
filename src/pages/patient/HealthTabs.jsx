@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
 import { InsertFoods, GetListFood } from '../../redux/foodSlice';
+import ApiNotification from "../../apis/ApiNotification";
 
 const Following = ({ user, nearestAppointment, warning }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
@@ -22,6 +23,30 @@ const Following = ({ user, nearestAppointment, warning }) => {
     border: warningCount > 1 ? 'border-danger' : 'border-success',
     content: warningCount > 1 ? safeWarning.join('\n\n') + '\n\n Vui lòng tham khảo ý kiến bác sĩ!' : "Chỉ số đường huyết trong mức bình thường"
   };
+
+  useEffect(() => {
+    if (warningCount > 1) {
+      const fetchWarning = async () => {
+        try {
+          await ApiNotification.createNotification({
+            receiverId: user.uid,
+            title: "Cảnh báo vượt mức nguy hiểm đường huyết",
+            content: safeWarning.join('\n'),
+            type: "system",
+            metadata: {
+              link: `/patient/appointments/${user.uid}`,
+            },
+            avatar: user.avatar || "",
+          });
+        } catch (err) {
+          console.error("Lỗi khi gửi cảnh báo:", err);
+        }
+      };
+
+      fetchWarning();
+    }
+  }, [warningCount, safeWarning, user]);
+
   return <div className="py-3">
     {/* Header */}
     <div className="bg-white rounded shadow-sm border p-3 mb-3">
