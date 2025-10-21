@@ -472,32 +472,33 @@ const HealthTabs = () => {
   const [nearestAppointment, setNearestAppointment] = useState(null);
   const [warning, setWarning] = useState();   // chỉ số cảnh báo
 
+
+  let fetchBloodSugarData = async () => {
+    try {
+      // Lấy cả dữ liệu lúc đói và sau ăn
+      const [postMealRes, fastingRes] = await Promise.all([
+        dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 6 })),
+        dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 6 }))
+      ]);
+
+      // Kiểm tra response structure - thử nhiều format khác nhau
+      let postMealData = postMealRes.payload.DT.bloodSugarData;
+      let fastingData = fastingRes.payload.DT.bloodSugarData;
+
+      // Gộp dữ liệu từ cả hai API calls
+      const allBloodSugarData = [...postMealData, ...fastingData];
+
+      setBloodSugar(allBloodSugarData);
+    } catch (error) {
+      console.error('Error fetching blood sugar data:', error);
+    }
+  }
+
   // get bloodSugar
   useEffect(() => {
     if (!user?.userId) {
       console.log('No userId, skipping fetchBloodSugarData');
       return;
-    }
-
-    let fetchBloodSugarData = async () => {
-      try {
-        // Lấy cả dữ liệu lúc đói và sau ăn
-        const [postMealRes, fastingRes] = await Promise.all([
-          dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 6 })),
-          dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 6 }))
-        ]);
-
-        // Kiểm tra response structure - thử nhiều format khác nhau
-        let postMealData = postMealRes.payload.DT.bloodSugarData;
-        let fastingData = fastingRes.payload.DT.bloodSugarData;
-
-        // Gộp dữ liệu từ cả hai API calls
-        const allBloodSugarData = [...postMealData, ...fastingData];
-
-        setBloodSugar(allBloodSugarData);
-      } catch (error) {
-        console.error('Error fetching blood sugar data:', error);
-      }
     }
 
     fetchBloodSugarData()
@@ -596,12 +597,8 @@ const HealthTabs = () => {
       const botResponse = res.data;
       setAiPlan(botResponse);
 
-      // Thêm thông báo thành công
-      alert('Đã lưu chỉ số đường huyết thành công!');
-
       // Refresh blood sugar data để hiển thị trên chart
-      dispatch(fetchBloodSugar({ userId: user.userId, type: "postMeal", days: 7 }));
-      dispatch(fetchBloodSugar({ userId: user.userId, type: "fasting", days: 7 }));
+      await fetchBloodSugarData();
 
     } catch (err) {
       console.error('API error:', err);
