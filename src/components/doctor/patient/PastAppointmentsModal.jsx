@@ -1,36 +1,51 @@
 import { useState, useEffect } from "react";
-import { Calendar, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Pill } from "lucide-react";
 import { Button } from "../common-ui-components";
 import ApiDoctor from "../../../apis/ApiDoctor";
+import ApiPatient from "../../../apis/ApiPatient"; // Thêm nếu bạn gọi từ service bệnh nhân
 
 const PastAppointmentsModal = ({ show, onHide, patientId }) => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [expandedId, setExpandedId] = useState(null);
+    const [medicines, setMedicines] = useState({});
+    const [loadingMed, setLoadingMed] = useState(false);
 
-    // Gọi API để lấy lịch hẹn đã khám
     useEffect(() => {
         if (!show || !patientId) return;
-
         const fetchPastAppointments = async () => {
             setLoading(true);
-            setError(null);
             try {
                 const response = await ApiDoctor.getPatientPastAppointments(patientId);
-                console.log("Past Appointments Data:", response); // Debug
                 setAppointments(Array.isArray(response) ? response : response.data || []);
             } catch (err) {
-                console.error("Lỗi khi gọi API lịch hẹn:", err.message, err.response?.data);
-                setError(
-                    err.response?.data?.message || "Không thể tải danh sách lịch hẹn. Vui lòng thử lại sau."
-                );
+                setError("Không thể tải danh sách lịch hẹn.");
             } finally {
                 setLoading(false);
             }
         };
-
         fetchPastAppointments();
     }, [show, patientId]);
+
+    const handleToggle = async (id) => {
+        if (expandedId === id) {
+            setExpandedId(null);
+            return;
+        }
+        setExpandedId(id);
+        if (!medicines[id]) {
+            setLoadingMed(true);
+            try {
+                const res = await ApiPatient.getMedicinesByAppointment(id);
+                setMedicines((prev) => ({ ...prev, [id]: res.DT || [] }));
+            } catch (error) {
+                console.error("Lỗi tải thuốc:", error);
+            } finally {
+                setLoadingMed(false);
+            }
+        }
+    };
 
     if (!show) return null;
 
@@ -46,122 +61,123 @@ const PastAppointmentsModal = ({ show, onHide, patientId }) => {
                     style={{
                         borderRadius: "16px",
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        border: "none",
                         overflow: "hidden",
                     }}
                 >
-                    <div
-                        className="modal-header border-0 py-3 px-4"
-                        style={{ backgroundColor: "#f8f9fa" }}
-                    >
+                    <div className="modal-header border-0 py-3 px-4" style={{ backgroundColor: "#f8f9fa" }}>
                         <h5 className="modal-title fw-bold text-dark">Lịch sử khám</h5>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={onHide}
-                            style={{ fontSize: "1rem" }}
-                        ></button>
+                        <button type="button" className="btn-close" onClick={onHide}></button>
                     </div>
                     <div className="modal-body p-4">
                         {loading ? (
                             <div className="text-center py-5">
-                                <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Đang tải danh sách lịch hẹn...</span>
-                                </div>
+                                <div className="spinner-border text-primary" />
                             </div>
                         ) : error ? (
-                            <div className="alert alert-danger" role="alert">
-                                <i className="fas fa-exclamation-triangle me-2"></i>
-                                {error}
-                            </div>
+                            <div className="alert alert-danger">{error}</div>
                         ) : appointments.length > 0 ? (
                             <div className="table-responsive">
-                                <table
-                                    className="table table-hover"
-                                    style={{ borderCollapse: "separate", borderSpacing: 0 }}
-                                >
-                                    <thead
-                                        style={{
-                                            backgroundColor: "#f8f9fa",
-                                            color: "#1e40af",
-                                            fontWeight: 600,
-                                        }}
-                                    >
+                                <table className="table align-middle">
+                                    <thead className="table-light">
                                         <tr>
-                                            <th
-                                                scope="col"
-                                                style={{
-                                                    padding: "12px",
-                                                    borderTopLeftRadius: "8px",
-                                                    borderBottom: "1px solid #e0e7ff",
-                                                }}
-                                            >
-                                                Ngày
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                style={{ padding: "12px", borderBottom: "1px solid #e0e7ff" }}
-                                            >
-                                                Giờ
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                style={{ padding: "12px", borderBottom: "1px solid #e0e7ff" }}
-                                            >
-                                                Bác sĩ
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                style={{
-                                                    padding: "12px",
-                                                    borderTopRightRadius: "8px",
-                                                    borderBottom: "1px solid #e0e7ff",
-                                                }}
-                                            >
-                                                Bệnh viện
-                                            </th>
+                                            <th>Ngày</th>
+                                            <th>Giờ</th>
+                                            <th>Bác sĩ</th>
+                                            <th>Bệnh viện</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {appointments.map((appt) => (
-                                            <tr
-                                                key={appt._id}
-                                                style={{ transition: "background-color 0.2s" }}
-                                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f7ff")}
-                                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
-                                            >
-                                                <td style={{ padding: "12px" }}>
-                                                    {new Date(appt.date).toLocaleDateString("vi-VN", {
-                                                        day: "2-digit",
-                                                        month: "2-digit",
-                                                        year: "numeric",
-                                                    })}
-                                                </td>
-                                                <td style={{ padding: "12px" }}>{appt.time || "-"}</td>
-                                                <td style={{ padding: "12px" }}>
-                                                    {appt.doctorId?.userId?.username || "Không xác định"}
-                                                </td>
-                                                <td style={{ padding: "12px" }}>{appt.doctorId?.hospital || "-"}</td>
-                                            </tr>
+                                            <>
+                                                <tr
+                                                    key={appt._id}
+                                                    onClick={() => handleToggle(appt._id)}
+                                                    style={{
+                                                        cursor: "pointer",
+                                                        transition: "background-color 0.3s",
+                                                        backgroundColor: expandedId === appt._id ? "#f0f7ff" : "white",
+                                                    }}
+                                                >
+                                                    <td>
+                                                        {new Date(appt.date).toLocaleDateString("vi-VN", {
+                                                            day: "2-digit",
+                                                            month: "2-digit",
+                                                            year: "numeric",
+                                                        })}
+                                                    </td>
+                                                    <td>{appt.time || "-"}</td>
+                                                    <td>{appt.doctorId?.userId?.username || "Không xác định"}</td>
+                                                    <td>{appt.doctorId?.hospital || "-"}</td>
+                                                    <td className="text-end">
+                                                        {expandedId === appt._id ? (
+                                                            <ChevronUp size={18} color="#2563eb" />
+                                                        ) : (
+                                                            <ChevronDown size={18} color="#2563eb" />
+                                                        )}
+                                                    </td>
+                                                </tr>
+
+                                                {expandedId === appt._id && (
+                                                    <tr>
+                                                        <td colSpan="5">
+                                                            <div
+                                                                className="p-3 rounded bg-light border mt-2"
+                                                                style={{
+                                                                    borderLeft: "4px solid #2563eb",
+                                                                    backgroundColor: "#f9fafb",
+                                                                }}
+                                                            >
+                                                                {loadingMed ? (
+                                                                    <div className="text-center py-3">
+                                                                        <div className="spinner-border text-primary" />
+                                                                    </div>
+                                                                ) : medicines[appt._id]?.length > 0 ? (
+                                                                    medicines[appt._id].map((med) => (
+                                                                        <div
+                                                                            key={med._id}
+                                                                            className="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded shadow-sm"
+                                                                            style={{
+                                                                                border: "1px solid #e5e7eb",
+                                                                            }}
+                                                                        >
+                                                                            <div className="d-flex align-items-center gap-2">
+                                                                                <Pill size={18} color="#2563eb" />
+                                                                                <div>
+                                                                                    <div className="fw-semibold text-dark">{med.name}</div>
+                                                                                    <small className="text-muted">
+                                                                                        Liều lượng: {med.lieu_luong}
+                                                                                    </small>
+                                                                                </div>
+                                                                            </div>
+                                                                            <small className="text-muted">
+                                                                                {new Date(med.time).toLocaleTimeString("vi-VN", {
+                                                                                    hour: "2-digit",
+                                                                                    minute: "2-digit",
+                                                                                })}
+                                                                            </small>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="text-muted fst-italic text-center">
+                                                                        Không có thuốc trong ngày khám này.
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                         ) : (
-                            <p
-                                className="text-muted mb-0"
-                                style={{ fontStyle: "italic", fontSize: "0.9rem" }}
-                            >
-                                Không có lịch hẹn nào trong quá khứ.
-                            </p>
+                            <p className="text-muted fst-italic">Không có lịch hẹn nào trong quá khứ.</p>
                         )}
                     </div>
                     <div className="modal-footer border-0 pt-0 pb-4 px-4">
-                        <Button
-                            variant="secondary"
-                            onClick={onHide}
-                            style={{ borderRadius: "8px", padding: "8px 20px" }}
-                        >
+                        <Button variant="secondary" onClick={onHide}>
                             Đóng
                         </Button>
                     </div>
