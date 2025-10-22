@@ -138,7 +138,7 @@ const NotificationDropdown = () => {
             // Nếu chỉ là cập nhật hoặc xóa → reload mà không hiện toast
             if (
                 typeof signal === "string" &&
-                ["notification_update", "notification_delete", "notification_read_all"].includes(signal)
+                ["notification_update", "notification_delete", "notification_read_all", "warning"].includes(signal)
             ) {
                 await Promise.all([loadNotifications(), loadUnreadCount()]);
                 return;

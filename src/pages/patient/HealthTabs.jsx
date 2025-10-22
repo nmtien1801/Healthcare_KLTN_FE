@@ -9,6 +9,7 @@ import { fetchBloodSugar, saveBloodSugar } from '../../redux/patientSlice'
 import ApiBooking from '../../apis/ApiBooking'
 import { InsertFoods, GetListFood } from '../../redux/foodSlice';
 import ApiNotification from "../../apis/ApiNotification";
+import { sendStatus } from "../../utils/SetupSignFireBase";
 
 const Following = ({ user, nearestAppointment, warning }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
@@ -38,6 +39,8 @@ const Following = ({ user, nearestAppointment, warning }) => {
             },
             avatar: user.avatar || "",
           });
+          // alert("Cảnh báo: Chỉ số đường huyết của bạn vượt mức nguy hiểm. Vui lòng tham khảo ý kiến bác sĩ!");
+          await sendStatus(user?.uid, user?.uid, "warning");
         } catch (err) {
           console.error("Lỗi khi gửi cảnh báo:", err);
         }
