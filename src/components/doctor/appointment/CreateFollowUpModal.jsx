@@ -7,6 +7,7 @@ import { book_appointment } from "../../../apis/assistant";
 import { useSelector } from "react-redux";
 import { sendStatus } from "../../../utils/SetupSignFireBase";
 import ApiNotification from "../../../apis/ApiNotification";
+import { getBalanceService, withdrawService } from "../../../apis/paymentService";
 
 const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
     const user = useSelector((state) => state.auth.userInfo);
@@ -31,6 +32,7 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [showTimeList, setShowTimeList] = useState(false);
+    const BOOKING_FEE = import.meta.env.VITE_BOOKING_FEE;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -83,6 +85,9 @@ const CreateFollowUpModal = ({ show, onHide, patient, onSave }) => {
                 time: fullDateTime,
                 location: formData.type,
             });
+
+            // trừ phí đặt lịch
+            await withdrawService(patient.userId, BOOKING_FEE);
 
             setSuccessMessage(`Đặt lịch hẹn tái khám thành công với bệnh nhân ${patient.name} vào ${formattedDate} lúc ${formattedTime}!`);
             setShowSuccessModal(true);

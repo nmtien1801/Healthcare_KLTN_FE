@@ -116,7 +116,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
   const [errorMessage, setErrorMessage] = useState("");
   const senderId = user?.uid;
   const [receiverId, setReceiverId] = useState();
-  const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
+  const BOOKING_FEE = import.meta.env.VITE_BOOKING_FEE;
 
   // Fetch appointments từ API
   const fetchAppointments = async () => {
