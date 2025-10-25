@@ -47,7 +47,7 @@ export default function LoginForm() {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const remaining = Math.max(0, 60 - elapsed);
         setCountdown(remaining);
-        
+
         if (remaining === 0) {
           setStartTime(null);
         }
@@ -86,22 +86,28 @@ export default function LoginForm() {
     } else if (+formData.captcha !== +code.code) {
       setErrorMessage("❌ Mã không đúng");
     } else {
-      // Gửi thông tin đăng ký đi mongo
-      let res = await dispatch(register(formData));
-      if (res.payload.EC === 0) {
-        // Gửi thông tin đăng ký đi firebase
-        await createUserWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password
-        );
-        navigate("/login");
-      } else {
-        setErrorMessage(res.payload.EM);
+      // Gửi thông tin đăng ký đi firebase
+      let result = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      if (result.user) {
+        // Gửi thông tin đăng ký đi mongo
+        // Chuyển đổi dob thành string trước khi gửi
+        const formDataToSend = {
+          ...formData,
+          uid: result.user.uid
+        };
+        let res = await dispatch(register(formDataToSend));
+        if (res.payload.EC === 0) {
+          navigation.navigate("Login");
+        } else {
+          setErrorMessage(res.payload.EM);
+        }
       }
     }
-
-
   };
 
   const handleVerifyEmail = async () => {
