@@ -181,20 +181,40 @@ const ViewPatientModal = ({ show, onHide, patient, onEdit }) => {
                                 border: "1px solid #e0e7ff",
                             }}
                         >
-                            <Avatar
-                                src={patientData.avatar}
-                                alt={patientData.name}
-                                fallback={patientData.name
-                                    ?.split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                style={{
-                                    width: "96px",
-                                    height: "96px",
-                                    fontSize: "2.5rem",
-                                    border: "3px solid #ffffff",
-                                }}
-                            />
+                            {patientData.avatar ? (
+                                <img
+                                    src={patientData.avatar}
+                                    alt={patientData.name}
+                                    style={{
+                                        width: 50,
+                                        height: 50,
+                                        borderRadius: "50%",
+                                        objectFit: "cover",
+                                        border: "2px solid #fff",
+                                    }}
+                                />
+                            ) : (
+                                <div
+                                    style={{
+                                        width: 50,
+                                        height: 50,
+                                        borderRadius: "50%",
+                                        backgroundColor: "#007bff",
+                                        color: "#fff",
+                                        fontWeight: 600,
+                                        fontSize: "1.2rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    {patientData.name
+                                        ?.split(" ")
+                                        .map((n) => n[0])
+                                        .join("") || "?"}
+                                </div>
+                            )}
+
                             <div className="flex-grow-1">
                                 <h4 className="fw-bold mb-1 text-dark">
                                     {patientData.name}

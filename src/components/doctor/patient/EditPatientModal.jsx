@@ -332,6 +332,41 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
                                     />
                                 </div>
 
+                                {/* Thông tin sức khỏe */}
+                                <div className="col-12 mt-4">
+                                    <h6 className="fw-semibold text-primary mb-3">Thông tin sức khỏe</h6>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <label className="form-label fw-medium">Huyết áp (mmHg)</label>
+                                    <Input
+                                        type="text"
+                                        value={formData.bloodPressure || ""}
+                                        onChange={(e) => handleChange("bloodPressure", e.target.value)}
+                                        placeholder="VD: 120/80"
+                                    />
+                                </div>
+
+                                <div className="col-md-4">
+                                    <label className="form-label fw-medium">Nhịp tim (lần/phút)</label>
+                                    <Input
+                                        type="number"
+                                        value={formData.heartRate || ""}
+                                        onChange={(e) => handleChange("heartRate", e.target.value)}
+                                        placeholder="VD: 75"
+                                    />
+                                </div>
+
+                                <div className="col-md-4">
+                                    <label className="form-label fw-medium">Đường huyết (mmol/L)</label>
+                                    <Input
+                                        type="number"
+                                        value={formData.bloodSugar || ""}
+                                        onChange={(e) => handleChange("bloodSugar", e.target.value)}
+                                        placeholder="VD: 5.8"
+                                    />
+                                </div>
+
                                 {/* Phần thuốc */}
                                 <div className="col-12 mt-4">
                                     <h6 className="fw-semibold text-primary mb-3">Đơn thuốc</h6>
