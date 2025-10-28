@@ -1,11 +1,12 @@
-"use client";
+;
 
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
-import { Login } from "../../redux/authSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { register, verifyEmail } from "../../redux/authSlice";
+import { auth, provider } from '../../../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginForm() {
   const dispatch = useDispatch();
@@ -16,10 +17,12 @@ export default function LoginForm() {
   const [errorMessage, setErrorMessage] = useState("");
   const [countdown, setCountdown] = useState(0); // đếm ngược 60s 
   const [code, setCode] = useState({}) // mã xác thực trong 60s
+  const [startTime, setStartTime] = useState(null); // thời điểm bắt đầu đếm ngược
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     phoneNumber: "",
+    address: "",
     password: "",
     confirmPassword: "",
     captcha: "",
@@ -39,13 +42,19 @@ export default function LoginForm() {
 
   useEffect(() => {
     let timer;
-    if (countdown > 0) {
+    if (startTime && countdown > 0) {
       timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = Math.max(0, 60 - elapsed);
+        setCountdown(remaining);
+
+        if (remaining === 0) {
+          setStartTime(null);
+        }
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [countdown]);
+  }, [startTime, countdown]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +62,13 @@ export default function LoginForm() {
 
     // kiểm tra tài khoản 10 ký tự bất kì
     if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
-      setErrorMessage("Số tài khoản phải bao gồm đúng 10 ký tự!");
+      setErrorMessage("Số điện thoại phải bao gồm đúng 10 ký tự!");
+      return;
+    }
+
+    // Kiểm tra mật khẩu > 6 ký tự
+    if (formData.password.length < 6) {
+      setErrorMessage("Mật khẩu phải có ít nhất 6 ký tự!");
       return;
     }
 
@@ -71,16 +86,28 @@ export default function LoginForm() {
     } else if (+formData.captcha !== +code.code) {
       setErrorMessage("❌ Mã không đúng");
     } else {
-      // Gửi thông tin đăng ký đi
-      let res = await dispatch(register(formData));
-      if (res.payload.EC === 0) {
-        navigate("/login");
-      }else{
-      setErrorMessage(res.payload.EM);
+      // Gửi thông tin đăng ký đi firebase
+      let result = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      if (result.user) {
+        // Gửi thông tin đăng ký đi mongo
+        // Chuyển đổi dob thành string trước khi gửi
+        const formDataToSend = {
+          ...formData,
+          uid: result.user.uid
+        };
+        let res = await dispatch(register(formDataToSend));
+        if (res.payload.EC === 0) {
+          navigation.navigate("Login");
+        } else {
+          setErrorMessage(res.payload.EM);
+        }
       }
     }
-
-
   };
 
   const handleVerifyEmail = async () => {
@@ -92,6 +119,7 @@ export default function LoginForm() {
 
     // Bắt đầu đếm ngược
     setCountdown(60);
+    setStartTime(Date.now());
   }
 
   return (
@@ -103,7 +131,7 @@ export default function LoginForm() {
         <div className="card-body p-4">
           {/* Logo and Title */}
           <div className="text-center mb-4">
-            <h1 className="display-6 text-primary fw-bold mb-3">Zata</h1>
+            <h1 className="display-6 text-primary fw-bold mb-3">DiaTech</h1>
             <h2 className="fs-5 fw-medium text-dark">Đăng ký với mật khẩu</h2>
           </div>
 
@@ -141,13 +169,26 @@ export default function LoginForm() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Số tài khoản"
+                  placeholder="Số điện thoại"
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
                   required
                 />
               </div>
+            </div>
+
+            {/* address Input */}
+            <div className="mb-3">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             {/* Password Input */}
@@ -223,7 +264,7 @@ export default function LoginForm() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="gender"
+                  placeholder="Gender"
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
@@ -236,9 +277,9 @@ export default function LoginForm() {
             <div className="mb-3">
               <div className="input-group">
                 <input
-                  type="text"
+                  type="date"
                   className="form-control"
-                  placeholder="dob"
+                  placeholder="Ngày sinh"
                   name="dob"
                   value={formData.dob}
                   onChange={handleChange}

@@ -1,436 +1,455 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  Card,
+  Button,
+  Table,
+  Pagination,
+  Form,
+  InputGroup,
+  Image,
+  Row,
+  Col,
+} from "react-bootstrap";
+import { Search, Clock, CalendarDays, Plus, Trash2, Edit, Eye } from "lucide-react";
+import AddAppointmentModal from "../../components/doctor/appointment/AddAppointmentModal";
+import ViewAppointmentModal from "../../components/doctor/appointment/ViewAppointmentModal";
+import EditAppointmentModal from "../../components/doctor/appointment/EditAppointmentModal";
+import ApiDoctor from "../../apis/ApiDoctor";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { vi } from "date-fns/locale";
+import { getLabelFromOptions } from "../../utils/apppointmentHelper";
+import { STATUS_COLORS, STATUS_OPTIONS, TYPE_OPTIONS } from "../../utils/appointmentConstants";
+import { sendStatus, listenStatusByReceiver } from "../../utils/SetupSignFireBase";
+import { useSelector } from "react-redux";
+import ApiNotification from "../../apis/ApiNotification";
 
-const AppointmentTab = () => {
-  const [selectedAppointment, setSelectedAppointment] = useState(0);
-  const [showChatModal, setShowChatModal] = useState(false);
-  const [showCallModal, setShowCallModal] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    { text: "Chào bác sĩ, tôi đang gặp vấn đề về huyết áp", sender: "patient", time: "09:15" },
-    { text: "Chào anh Bình, anh có thể cho tôi biết chỉ số huyết áp gần đây của anh không?", sender: "doctor", time: "09:16" },
-    { text: "Hôm qua đo được 160/95, tôi đã uống thuốc như bác sĩ kê đơn", sender: "patient", time: "09:18" },
-  ]);
 
-  const [newMessage, setNewMessage] = useState("");
+export default function AppointmentTab() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterDate, setFilterDate] = useState(null);
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [todayPage, setTodayPage] = useState(1);
+  const [upcomingPage, setUpcomingPage] = useState(1);
+  const itemsPerPage = 5;
 
-  const appointments = [
-    {
-      id: 1,
-      patient: {
-        name: "Trần Văn Bình",
-        age: 68,
-        image: "https://readdy.ai/api/search-image?query=elderly%20asian%20man%20portrait%2C%2070%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient1&orientation=squarish",
-        condition: "Tăng huyết áp, Tiểu đường type 2"
-      },
-      date: "23/06/2025",
-      time: "09:30",
-      status: "confirmed",
-      type: "Tái khám",
-      notes: "Kiểm tra huyết áp và đường huyết"
-    },
-    {
-      id: 2,
-      patient: {
-        name: "Nguyễn Thị Mai",
-        age: 52,
-        image: "https://readdy.ai/api/search-image?query=middle%20aged%20asian%20woman%20portrait%2C%2050%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient2&orientation=squarish",
-        condition: "Tiểu đường type 2"
-      },
-      date: "23/06/2025",
-      time: "10:45",
-      status: "confirmed",
-      type: "Tái khám",
-      notes: "Kiểm tra đường huyết, điều chỉnh liều insulin"
-    },
-    {
-      id: 3,
-      patient: {
-        name: "Lê Minh Tuấn",
-        age: 35,
-        image: "https://readdy.ai/api/search-image?query=young%20asian%20man%20portrait%2C%2030%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient3&orientation=squarish",
-        condition: "Viêm phổi"
-      },
-      date: "23/06/2025",
-      time: "14:00",
-      status: "pending",
-      type: "Tái khám",
-      notes: "Kiểm tra tình trạng phổi, đánh giá hiệu quả điều trị"
-    },
-    {
-      id: 4,
-      patient: {
-        name: "Phạm Thị Hương",
-        age: 72,
-        image: "https://readdy.ai/api/search-image?query=elderly%20asian%20woman%20portrait%2C%2075%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient4&orientation=squarish",
-        condition: "Suy tim, Tăng huyết áp"
-      },
-      date: "24/06/2025",
-      time: "08:15",
-      status: "confirmed",
-      type: "Tái khám",
-      notes: "Đánh giá chức năng tim, điều chỉnh thuốc"
-    },
-    {
-      id: 5,
-      patient: {
-        name: "Đỗ Thanh Hà",
-        age: 45,
-        image: "https://readdy.ai/api/search-image?query=middle%20aged%20asian%20woman%20portrait%2C%2045%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient5&orientation=squarish",
-        condition: "Viêm khớp dạng thấp"
-      },
-      date: "24/06/2025",
-      time: "11:30",
-      status: "confirmed",
-      type: "Khám mới",
-      notes: "Đau khớp gối và cổ tay, nghi ngờ viêm khớp dạng thấp"
-    }
-  ];
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  // const formatDate = (date: Date): string => {
-  //   const options: Intl.DateTimeFormatOptions = {
-  //     weekday: 'long',
-  //     year: 'numeric',
-  //     month: 'long',
-  //     day: 'numeric'
-  //   };
-  //   return date.toLocaleDateString('vi-VN', options);
-  // };
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
+  const user = useSelector((state) => state.auth.userInfo);
+  const doctorUid = user.uid;
+  const [patientUid, setPatientUid] = useState();
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const now = new Date();
-      const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-      setChatMessages([
-        ...chatMessages,
-        {
-          text: newMessage,
-          sender: 'doctor',
-          time: timeString
-        }
-      ]);
-      setNewMessage("");
+  const fetchAppointments = async () => {
+    try {
+      const resToday = await ApiDoctor.getAppointmentsToday();
+      setTodayAppointments(resToday.map(mapAppointment));
+      const resUpcoming = await ApiDoctor.getAppointments();
+      setUpcomingAppointments(resUpcoming.map(mapAppointment));
+    } catch (err) {
+      console.error("Lỗi lấy appointments:", err);
     }
   };
 
-  const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  // Lắng nghe tín hiệu hủy lịch qua Firestore (status message) trong chats
+  useEffect(() => {
+    const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+      // Chỉ xử lý các status liên quan đến appintments
+      const appointmentStatuses = [
+        "Đặt lịch",
+        "Hủy lịch",
+        "Xác nhận",
+        "Hủy bởi bác sĩ",
+        "Hoàn thành",
+        "Đang chờ"
+      ];
+
+      if (appointmentStatuses.includes(signal?.status)) {
+        await fetchAppointments();
+      }
+    });
+
+    return () => unsub();
+  }, [doctorUid]);
+
+  const mapAppointment = (item) => ({
+    id: item._id,
+    uid: item.patientId?.userId?.uid || "",
+    patientName: item.patientId?.userId?.username || "",
+    patientEmail: item.patientId?.userId?.email || "",
+    patientAge: item.patientId?.age || "",
+    patientDisease: item.patientId?.disease || "",
+    patientAvatar:
+      item.patientId?.userId?.avatar ||
+      "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop&crop=face",
+    date: new Date(item.date).toLocaleDateString("vi-VN"),
+    time: item.time,
+    type: item.type,
+    isFollowUp: item.isFollowUp,
+    reason: item.reason || "Tạm thời chưa có",
+    doctor: item.doctorId?.userId?.username || "Tạm thời chưa có",
+    notes: item.notes || "Tạm thời chưa có",
+    status: item.status,
+  });
+
+  // Filter + Search
+  const filteredToday = useMemo(() => {
+    return todayAppointments.filter((a) => {
+      const matchSearch =
+        a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.patientDisease.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.reason.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchDate = filterDate ? a.date === new Date(filterDate).toLocaleDateString("vi-VN") : true;
+
+      return matchSearch && matchDate;
+    });
+  }, [todayAppointments, searchTerm, filterDate]);
+
+  const filteredUpcoming = useMemo(() => {
+    return upcomingAppointments.filter((a) => {
+      const matchSearch =
+        a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.patientDisease.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.reason.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchDate = filterDate ? a.date === new Date(filterDate).toLocaleDateString("vi-VN") : true;
+
+      return matchSearch && matchDate;
+    });
+  }, [upcomingAppointments, searchTerm, filterDate]);
+
+  const handleAddAppointment = (newAppointmentData) => {
+    const newAppointment = {
+      id: Date.now(),
+      patientAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        newAppointmentData.patientName
+      )}&size=150&background=random`,
+      ...newAppointmentData,
+    };
+    setUpcomingAppointments((prev) => [...prev, newAppointment]);
+    setShowAddModal(false);
+  };
+
+  const handleViewAppointment = async (appointment) => {
+    try {
+      setPatientUid(appointment.uid)
+      const data = await ApiDoctor.getAppointmentById(appointment.id);
+      const mapped = mapAppointment(data);
+      setSelectedAppointment(mapped);
+      setShowViewModal(true);
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết lịch hẹn:", err);
+      alert("Không thể tải chi tiết lịch hẹn.");
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Đã xác nhận';
-      case 'pending':
-        return 'Chờ xác nhận';
-      case 'cancelled':
-        return 'Đã hủy';
-      default:
-        return 'Không xác định';
+  const handleEditAppointment = async (appointment) => {
+    try {
+      setPatientUid(appointment.uid);
+      const data = await ApiDoctor.getAppointmentById(appointment.id);
+      const mapped = mapAppointment(data);
+      setSelectedAppointment(mapped);
+      setShowViewModal(false);
+      setShowEditModal(true);
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết lịch hẹn để chỉnh sửa:", err);
+      alert("Không thể tải chi tiết lịch hẹn.");
     }
   };
 
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Lịch hẹn khám bệnh</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center !rounded-button">
-          <i className="fas fa-plus mr-2"></i>
-          Tạo lịch hẹn mới
-        </button>
-      </div>
 
-      {/* Date selector */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-wrap items-center justify-between">
-          <div className="flex items-center mb-4 md:mb-0">
-            <button className="p-2 rounded-full hover:bg-gray-100 mr-4 cursor-pointer !rounded-button">
-              <i className="fas fa-chevron-left text-gray-600"></i>
-            </button>
-            <h2 className="text-lg font-medium">Thứ Hai, 23 tháng 6, 2025</h2>
-            <button className="p-2 rounded-full hover:bg-gray-100 ml-4 cursor-pointer !rounded-button">
-              <i className="fas fa-chevron-right text-gray-600"></i>
-            </button>
-          </div>
-          <div className="flex">
-            <button className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-md mr-2 !rounded-button">Hôm nay</button>
-            <button className="px-3 py-1 text-sm text-gray-600 rounded-md !rounded-button">Tuần này</button>
-          </div>
-        </div>
-      </div>
+  const handleUpdateAppointment = async (updatedAppointment) => {
+    try {
+      const payload = {
+        ...updatedAppointment,
+        date: new Date(updatedAppointment.date).toISOString().split("T")[0], // Gửi YYYY-MM-DD cho API
+      };
 
-      {/* Appointment list */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium">Lịch hẹn hôm nay (3)</h3>
-            <div className="relative">
-              <input
-                type="text"
-                className="pl-8 pr-4 py-1 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                placeholder="Tìm kiếm lịch hẹn..."
-              />
-              <div className="absolute left-2 top-1.5 text-gray-400">
-                <i className="fas fa-search text-sm"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {appointments.filter(app => app.date === "23/06/2025").map((appointment) => (
-            <div
-              key={appointment.id}
-              className={`p-4 hover:bg-blue-50 transition-colors ${selectedAppointment === appointment.id ? 'bg-blue-50' : ''}`}
-              onClick={() => setSelectedAppointment(appointment.id)}
-            >
-              <div className="flex justify-between">
-                <div className="flex items-start">
-                  <img
-                    src={appointment.patient.image}
-                    alt={appointment.patient.name}
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
-                  <div>
-                    <h4 className="font-medium">{appointment.patient.name}</h4>
-                    <p className="text-sm text-gray-500">{appointment.patient.age} tuổi - {appointment.patient.condition}</p>
-                    <div className="flex items-center mt-1">
-                      <span className="text-sm text-gray-600 mr-4">
-                        <i className="far fa-clock mr-1"></i> {appointment.time}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        <i className="far fa-calendar-alt mr-1"></i> {appointment.type}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(appointment.status)}`}>
-                    {getStatusText(appointment.status)}
-                  </span>
-                  <div className="mt-2 flex">
-                    <button
-                      className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 mr-1 cursor-pointer !rounded-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowChatModal(true);
-                      }}
-                    >
-                      <i className="fas fa-comment-medical"></i>
-                    </button>
-                    <button
-                      className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 mr-1 cursor-pointer !rounded-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowCallModal(true);
-                      }}
-                    >
-                      <i className="fas fa-phone-alt"></i>
-                    </button>
-                    <button className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 cursor-pointer !rounded-button">
-                      <i className="fas fa-ellipsis-v"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {selectedAppointment === appointment.id && (
-                <div className="mt-4 bg-white p-3 rounded-lg border border-gray-200">
-                  <h5 className="font-medium text-sm mb-2">Ghi chú</h5>
-                  <p className="text-sm text-gray-600">{appointment.notes}</p>
-                  <div className="mt-3 flex justify-end">
-                    <button className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm mr-2 !rounded-button">
-                      Hủy lịch hẹn
-                    </button>
-                    <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm !rounded-button">
-                      Xác nhận đã khám
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      await ApiDoctor.updateAppointment(updatedAppointment.id, payload);
 
-      {/* Upcoming appointments */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h3 className="font-medium">Lịch hẹn sắp tới</h3>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {appointments.filter(app => app.date === "24/06/2025").map((appointment) => (
-            <div key={appointment.id} className="p-4 hover:bg-blue-50 transition-colors">
-              <div className="flex justify-between">
-                <div className="flex items-start">
-                  <img
-                    src={appointment.patient.image}
-                    alt={appointment.patient.name}
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
-                  <div>
-                    <h4 className="font-medium">{appointment.patient.name}</h4>
-                    <p className="text-sm text-gray-500">{appointment.patient.age} tuổi - {appointment.patient.condition}</p>
-                    <div className="flex items-center mt-1">
-                      <span className="text-sm text-gray-600 mr-4">
-                        <i className="far fa-clock mr-1"></i> {appointment.time}
-                      </span>
-                      <span className="text-sm text-gray-600 mr-4">
-                        <i className="far fa-calendar-alt mr-1"></i> {appointment.date}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        <i className="fas fa-tag mr-1"></i> {appointment.type}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(appointment.status)}`}>
-                    {getStatusText(appointment.status)}
-                  </span>
-                  <div className="mt-2 flex">
-                    <button className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 mr-1 cursor-pointer !rounded-button">
-                      <i className="fas fa-comment-medical"></i>
-                    </button>
-                    <button className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 mr-1 cursor-pointer !rounded-button">
-                      <i className="fas fa-phone-alt"></i>
-                    </button>
-                    <button className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 cursor-pointer !rounded-button">
-                      <i className="fas fa-ellipsis-v"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      if (payload.status === "confirmed") {
+        await sendStatus(doctorUid, patientUid, "Xác nhận");
+      } else if (payload.status === "canceled") {
+        await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
+      }
+      else if (payload.status === "completed") {
+        await sendStatus(doctorUid, patientUid, "Hoàn thành");
+      }
+      else if (payload.status === "pending") {
+        await sendStatus(doctorUid, patientUid, "Đang chờ");
+      }
+      await ApiNotification.createNotification({
+        receiverId: patientUid,
+        title: "Cập nhật lịch hẹn",
+        content: `Lịch hẹn của bạn vào ngày ${new Date(updatedAppointment.date).toLocaleDateString("vi-VN")} lúc ${updatedAppointment.time} đã được cập nhật.`,
+        metadata: {
+          link: `/patient/appointments/${updatedAppointment.id}`
+        },
+        avatar: user?.avatar || null,
+      });
+      // Chuyển đổi lại date sang DD/MM/YYYY khi cập nhật state
+      const updatedAppointmentWithFormattedDate = {
+        ...updatedAppointment,
+        date: new Date(updatedAppointment.date).toLocaleDateString("vi-VN"),
+      };
 
-      {/* Chat Modal */}
-      {showChatModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <div className="flex items-center">
-                <img
-                  src="https://readdy.ai/api/search-image?query=elderly%20asian%20man%20portrait%2C%2070%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient1&orientation=squarish"
-                  alt="Bệnh nhân"
-                  className="w-10 h-10 rounded-full mr-3"
-                />
-                <div>
-                  <h3 className="font-medium">Trần Văn Bình</h3>
-                  <p className="text-xs text-green-500">Đang trực tuyến</p>
-                </div>
-              </div>
-              <button
-                className="text-gray-500 hover:text-gray-700 cursor-pointer !rounded-button"
-                onClick={() => setShowChatModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto flex-grow">
-              <div className="space-y-4">
-                {chatMessages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.sender === 'doctor' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {message.sender === 'patient' && (
-                      <img
-                        src="https://readdy.ai/api/search-image?query=elderly%20asian%20man%20portrait%2C%2070%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=30&height=30&seq=patient1&orientation=squarish"
-                        alt="Bệnh nhân"
-                        className="w-8 h-8 rounded-full mr-2 self-end"
+      setUpcomingAppointments((prev) =>
+        prev.map((app) =>
+          app.id === updatedAppointment.id ? updatedAppointmentWithFormattedDate : app
+        )
+      );
+      setTodayAppointments((prev) =>
+        prev.map((app) =>
+          app.id === updatedAppointment.id ? updatedAppointmentWithFormattedDate : app
+        )
+      );
+
+      setShowEditModal(false);
+      setSelectedAppointment(updatedAppointmentWithFormattedDate);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật lịch hẹn:", error);
+      alert("Cập nhật lịch hẹn thất bại. Vui lòng thử lại.");
+    }
+  };
+  const handleDeleteAppointment = (appointment) => {
+    setPatientUid(appointment.uid)
+    setAppointmentToDelete(appointment);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAppointment = async () => {
+    try {
+      if (!appointmentToDelete) return;
+
+      await ApiDoctor.deleteAppointment(appointmentToDelete.id);
+
+      await sendStatus(doctorUid, patientUid, "Hủy bởi bác sĩ");
+
+      setUpcomingAppointments((prev) =>
+        prev.filter((app) => app.id !== appointmentToDelete.id)
+      );
+      setTodayAppointments((prev) =>
+        prev.filter((app) => app.id !== appointmentToDelete.id)
+      );
+
+      setShowDeleteModal(false);
+      setAppointmentToDelete(null);
+      await ApiNotification.createNotification({
+        receiverId: patientUid,
+        avatar: user?.avatar || null,
+        title: "Lịch hẹn bị hủy",
+        content: `Lịch hẹn của bạn vào ngày ${appointmentToDelete.date} lúc ${appointmentToDelete.time} đã bị hủy.`,
+        metadata: {
+          link: `/patient/appointments/${appointmentToDelete.id}`
+        },
+      });
+    } catch (error) {
+      console.error("Lỗi khi xóa lịch hẹn:", error);
+      alert("Xóa lịch hẹn thất bại. Vui lòng thử lại.");
+    }
+  };
+
+  // Pagination
+  const paginate = (appointments, page) =>
+    appointments.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  const renderPagination = (currentPage, totalPages, setPage) => (
+    <Pagination className="justify-content-center mt-3">
+      <Pagination.Prev onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} />
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        <Pagination.Item key={page} active={page === currentPage} onClick={() => setPage(page)}>
+          {page}
+        </Pagination.Item>
+      ))}
+      <Pagination.Next onClick={() => setPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} />
+    </Pagination>
+  );
+
+  const renderTable = (appointments, paginated, totalPages, page, setPage) => (
+    <>
+      <div className="table-responsive">
+        <Table hover>
+          <thead>
+            <tr>
+              <th>Bệnh nhân</th>
+              <th>Chẩn đoán</th>
+              <th>Thời gian</th>
+              <th>Địa điểm</th>
+              <th>Loại</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.length > 0 ? (
+              paginated.map((appointment) => (
+                <tr key={appointment.id}>
+                  <td>
+                    <div className="d-flex align-items-center">
+                      <Image
+                        roundedCircle
+                        width={40}
+                        height={40}
+                        src={appointment.patientAvatar}
+                        alt={appointment.patientName}
+                        className="me-2"
                       />
-                    )}
-                    <div>
-                      <div
-                        className={`max-w-xs px-4 py-2 rounded-lg ${message.sender === 'doctor'
-                          ? 'bg-blue-600 text-white rounded-br-none'
-                          : 'bg-gray-200 text-gray-800 rounded-bl-none'
-                          }`}
-                      >
-                        <p className="text-sm">{message.text}</p>
+                      <div>
+                        <div className="fw-semibold">{appointment.patientName}</div>
+                        <div className="text-muted small">{appointment.patientAge} tuổi</div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">{message.time}</p>
                     </div>
-                    {message.sender === 'doctor' && (
-                      <img
-                        src="https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=30&height=30&seq=doctor1&orientation=squarish"
-                        alt="Bác sĩ"
-                        className="w-8 h-8 rounded-full ml-2 self-end"
-                      />
-                    )}
-                  </div>
-                ))}
+                  </td>
+                  <td>{appointment.patientDisease}</td>
+                  <td>
+                    <div className="d-flex align-items-center gap-1">
+                      <Clock size={12} /> <span className="ms-2">{appointment.date} - </span>
+                      <span className="fs-6 ms-1">{appointment.time}</span>
+                    </div>
+                  </td>
+                  <td>{getLabelFromOptions(TYPE_OPTIONS, appointment.type)}</td>
+                  <td>{appointment.isFollowUp == true ? "Tái khám" : "Khám mới"}</td>
+                  <td>
+                    <span
+                      className={`badge bg-${STATUS_COLORS[appointment.status]?.bg} text-${STATUS_COLORS[appointment.status]?.text}`}
+                    >
+                      {getLabelFromOptions(STATUS_OPTIONS, appointment.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <Button variant="link" className="p-0 me-2" onClick={() => handleViewAppointment(appointment)}>
+                      <Eye size={16} />
+                    </Button>
+                    <Button variant="link" className="p-0 me-2" onClick={() => handleEditAppointment(appointment)}>
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="link"
+                      className="p-0 text-danger"
+                      onClick={() => handleDeleteAppointment(appointment)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center text-muted">Không có lịch hẹn.</td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+      </div>
+      {totalPages > 1 && renderPagination(page, totalPages, setPage)}
+    </>
+  );
+  return (
+    <div className="m-2">
+      <h3 className="mb-4">Lịch hẹn khám bệnh</h3>
+
+      {/* Hôm nay */}
+      <Card className="shadow-sm mb-4">
+        <Card.Body>
+          <div className="row mb-3 justify-content-between align-items-center">
+            <div className="col-12 col-lg-6">
+              <h5>Lịch hẹn hôm nay</h5>
+              <div className="text-primary small">{filteredToday.length} cuộc hẹn</div>
+            </div>
+            <div className="row col-12 col-lg-6">
+              <div className="col-4 col-lg-4">
+                <InputGroup>
+                  <Form.Control placeholder="Tìm kiếm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <InputGroup.Text><Search size={16} /></InputGroup.Text>
+                </InputGroup>
+              </div>
+              <div className="col-4 col-lg-4">
+                <div className="d-flex">
+                  <DatePicker
+                    selected={filterDate}
+                    onChange={(date) => setFilterDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    className="form-control"
+                    placeholderText="Chọn ngày"
+                    locale={vi}
+                  />
+                </div>
+              </div>
+              <div className="col-4 col-lg-4">
+                <Button onClick={() => setShowAddModal(true)}><Plus size={16} /> Thêm</Button>
               </div>
             </div>
-            <div className="p-4 border-t border-gray-200">
-              <div className="flex items-center">
-                <button className="text-gray-500 p-2 rounded-full hover:bg-gray-100 mr-2 cursor-pointer !rounded-button">
-                  <i className="fas fa-paperclip"></i>
-                </button>
-                <input
-                  type="text"
-                  className="flex-grow px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập tin nhắn..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button
-                  className="bg-blue-600 text-white p-2 rounded-full ml-2 cursor-pointer !rounded-button"
-                  onClick={handleSendMessage}
-                >
-                  <i className="fas fa-paper-plane"></i>
-                </button>
+          </div>
+          {renderTable(todayAppointments, paginate(filteredToday, todayPage), Math.ceil(filteredToday.length / itemsPerPage), todayPage, setTodayPage)}
+        </Card.Body>
+      </Card>
+
+      {/* Sắp tới */}
+      <Card className="shadow-sm">
+        <Card.Body>
+          <h5 className="mb-3">Lịch hẹn sắp tới</h5>
+          {renderTable(upcomingAppointments, paginate(filteredUpcoming, upcomingPage), Math.ceil(filteredUpcoming.length / itemsPerPage), upcomingPage, setUpcomingPage)}
+        </Card.Body>
+      </Card>
+
+      {/* Modals */}
+      <AddAppointmentModal show={showAddModal} onHide={() => setShowAddModal(false)} onSave={handleAddAppointment} />
+      <ViewAppointmentModal
+        show={showViewModal}
+        onHide={() => setShowViewModal(false)}
+        appointment={selectedAppointment}
+        onEdit={handleEditAppointment}
+      />
+
+      <EditAppointmentModal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        appointment={selectedAppointment}
+        onSave={handleUpdateAppointment}
+      />
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Xác nhận xóa</h5>
+                <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  Bạn có chắc chắn muốn xóa lịch hẹn của{" "}
+                  <strong>{appointmentToDelete?.patientName}</strong> vào ngày{" "}
+                  <strong>{appointmentToDelete?.date}</strong> lúc{" "}
+                  <strong>{appointmentToDelete?.time}</strong> không?
+                </p>
+              </div>
+              <div className="modal-footer">
+                <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                  Hủy
+                </Button>
+                <Button variant="danger" onClick={confirmDeleteAppointment}>
+                  Xóa
+                </Button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Call Modal */}
-      {showCallModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm mx-4 p-6 text-center">
-            <img
-              src="https://readdy.ai/api/search-image?query=elderly%20asian%20man%20portrait%2C%2070%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=120&height=120&seq=patient1&orientation=squarish"
-              alt="Bệnh nhân"
-              className="w-24 h-24 rounded-full mx-auto mb-4"
-            />
-            <h3 className="text-xl font-semibold mb-1">Trần Văn Bình</h3>
-            <p className="text-gray-500 mb-6">Đang gọi...</p>
-            <div className="flex justify-center space-x-4">
-              <button className="bg-red-600 text-white p-4 rounded-full cursor-pointer !rounded-button" onClick={() => setShowCallModal(false)}>
-                <i className="fas fa-phone-slash text-xl"></i>
-              </button>
-              <button className="bg-green-600 text-white p-4 rounded-full cursor-pointer !rounded-button">
-                <i className="fas fa-phone-alt text-xl"></i>
-              </button>
-              <button className="bg-blue-600 text-white p-4 rounded-full cursor-pointer !rounded-button">
-                <i className="fas fa-video text-xl"></i>
-              </button>
-            </div>
-            <div className="mt-6">
-              <button
-                className="text-gray-500 hover:text-gray-700 cursor-pointer !rounded-button"
-                onClick={() => setShowCallModal(false)}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-};
-
-export default AppointmentTab;
+}

@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   loginService,
-  doGetAccountService,
   registerService,
   sendCodeService,
   resetPasswordService,
@@ -17,16 +16,8 @@ const initialState = {
 
 export const Login = createAsyncThunk(
   "auth/Login",
-  async ({ phoneNumber, password }, thunkAPI) => {
-    const response = await loginService(phoneNumber, password);
-    return response;
-  }
-);
-
-export const doGetAccount = createAsyncThunk(
-  "auth/doGetAccount",
-  async (thunkAPI) => {
-    const response = await doGetAccountService();
+  async ({ user }, thunkAPI) => {
+    const response = await loginService(user);
     return response;
   }
 );
@@ -80,19 +71,20 @@ const authSlice = createSlice({
   initialState,
 
   reducers: {
-    updateAvatar: (state, action) => {
-      if (state.userInfo) {
-        state.userInfo.avatar = action.payload; // Cập nhật avatar trong Redux store
-      }
-    },
     logout: (state) => {
-      state.userInfo = {}; // Xóa thông tin người dùng
+      state.userInfo = null; // Xóa thông tin người dùng
       state.isLoggedIn = false; // Đặt trạng thái đăng xuất
+    },
+    setUser: (state, action) => {
+      state.userInfo = action.payload;
+    },
+    clearUser: (state) => {
+      state.userInfo = null;
     },
   },
 
   extraReducers: (builder) => {
-    //  Login
+    // Login
     builder
       .addCase(Login.pending, (state) => {
         state.isLoading = true; // Bắt đầu loading
@@ -100,33 +92,12 @@ const authSlice = createSlice({
       .addCase(Login.fulfilled, (state, action) => {
         if (action.payload.EC === 0) {
           state.userInfo = action.payload.DT || {};
+
           state.isLoggedIn = true;
           state.isLoading = false; // Kết thúc loading
-        } else {
-          alert(action.payload.EM);
         }
       })
       .addCase(Login.rejected, (state, action) => {
-        state.isLoggedIn = false;
-        state.isLoading = false; // Kết thúc loading
-        alert("Đăng nhập không thành công");
-      });
-
-    // doGetAccount
-    builder
-      .addCase(doGetAccount.pending, (state) => {
-        state.isLoading = true; // Bắt đầu loading
-      })
-      .addCase(doGetAccount.fulfilled, (state, action) => {
-        if (action.payload.EC === 0) {
-          state.userInfo = action.payload.DT || {};
-          console.log("state.userInfo: ", action.payload);
-
-          state.isLoggedIn = true;
-          state.isLoading = false; // Kết thúc loading
-        }
-      })
-      .addCase(doGetAccount.rejected, (state, action) => {
         state.isLoggedIn = false;
         state.isLoading = false; // Kết thúc loading
       });
@@ -163,10 +134,8 @@ const authSlice = createSlice({
   },
 });
 
-export const { updateAvatar, logout } = authSlice.actions;
-
 // Export actions
-export const {} = authSlice.actions;
+export const { setUser, clearUser, logout } = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;

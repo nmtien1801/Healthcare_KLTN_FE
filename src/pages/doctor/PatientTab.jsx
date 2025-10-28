@@ -1,265 +1,688 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Filter, Eye, Edit, MessageSquare, Phone, X, Bot, Send } from "lucide-react";
+import ViewPatientModal from "../../components/doctor/patient/ViewPatientModal";
+import EditPatientModal from "../../components/doctor/patient/EditPatientModal";
+import CreateFollowUpModal from "../../components/doctor/appointment/CreateFollowUpModal";
+import { collection, onSnapshot, orderBy, query, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useSelector, useDispatch } from "react-redux";
+import { db } from "../../../firebase";
+import ApiPatient from "../../apis/ApiPatient";
+import ApiDoctor from "../../apis/ApiDoctor";
+import { listenStatusByReceiver } from "../../utils/SetupSignFireBase";
+import { Button, Input, Select, Badge } from "../../components/doctor/common-ui-components";
 
-const PatientTab = () => {
+// Hàm ánh xạ dữ liệu từ API sang định dạng phù hợp với component
+const mapPatientData = (apiPatient, pastAppointments = []) => {
+  const statusColors = {
+    "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
+    "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
+    "Ổn định": { color: "bg-success", textColor: "text-white" },
+  };
+
+  // Xử lý healthRecords an toàn
+  const hasHealthRecords = apiPatient.healthRecords && Array.isArray(apiPatient.healthRecords) && apiPatient.healthRecords.length > 0;
+  const healthRecords = hasHealthRecords
+    ? apiPatient.healthRecords.map(record => ({
+      id: record._id || `temp-${Date.now()}`,
+      date: record.date
+        ? new Date(record.date).toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+        : "-",
+      bloodPressure: record.bloodPressure || "-",
+      heartRate: record.heartRate || "-",
+      bloodSugar: record.bloodSugar || "-",
+      recordedAt: record.recordedAt
+        ? new Date(record.recordedAt).toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+        : "-",
+    }))
+    : [];
+
+  // Xử lý thông tin userId
+  const userId = apiPatient.userId || {};
+
+  // Lấy lịch hẹn gần nhất từ pastAppointments
+  const lastAppointment = pastAppointments.length > 0 ? pastAppointments[0] : null;
+  const lastVisitDate = lastAppointment && lastAppointment.date ? new Date(lastAppointment.date) : null;
+
+  return {
+    id: apiPatient._id || `temp-${Date.now()}`,
+    userId: apiPatient.userId,
+    uid: apiPatient.userId.uid,
+    name: userId.username || apiPatient.name || "Không xác định",
+    age: apiPatient.age || 0,
+    patientCount: `${apiPatient.age || 0} tuổi`,
+    avatar: userId.avatar || apiPatient.avatar || "https://via.placeholder.com/150?text=User",
+    disease: apiPatient.disease || "Không xác định",
+    patientId: apiPatient.insuranceId || "-",
+    status: apiPatient.status || "Ổn định",
+    statusColor: statusColors[apiPatient.status]?.color || "bg-secondary",
+    statusTextColor: statusColors[apiPatient.status]?.textColor || "text-white",
+    lastVisit: lastVisitDate
+      ? lastVisitDate.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "Chưa có",
+    lastVisitDate: lastVisitDate || new Date(),
+    phone: userId.phone || apiPatient.phone || "",
+    email: userId.email || apiPatient.email || "",
+    address: userId.address || apiPatient.address || "",
+    bloodType: apiPatient.bloodType || "-",
+    allergies: apiPatient.allergies || "Không có",
+    emergencyContact: apiPatient.emergencyContact || "Không có",
+    notes: apiPatient.notes || "",
+    gender: userId.gender || "-",
+    dob: userId.dob
+      ? new Date(userId.dob).toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      : "-",
+    role: userId.role || "-",
+    healthRecords,
+  };
+};
+const Avatar = ({ src, alt, fallback, className = "", size = 50 }) => {
+  const [imageError, setImageError] = useState(false);
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Quản lý bệnh nhân</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center !rounded-button">
-          <i className="fas fa-plus mr-2"></i>
-          Thêm bệnh nhân
-        </button>
-      </div>
-
-      {/* Search and filter */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-wrap items-center">
-          <div className="w-full md:w-1/3 mb-4 md:mb-0 md:pr-2">
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Tìm kiếm bệnh nhân..."
-              />
-              <div className="absolute left-3 top-2.5 text-gray-400">
-                <i className="fas fa-search"></i>
-              </div>
-            </div>
-          </div>
-          <div className="w-full md:w-1/3 mb-4 md:mb-0 md:px-2">
-            <div className="relative">
-              <select className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none">
-                <option value="">Tất cả bệnh</option>
-                <option value="heart">Tim mạch</option>
-                <option value="diabetes">Tiểu đường</option>
-                <option value="respiratory">Hô hấp</option>
-              </select>
-              <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                <i className="fas fa-chevron-down"></i>
-              </div>
-            </div>
-          </div>
-          <div className="w-full md:w-1/3 md:pl-2">
-            <div className="relative">
-              <select className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none">
-                <option value="">Sắp xếp theo</option>
-                <option value="name">Tên</option>
-                <option value="date">Ngày khám gần nhất</option>
-                <option value="status">Tình trạng</option>
-              </select>
-              <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                <i className="fas fa-chevron-down"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Patient list */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bệnh nhân
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thông tin
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tình trạng
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Lần khám gần nhất
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10">
-                    <img className="h-10 w-10 rounded-full" src="https://readdy.ai/api/search-image?query=elderly%20asian%20man%20portrait%2C%2070%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient1&orientation=squarish" alt="Bệnh nhân" />
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">Trần Văn Bình</div>
-                    <div className="text-sm text-gray-500">68 tuổi</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">Tăng huyết áp, Tiểu đường type 2</div>
-                <div className="text-sm text-gray-500">BHYT: BH123456789</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                  Cần theo dõi
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                15/06/2025
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-eye"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 cursor-pointer !rounded-button">
-                  <i className="fas fa-comment-medical"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10">
-                    <img className="h-10 w-10 rounded-full" src="https://readdy.ai/api/search-image?query=middle%20aged%20asian%20woman%20portrait%2C%2050%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient2&orientation=squarish" alt="Bệnh nhân" />
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">Nguyễn Thị Mai</div>
-                    <div className="text-sm text-gray-500">52 tuổi</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">Tiểu đường type 2</div>
-                <div className="text-sm text-gray-500">BHYT: BH987654321</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
-                  Đang điều trị
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                20/06/2025
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-eye"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 cursor-pointer !rounded-button">
-                  <i className="fas fa-comment-medical"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10">
-                    <img className="h-10 w-10 rounded-full" src="https://readdy.ai/api/search-image?query=young%20asian%20man%20portrait%2C%2030%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient3&orientation=squarish" alt="Bệnh nhân" />
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">Lê Minh Tuấn</div>
-                    <div className="text-sm text-gray-500">35 tuổi</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">Viêm phổi</div>
-                <div className="text-sm text-gray-500">BHYT: BH456789123</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                  Theo dõi
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                21/06/2025
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-eye"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 cursor-pointer !rounded-button">
-                  <i className="fas fa-comment-medical"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10">
-                    <img className="h-10 w-10 rounded-full" src="https://readdy.ai/api/search-image?query=elderly%20asian%20woman%20portrait%2C%2075%20years%20old%2C%20natural%20lighting%2C%20neutral%20expression%2C%20high%20quality%2C%20detailed%20face%2C%20indoor%20setting%2C%20centered%20composition&width=40&height=40&seq=patient4&orientation=squarish" alt="Bệnh nhân" />
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">Phạm Thị Hương</div>
-                    <div className="text-sm text-gray-500">72 tuổi</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">Suy tim, Tăng huyết áp</div>
-                <div className="text-sm text-gray-500">BHYT: BH789123456</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  Ổn định
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                18/06/2025
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-eye"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 mr-3 cursor-pointer !rounded-button">
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button className="text-blue-600 hover:text-blue-900 cursor-pointer !rounded-button">
-                  <i className="fas fa-comment-medical"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Patient health monitoring */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Theo dõi chỉ số sức khỏe - Trần Văn Bình</h2>
-        <div id="health-chart" style={{ height: '300px' }}></div>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-medium text-blue-800">Huyết áp</h3>
-              <span className="text-red-500 text-sm font-semibold">Cao</span>
-            </div>
-            <p className="text-2xl font-bold mt-2">160/95</p>
-            <p className="text-xs text-gray-500 mt-1">Cập nhật: 23/06/2025 08:15</p>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-medium text-purple-800">Nhịp tim</h3>
-              <span className="text-yellow-500 text-sm font-semibold">Cao nhẹ</span>
-            </div>
-            <p className="text-2xl font-bold mt-2">92 bpm</p>
-            <p className="text-xs text-gray-500 mt-1">Cập nhật: 23/06/2025 08:15</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-medium text-green-800">Đường huyết</h3>
-              <span className="text-green-500 text-sm font-semibold">Bình thường</span>
-            </div>
-            <p className="text-2xl font-bold mt-2">6.5 mmol/L</p>
-            <p className="text-xs text-gray-500 mt-1">Cập nhật: 23/06/2025 08:15</p>
-          </div>
-        </div>
-      </div>
+    <div
+      className={`position-relative d-inline-flex align-items-center justify-content-center rounded-circle bg-light overflow-hidden ${className}`}
+      style={{ width: size, height: size }}
+    >
+      {!imageError && src ? (
+        <img
+          src={src}
+          alt={alt}
+          className="w-100 h-100 rounded-circle object-fit-cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <span
+          className="fw-medium text-muted text-uppercase"
+          style={{ fontSize: size / 2.5 }}
+        >
+          {fallback}
+        </span>
+      )}
     </div>
   );
 };
 
-export default PatientTab;
+export default function PatientTab({ handleStartCall }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [patientList, setPatientList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Thêm state isLoading
+  const patientsPerPage = 5;
+
+  // Modal states
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  // Chat states
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [messageInput, setMessageInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const user = useSelector((state) => state.auth.userInfo);
+  const senderId = user?.uid;
+  const [receiverId, setReceiverId] = useState()
+  const roomChats = [senderId, receiverId].sort().join('_');
+
+  // Lấy dữ liệu bệnh nhân và lịch hẹn gần nhất từ API
+  const fetchPatientsAndAppointments = async () => {
+    setIsLoading(true); // Bật loading
+    setError(null);
+    try {
+      const response = await ApiPatient.getAllPatients();
+      let patients = Array.isArray(response) ? response : response.data || [];
+
+      if (!Array.isArray(patients)) {
+        console.warn("Dữ liệu API không đúng định dạng:", response);
+        setError("Dữ liệu không hợp lệ từ server.");
+        return;
+      }
+
+      const patientsWithAppointments = await Promise.all(
+        patients.map(async (patient) => {
+          try {
+            const appointmentsResponse = await ApiDoctor.getPatientPastAppointments(patient._id);
+            const appointments = Array.isArray(appointmentsResponse)
+              ? appointmentsResponse
+              : appointmentsResponse.data || [];
+
+            return mapPatientData(patient, appointments);
+
+          } catch (err) {
+            console.error(`Lỗi khi lấy lịch hẹn của ${patient._id}:`, err.message);
+            return mapPatientData(patient, []);
+          }
+        })
+      );
+
+      setPatientList(patientsWithAppointments);
+    } catch (err) {
+      console.error("Lỗi khi gọi API bệnh nhân:", err.message, err.response?.data);
+      setError("Không thể tải danh sách bệnh nhân.");
+    } finally {
+      setIsLoading(false); // Tắt loading
+    }
+  };
+
+  // Lắng nghe tín hiệu realtime từ Firebase
+  useEffect(() => {
+    if (!senderId) {
+      console.warn("senderId không hợp lệ:", senderId);
+      setIsLoading(false);
+      return;
+    }
+    fetchPatientsAndAppointments(); // Gọi lần đầu khi component mount
+
+    const unsub = listenStatusByReceiver(senderId, async (signal) => {
+      const statusCode = [
+        "update_patient_info",
+        "update_patient_list"
+      ];
+
+      if (statusCode.includes(signal?.status)) {
+        await fetchPatientsAndAppointments();
+      }
+    });
+
+    return () => unsub();
+  }, [senderId]);
+
+  // Lắng nghe tin nhắn realtime từ Firebase
+  useEffect(() => {
+    if (!senderId || !roomChats) {
+      console.warn("senderId hoặc roomChats không hợp lệ:", senderId, roomChats);
+      return;
+    }
+    const q = query(
+      collection(db, 'chats', roomChats, 'messages'),
+      orderBy('timestamp', 'asc')
+    );
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const messages = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            text: data.message || data.text || '',
+            sender: data.senderId === senderId ? "doctor" : "patient",
+            timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+            originalData: data
+          };
+        });
+        setChatMessages(messages);
+      },
+      (error) => {
+        console.error('Lỗi lắng nghe tin nhắn:', error);
+      }
+    );
+    return () => unsub();
+  }, [senderId, roomChats]);
+
+  // Tự động cuộn xuống tin nhắn mới nhất
+  useEffect(() => {
+    if (showChatbot && chatMessages.length > 0) {
+      const chatContainer = document.querySelector('.chat-messages');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
+  }, [chatMessages, showChatbot]);
+
+  // Gửi tin nhắn
+  const sendMessage = async () => {
+    if (messageInput.trim() === "") return;
+
+    setIsSending(true);
+    const userMessage = messageInput.trim();
+    setMessageInput("");
+
+    const tempMessage = {
+      id: Date.now().toString(),
+      text: userMessage,
+      sender: "doctor",
+      timestamp: new Date(),
+      isTemp: true
+    };
+
+    setChatMessages((prev) => [...prev, tempMessage]);
+
+    try {
+      const docRef = await addDoc(collection(db, "chats", roomChats, "messages"), {
+        senderId,
+        receiverId,
+        message: userMessage,
+        timestamp: serverTimestamp()
+      });
+      console.log("Tin nhắn đã gửi:", docRef.id);
+
+      setChatMessages((prev) => prev.map(msg =>
+        msg.isTemp && msg.text === userMessage
+          ? { ...msg, id: docRef.id, isTemp: false }
+          : msg
+      ));
+    } catch (err) {
+      console.error('Lỗi gửi tin nhắn:', err);
+      setChatMessages((prev) => prev.filter(msg => !msg.isTemp || msg.text !== userMessage));
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Cập nhật bệnh nhân
+  const handleUpdatePatient = async (updatedPatient) => {
+    setIsLoading(true); // Bật loading khi cập nhật
+    try {
+      const statusColors = {
+        "Cần theo dõi": { color: "bg-danger", textColor: "text-white" },
+        "Đang điều trị": { color: "bg-warning", textColor: "text-dark" },
+        "Ổn định": { color: "bg-success", textColor: "text-white" },
+      };
+
+      const updated = {
+        ...updatedPatient,
+        patientCount: `${updatedPatient.age || 0} tuổi`,
+        statusColor: statusColors[updatedPatient.status]?.color || "bg-secondary",
+        statusTextColor: statusColors[updatedPatient.status]?.textColor || "text-white",
+      };
+
+      // Cập nhật danh sách bệnh nhân
+      setPatientList((prev) =>
+        prev.map((p) => (p.id === updated.id ? updated : p))
+      );
+
+      // Làm mới danh sách từ API
+      await fetchPatientsAndAppointments();
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật bệnh nhân:", error);
+      setError("Cập nhật bệnh nhân thất bại.");
+    } finally {
+      setIsLoading(false); // Tắt loading
+    }
+  };
+
+  // Xem chi tiết bệnh nhân
+  const handleViewPatient = (patient) => {
+    setSelectedPatient(patient);
+    setShowViewModal(true);
+  };
+
+  // Chỉnh sửa bệnh nhân
+  const handleEditPatient = (patient) => {
+    setSelectedPatient(patient);
+    setShowViewModal(false);
+    setShowEditModal(true);
+  };
+
+  // Điều hướng trang
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Lọc và sắp xếp bệnh nhân
+  const filteredAndSortedPatients = useMemo(() => {
+    if (error) return [];
+    const filtered = patientList.filter((patient) => {
+      const matchesSearch =
+        (patient.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (patient.disease?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (patient.patientId?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || patient.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return (a.name || "").localeCompare(b.name || "");
+        case "age":
+          return (a.age || 0) - (b.age || 0);
+        case "lastVisit":
+          return (b.lastVisitDate || new Date()) - (a.lastVisitDate || new Date());
+        case "status":
+          return (a.status || "").localeCompare(b.status || "");
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [patientList, searchTerm, statusFilter, sortBy, error]);
+
+  // Phân trang
+  const totalPages = Math.ceil(filteredAndSortedPatients.length / patientsPerPage);
+  const paginatedPatients = filteredAndSortedPatients.slice(
+    (currentPage - 1) * patientsPerPage,
+    currentPage * patientsPerPage
+  );
+
+  // Hiển thị loading
+  if (isLoading) {
+    return (
+      <div className="m-2 d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status" style={{ width: "3rem", height: "3rem" }}>
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+          <div className="mt-2 text-muted">Đang tải dữ liệu...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Hiển thị lỗi
+  if (error) {
+    return (
+      <div className="m-2">
+        <h3 className="mb-4">Quản lý bệnh nhân</h3>
+        <div className="alert alert-danger" role="alert">
+          <i className="fas fa-exclamation-triangle me-2"></i>
+          {error}
+          <button
+            className="btn btn-sm btn-outline-danger ms-2"
+            onClick={() => {
+              setError(null);
+              fetchPatientsAndAppointments();
+            }}
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleShowChat = async (patient) => {
+    setShowChatbot(true)
+    setReceiverId(patient.uid)
+  }
+
+  // Hàm mở modal tái khám
+  const handleCreateFollowUp = (patient) => {
+    setSelectedPatient(patient);
+    setShowFollowUpModal(true);
+  };
+
+  // Hàm xử lý sau khi tạo lịch hẹn thành công
+  const handleFollowUpCreated = async () => {
+    setShowFollowUpModal(false);
+    await fetchPatientsAndAppointments(); // Làm mới danh sách bệnh nhân để cập nhật lần khám gần nhất
+  };
+
+  return (
+    <div className="m-2">
+      {/* Search and Filters */}
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <h3 className="mb-0">Quản lý bệnh nhân</h3>
+        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
+          <div className="position-relative">
+            <Select value={statusFilter} onChange={setStatusFilter} style={{ paddingLeft: "2rem" }}>
+              <option value="all">Tất cả tình trạng</option>
+              <option value="Cần theo dõi">Cần theo dõi</option>
+              <option value="Đang điều trị">Đang điều trị</option>
+              <option value="Ổn định">Ổn định</option>
+            </Select>
+          </div>
+          <Select value={sortBy} onChange={setSortBy}>
+            <option value="name">Sắp xếp theo tên</option>
+            <option value="age">Sắp xếp theo tuổi</option>
+            <option value="lastVisit">Lần khám gần nhất</option>
+            <option value="status">Tình trạng</option>
+          </Select>
+          <div className="position-relative">
+            <Search
+              className="position-absolute top-50 translate-middle-y text-muted"
+              size={16}
+              style={{ left: "12px", zIndex: 10 }}
+            />
+            <Input
+              placeholder="Tìm kiếm bệnh nhân..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ paddingLeft: "2.5rem" }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Patient Table */}
+      <div className="card shadow-sm m-4" style={{ borderRadius: "12px", border: "none" }}>
+        <div className="table-responsive">
+          <table className="w-100">
+            <thead className="bg-primary text-white">
+              <tr>
+                <th className="p-2 fw-bold py-3 border-0">Bệnh nhân</th>
+                <th className="fw-bold py-3 border-0">Thông tin</th>
+                <th className="fw-bold py-3 border-0">Tình trạng</th>
+                <th className="fw-bold py-3 border-0">Lần khám gần nhất</th>
+                <th className="fw-bold small py-3 border-0">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedPatients.length > 0 ? (
+                paginatedPatients.map((patient) => (
+                  <tr key={patient.id} style={{ borderTop: "1px solid #f1f3f4" }}>
+                    <td className="p-3 border-0">
+                      <div className="d-flex align-items-center gap-3">
+                        <Avatar
+                          src={patient.avatar}
+                          alt={patient.name}
+                          fallback={patient.name?.split(" ").map((n) => n[0]).join("") || "-"}
+                          style={{ width: "40px", height: "40px" }}
+                        />
+                        <div>
+                          <div className="fw-semibold text-dark">{patient.name}</div>
+                          <div className="small text-muted">{patient.patientCount}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 border-0">
+                      <div>
+                        <div className="text-dark mb-1">{patient.disease}</div>
+                        <div className="small text-muted">{patient.patientId}</div>
+                      </div>
+                    </td>
+                    <td className="py-3 border-0">
+                      <Badge className={`${patient.statusColor} ${patient.statusTextColor}`}>
+                        {patient.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 border-0">
+                      <div className="text-dark">{patient.lastVisit}</div>
+                    </td>
+                    <td className="py-3 border-0 text-center">
+                      <div className="d-flex flex-column align-items-start gap-2">
+                        {/* Hàng 1 */}
+                        <div className="d-flex  gap-2">
+                          <Button variant="info" size="sm" className="p-2" onClick={() => handleViewPatient(patient)}
+                            title="Xem chi tiết"><Eye size={16} /></Button>
+                          <Button variant="success" size="sm" className="p-2" onClick={() => handleEditPatient(patient)}
+                            title="Chỉnh sửa"><Edit size={16} /></Button>
+                        </div>
+
+                        {/* Hàng 2 */}
+                        <div className="d-flex gap-2">
+                          <Button variant="primary" size="sm" className="p-2" onClick={() => handleShowChat(patient)}
+                            title="Nhắn tin"><MessageSquare size={16} /></Button>
+                          <Button variant="warning" size="sm" className="p-2"><Phone size={16} onClick={() => handleStartCall(user, { uid: patient.uid }, "doctor")}
+                            title="Gọi điện" /></Button>
+                        </div>
+
+                        {/* Hàng 3 */}
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          className="px-3 py-1 fw-semibold text-white"
+                          style={{
+
+                            borderRadius: "6px",
+                          }}
+                          onClick={() => handleCreateFollowUp(patient)}
+                          title="Tái khám"
+                        >
+                          Tái khám
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-muted">
+                    Không có bệnh nhân nào phù hợp với bộ lọc.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Chatbot Popup */}
+      {showChatbot && (
+        <div className="position-fixed bottom-0 end-0 m-3 shadow-lg rounded-4 bg-white" style={{ width: 320, height: 450, zIndex: 9999 }}>
+          <div className="bg-primary text-white d-flex justify-content-between align-items-center p-2 rounded-top-4">
+            <div><Bot size={18} className="me-1" /> Chat với bệnh nhân</div>
+            <button onClick={() => setShowChatbot(false)} className="btn btn-sm btn-light text-dark rounded-circle">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="p-2 chat-messages" style={{ height: 340, overflowY: "auto" }}>
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-muted mt-4">
+                <Bot size={24} className="mb-2" />
+                <div>Chưa có tin nhắn nào</div>
+                <small>Bắt đầu cuộc trò chuyện với bệnh nhân</small>
+              </div>
+            ) : (
+              chatMessages.map((msg) => (
+                <div key={msg.id} className={`mb-2 ${msg.sender === "doctor" ? "text-end" : "text-start"}`}>
+                  <div className={`d-inline-block px-3 py-2 rounded-3 ${msg.sender === "doctor" ? "bg-primary text-white" : "bg-light text-dark"}`}>
+                    {msg.text}
+                  </div>
+                  <div className={`small text-muted mt-1 ${msg.sender === "doctor" ? "text-end" : "text-start"}`}>
+                    {msg.timestamp instanceof Date
+                      ? msg.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                      : new Date(msg.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                    }
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="border-top d-flex p-3 align-items-center">
+            <input
+              type="text"
+              className="form-control form-control-sm rounded-pill me-2"
+              placeholder="Nhập tin nhắn..."
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !isSending && sendMessage()}
+              disabled={isSending}
+            />
+            <button
+              onClick={sendMessage}
+              className="btn btn-sm btn-primary rounded-pill"
+              disabled={isSending || !messageInput.trim()}
+            >
+              {isSending ? (
+                <div className="spinner-border spinner-border-sm" role="status">
+                  <span className="visually-hidden">Đang gửi...</span>
+                </div>
+              ) : (
+                <Send size={16} />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredAndSortedPatients.length > 0 && totalPages > 1 && (
+        <div className="d-flex justify-content-center align-items-center gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Trước
+          </Button>
+          {[...Array(totalPages).keys()].map((page) => (
+            <Button
+              key={page + 1}
+              variant={currentPage === page + 1 ? "primary" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(page + 1)}
+            >
+              {page + 1}
+            </Button>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Sau
+          </Button>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {filteredAndSortedPatients.length === 0 && !error && (
+        <div className="card shadow-sm mb-4" style={{ borderRadius: "12px", border: "none" }}>
+          <div className="card-body text-center py-5">
+            <div className="text-muted mb-2">Không tìm thấy bệnh nhân nào</div>
+            <div className="small text-muted">Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      <ViewPatientModal
+        show={showViewModal}
+        onHide={() => setShowViewModal(false)}
+        patient={selectedPatient}
+        onEdit={handleEditPatient}
+      />
+      {showEditModal &&
+        <EditPatientModal
+          show={showEditModal}
+          onHide={() => setShowEditModal(false)}
+          patient={selectedPatient}
+          onSave={handleUpdatePatient}
+        />
+      }
+      <CreateFollowUpModal
+        show={showFollowUpModal}
+        onHide={() => setShowFollowUpModal(false)}
+        patient={selectedPatient}
+        onSave={handleFollowUpCreated}
+      />
+    </div>
+  );
+}

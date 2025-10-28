@@ -23,48 +23,9 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Hàm làm mới token
-const refreshAccessToken = async () => {
-  try {
-    const refreshToken = localStorage.getItem("refresh_Token");
-
-    const response = await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/refreshToken`,
-      { refresh_Token: refreshToken }
-    );
-
-    const { newAccessToken, newRefreshToken } = response.data.DT;
-    localStorage.setItem("access_Token", newAccessToken);
-    localStorage.setItem("refresh_Token", newRefreshToken);
-
-    return newAccessToken;
-  } catch (error) {
-    console.error("Refresh token failed:", error.response?.data || error.message);
-    localStorage.removeItem("access_Token");
-    localStorage.removeItem("refresh_Token");
-    return null;
-  }
-};
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-
-  failedQueue = [];
-};
-
-let isRefreshing = false;
-let failedQueue = [];
-
 instance.interceptors.response.use(
   (response) => (response && response.data ? response.data : response),
   async (error) => {
-    const originalRequest = error.config;
     const status = error.response?.status || 500;
 
     switch (status) {
@@ -72,50 +33,10 @@ instance.interceptors.response.use(
       case 401: {
         const path = window.location.pathname;
 
-        if (path === "/" || path === "/login" || path === "/register" || path === "/forgot-password" || path === "/login-qr") {
+        if (path === "/" || path === "/login" || path === "/register" || path === "/forgot-password") {
           console.warn("401 on auth page, skip refresh");
           return Promise.reject(error); 
         }
-
-        if (!originalRequest._retry) {
-          if (isRefreshing) {
-            return new Promise((resolve, reject) => {
-              failedQueue.push({ resolve, reject });
-            })
-              .then(token => {
-                originalRequest.headers['Authorization'] = 'Bearer ' + token;
-                return instance(originalRequest);
-              })
-              .catch(err => Promise.reject(err));
-          }
-        }
-
-        originalRequest._retry = true;
-        isRefreshing = true;
-
-        try {
-          let newAccessToken = await refreshAccessToken();
-
-          if (!newAccessToken) {
-            window.location.href = '/login';
-            return Promise.reject(error);
-          }
-
-          instance.defaults.headers['Authorization'] = 'Bearer ' + newAccessToken;
-          processQueue(null, newAccessToken);
-
-          return instance(originalRequest);
-        } catch (err) {
-          processQueue(err, null);
-          // handle logout
-          localStorage.removeItem('access_Token');
-          localStorage.removeItem('refresh_Token');
-          window.location.href = '/login';
-          return Promise.reject(err);
-        } finally {
-          isRefreshing = false;
-        }
-
       }
 
       case 400: {
@@ -130,6 +51,7 @@ instance.interceptors.response.use(
 
       // Xử lý các lỗi khác
       case 404: {
+        toast.error("Không tìm thấy tài nguyên.");
         return Promise.reject(error); // Not found
       }
       case 409: {

@@ -1,119 +1,385 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from "react";
+import { Card, Button, Row, Col, Image, Spinner } from "react-bootstrap";
+import { Edit } from "lucide-react";
+import ApiDoctor from "../../apis/ApiDoctor";
+import { useSelector } from "react-redux";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { vi } from "date-fns/locale";
+import { formatDate } from "../../utils/formatDate";
+import { listenStatusByReceiver, sendStatus } from "../../utils/SetupSignFireBase";
 
-const InformationTab = () => {
+// ProfileHeader
+const ProfileHeader = ({ doctor }) => (
+  <Card className="shadow-sm mb-4">
+    <Card.Body className="d-flex flex-column align-items-center text-center">
+      <Image
+        roundedCircle
+        width={80}
+        height={80}
+        src={doctor.avatar}
+        alt="Bác sĩ"
+        className="mb-3"
+      />
+      <div>
+        <h4 className="mb-1">{doctor.name}</h4>
+        <div className="text-muted">{doctor.specialty}</div>
+        <div className="text-muted">{doctor.hospital}</div>
+      </div>
+    </Card.Body>
+  </Card>
+);
+
+// InfoSection
+const InfoSection = ({ doctor, isEditing, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    fullName: doctor.basicInfo.fullName,
+    email: doctor.basicInfo.email,
+    phone: doctor.basicInfo.phone,
+    dob: doctor.basicInfo.dob,
+    specialty: doctor.professionalInfo.specialty,
+    hospital: doctor.professionalInfo.hospital,
+    experienceYears: doctor.professionalInfo.experienceYears,
+    license: doctor.professionalInfo.license,
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = () => {
+    onSave(formData);
+  };
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">Thông tin cá nhân</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="text-center mb-6">
-          <div className="relative inline-block">
-            <img
-              src="https://readdy.ai/api/search-image?query=professional%20male%20doctor%20portrait%2C%20asian%20doctor%2C%20wearing%20white%20coat%2C%20stethoscope%2C%20friendly%20smile%2C%20high%20quality%2C%20studio%20lighting%2C%20medical%20professional%2C%20isolated%20on%20light%20blue%20background%2C%20centered%20composition&width=120&height=120&seq=doctor1&orientation=squarish"
-              alt="Bác sĩ"
-              className="w-24 h-24 rounded-full object-cover border-4 border-blue-500 mx-auto"
-            />
-            <button className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 shadow-md cursor-pointer !rounded-button">
-              <i className="fas fa-camera text-sm"></i>
-            </button>
-          </div>
-          <h2 className="text-xl font-semibold mt-4">BS. Nguyễn Văn An</h2>
-          <p className="text-gray-500">Bác sĩ chuyên khoa Tim mạch</p>
-        </div>
-        <div className="border-t border-gray-200 pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-medium mb-4">Thông tin cơ bản</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="Nguyễn Văn An"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="nguyenvanan@healthcare.vn"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                  <input
-                    type="tel"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="0912345678"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="15/08/1980"
-                    readOnly
-                  />
-                </div>
-              </div>
+      <h5 className="mb-3">Thông tin cá nhân và chuyên môn</h5>
+      {isEditing ? (
+        <Row>
+          <Col md={6}>
+            <div className="mb-3">
+              <label className="form-label">Họ và tên</label>
+              <input
+                type="text"
+                className="form-control"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+              />
             </div>
-            <div>
-              <h3 className="text-lg font-medium mb-4">Thông tin chuyên môn</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Chuyên khoa</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="Tim mạch"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bệnh viện</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="Bệnh viện Đa khoa Trung ương"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Số năm kinh nghiệm</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="15 năm"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Chứng chỉ hành nghề</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value="00123456/BYT-CCHN"
-                    readOnly
-                  />
-                </div>
-              </div>
+            <div className="mb-3">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-control"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
             </div>
+            <div className="mb-3">
+              <label className="form-label">Số điện thoại</label>
+              <input
+                type="text"
+                className="form-control"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Ngày sinh</label>
+              <DatePicker
+                selected={new Date(formData.dob.split("/").reverse().join("-"))}
+                onChange={(date) =>
+                  setFormData({ ...formData, dob: formatDate(date) })
+                }
+                dateFormat="dd/MM/yyyy"
+                className="form-control"
+                locale={vi}
+              />
+            </div>
+          </Col>
+          <Col md={6}>
+            <div className="mb-3">
+              <label className="form-label">Chuyên khoa</label>
+              <input
+                type="text"
+                className="form-control"
+                name="specialty"
+                value={formData.specialty}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Bệnh viện</label>
+              <input
+                type="text"
+                className="form-control"
+                name="hospital"
+                value={formData.hospital}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Số năm kinh nghiệm</label>
+              <input
+                type="text"
+                className="form-control"
+                name="experienceYears"
+                value={formData.experienceYears}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Số giấy phép</label>
+              <input
+                type="text"
+                className="form-control"
+                name="license"
+                value={formData.license}
+                onChange={handleChange}
+              />
+            </div>
+          </Col>
+          <div className="d-flex justify-content-end mt-4">
+            <Button
+              variant="outline-secondary"
+              className="me-2"
+              onClick={onCancel}
+            >
+              Hủy
+            </Button>
+            <Button variant="primary" onClick={handleSubmit}>
+              Lưu
+            </Button>
           </div>
-          <div className="mt-6 flex justify-end">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md !rounded-button">
-              Chỉnh sửa thông tin
-            </button>
-          </div>
-        </div>
-      </div>
+        </Row>
+      ) : (
+        <Row>
+          <Col md={6}>
+            <div className="mb-2">
+              <strong>Họ và tên:</strong> {doctor.basicInfo.fullName}
+            </div>
+            <div className="mb-2">
+              <strong>Email:</strong> {doctor.basicInfo.email}
+            </div>
+            <div className="mb-2">
+              <strong>Số điện thoại:</strong> {doctor.basicInfo.phone}
+            </div>
+            <div className="mb-2">
+              <strong>Ngày sinh:</strong> {doctor.basicInfo.dob}
+            </div>
+          </Col>
+          <Col md={6}>
+            <div className="mb-2">
+              <strong>Chuyên khoa:</strong> {doctor.professionalInfo.specialty}
+            </div>
+            <div className="mb-2">
+              <strong>Bệnh viện:</strong> {doctor.professionalInfo.hospital}
+            </div>
+            <div className="mb-2">
+              <strong>Kinh nghiệm:</strong>{" "}
+              {doctor.professionalInfo.experienceYears}
+            </div>
+            <div className="mb-2">
+              <strong>Giấy phép:</strong> {doctor.professionalInfo.license}
+            </div>
+          </Col>
+        </Row>
+      )}
     </div>
   );
 };
 
-export default InformationTab;
+// SummaryCards
+const SummaryCards = ({ doctor }) => (
+  <Row className="g-4">
+    {[
+      {
+        icon: "user-md",
+        title: "Chuyên khoa",
+        value: doctor.professionalInfo.specialty,
+        color: "primary",
+      },
+      {
+        icon: "hospital",
+        title: "Bệnh viện",
+        value: doctor.professionalInfo.hospital,
+        color: "success",
+      },
+      {
+        icon: "briefcase",
+        title: "Kinh nghiệm",
+        value: doctor.professionalInfo.experienceYears,
+        color: "warning",
+      },
+    ].map((item, index) => (
+      <Col md={4} key={index}>
+        <Card className="shadow-sm h-100">
+          <Card.Body className="d-flex align-items-center">
+            <div
+              className={`bg-${item.color} bg-opacity-10 rounded-circle p-3 me-3`}
+            >
+              <i
+                className={`fas fa-${item.icon} text-${item.color} fs-5`}
+              ></i>
+            </div>
+            <div>
+              <div className="text-muted" style={{ fontSize: "0.85rem" }}>
+                {item.title}
+              </div>
+              <div className="fw-semibold" style={{ fontSize: "1.2rem" }}>
+                {item.value}
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+      </Col>
+    ))}
+  </Row>
+);
+
+// Main Component
+export default function DoctorProfile() {
+  const [doctorData, setDoctorData] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const user = useSelector((state) => state.auth.userInfo);
+  const doctorUid = user.uid;
+  const patientUid = user.uid;
+  const roomChats = [doctorUid, patientUid].sort().join("_");
+
+  // Fetch doctor info
+  const fetchDoctorInfo = async () => {
+    try {
+      const res = await ApiDoctor.getDoctorInfo();
+      const data = res;
+      const mappedData = {
+        avatar: data.userId.avatar,
+        name: data.userId.username,
+        specialty: `Bác sĩ chuyên khoa ${data.specialty || "Nội tiết"}`,
+        hospital: data.hospital,
+        basicInfo: {
+          fullName: data.userId.username,
+          email: data.userId.email,
+          phone: data.userId.phone,
+          dob: formatDate(data.userId.dob),
+        },
+        professionalInfo: {
+          specialty: data.specialty || "Nội tiết",
+          hospital: data.hospital,
+          experienceYears: `${data.exp} năm`,
+          license: data.giay_phep,
+        },
+      };
+      setDoctorData(mappedData);
+    } catch (error) {
+      console.error("Lỗi khi fetch doctor info:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save updates
+  const handleSave = async (updatedData) => {
+    try {
+      await ApiDoctor.updateDoctor({
+        username: updatedData.fullName,
+        email: updatedData.email,
+        phone: updatedData.phone,
+        dob: updatedData.dob.split("/").reverse().join("-"),
+        hospital: updatedData.hospital,
+        exp: parseInt(updatedData.experienceYears, 10),
+        giay_phep: updatedData.license,
+      });
+
+      sendStatus(doctorUid, patientUid, "update_info");
+      setDoctorData((prev) => ({
+        ...prev,
+        basicInfo: {
+          ...prev.basicInfo,
+          fullName: updatedData.fullName,
+          email: updatedData.email,
+          phone: updatedData.phone,
+          dob: updatedData.dob,
+        },
+        professionalInfo: {
+          ...prev.professionalInfo,
+          specialty: updatedData.specialty,
+          hospital: updatedData.hospital,
+          experienceYears: updatedData.experienceYears,
+          license: updatedData.license,
+        },
+        name: updatedData.fullName,
+        specialty: `Bác sĩ chuyên khoa ${updatedData.specialty}`,
+        hospital: updatedData.hospital,
+      }));
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật doctor info:", error);
+      alert("Cập nhật thông tin thất bại!");
+    }
+  };
+
+  const handleCancel = () => setIsEditing(false);
+
+  // Lắng nghe tín hiệu realtime từ Firebase
+  useEffect(() => {
+    fetchDoctorInfo();
+    const unsub = listenStatusByReceiver(doctorUid, async (signal) => {
+      const statusCode = [
+        "update_info",
+      ];
+
+      if (statusCode.includes(signal?.status)) {
+        await fetchDoctorInfo();
+      }
+    });
+
+    return () => unsub();
+  }, [doctorUid]);
+
+  // Render
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center mt-5">
+        <Spinner animation="border" />
+      </div>
+    );
+  }
+
+  if (!doctorData) {
+    return <div className="text-center mt-5">Không có dữ liệu bác sĩ.</div>;
+  }
+
+  return (
+    <div className="m-2">
+      <h3 className="mb-4">Thông tin cá nhân</h3>
+      <ProfileHeader doctor={doctorData} />
+      <Card className="shadow-sm mb-4">
+        <Card.Body>
+          <InfoSection
+            doctor={doctorData}
+            isEditing={isEditing}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+          {!isEditing && (
+            <div className="d-flex justify-content-end mt-4">
+              <Button
+                variant="primary"
+                className="d-flex align-items-center gap-2"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit size={16} />
+                Chỉnh sửa thông tin
+              </Button>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+      <SummaryCards doctor={doctorData} />
+    </div>
+  );
+}
