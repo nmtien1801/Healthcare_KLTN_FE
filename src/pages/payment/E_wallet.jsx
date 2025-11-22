@@ -41,6 +41,7 @@ export default function WalletUIDesktop() {
     const [balanceVisible, setBalanceVisible] = useState(true)
     const user = useSelector((state) => state.auth.userInfo)
     const balance = useSelector((state) => state.payment.balance);
+    const BOOKING_FEE = import.meta.env.VITE_BOOKING_FEE;
 
     useEffect(() => {
         const fetchBalance = async () => {
@@ -93,7 +94,7 @@ export default function WalletUIDesktop() {
                             // Hẹn dispatch đúng thời điểm
                             const timeout = setTimeout(async () => {
                                 try {
-                                    await dispatch(deposit({ userId: user.userId, amount: 200000 }));
+                                    await dispatch(deposit({ userId: user.userId, amount: BOOKING_FEE }));
                                     await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
                                 } catch (err) {
                                     console.error("Lỗi dispatch deposit:", err);
@@ -103,7 +104,7 @@ export default function WalletUIDesktop() {
                         } else {
                             // Nếu đã qua 30 phút thì thực hiện ngay
                             try {
-                                await dispatch(deposit({ userId: user.userId, amount: 200000 }));
+                                await dispatch(deposit({ userId: user.userId, amount: BOOKING_FEE }));
                                 await ApiDoctor.updateAppointmentStatus(appointment._id, { status: "completed" });
                             } catch (err) {
                                 console.error("Lỗi dispatch deposit:", err);
