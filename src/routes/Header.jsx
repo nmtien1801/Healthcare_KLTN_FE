@@ -78,7 +78,7 @@ const Header = () => {
           {/* Logo & Title */}
           <Col xs="auto" className="d-flex align-items-center">
             <FaHeartbeat size={24} className="text-primary me-2" />
-            <span className="fs-5 fw-semibold text-primary">HealthCare AI</span>
+            <span className="fs-5 fw-semibold text-primary">DiaTech</span>
           </Col>
 
           {/* Notifications & Info */}
