@@ -21,6 +21,8 @@ import FlowPayment from "./FlowPayment"
 import { useSelector, useDispatch } from "react-redux"
 import { getBalance, deposit } from "../../redux/paymentSlice"
 import ApiDoctor from "../../apis/ApiDoctor";
+// 1. Import RevenueTab
+import RevenueTab from "../doctor/Revenue";
 
 const transactionHistory = [
     { id: 1, description: "Thanh toán hóa đơn Internet", date: "12/05/2025", amount: "- 180.000 đ", type: "expense" },
@@ -238,15 +240,13 @@ export default function WalletUIDesktop() {
                     </Card>
                 </Col>
 
-                {/* FlowPayment chiếm 9/12 */}
+                {/* Phần nội dung chính 9/12 */}
                 <Col lg={9} className="d-flex">
                     <Card className="shadow-sm border-0 flex-grow-1">
                         <Card.Body className="p-3">
                             {user.role === 'doctor' ? (
-                                <div>
-                                    <h4>Quản lý Thu nhập & Thanh toán</h4>
-                                    <p>Chức năng thanh toán nạp/rút tiền của Bác sĩ sẽ được hiển thị ở đây.</p>
-                                </div>
+                                // 2. Thay thế khối div placeholder bằng RevenueTab
+                                <RevenueTab />
                             ) : (
                                 <FlowPayment />
                             )}

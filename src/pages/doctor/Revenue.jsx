@@ -182,7 +182,7 @@ const RevenueTab = () => {
 
   return (
     <div className="m-2">
-      <h3 className="mb-4">Thống kê doanh thu</h3>
+      <h4 className="mb-4">Thống kê doanh thu</h4>
 
       <Card className="shadow-sm mb-4">
         <Card.Body>
