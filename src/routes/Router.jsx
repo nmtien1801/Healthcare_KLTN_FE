@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   Utensils,
   CalendarDays,
+  Banknote,
   ChevronUp,
   ChevronDown,
   Bot,
@@ -84,7 +85,7 @@ const Router = (props) => {
                     <span>Chấm công</span>
                   </Nav.Link>
                   <Nav.Link as={NavLink} to="/revenue" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
-                    <CalendarDays size={20} />
+                    <Banknote size={20} />
                     <span>Doanh thu</span>
                   </Nav.Link>
                 </>
