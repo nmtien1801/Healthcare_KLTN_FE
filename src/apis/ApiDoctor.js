@@ -16,6 +16,8 @@ const ApiDoctor = {
     updatePatientHealthInfo: (patientId, data) => ApiManager.put(`/doctor/patient-health/${patientId}`, data),
     updateAppointmentStatus: (id, data) => ApiManager.put(`/doctor/appointmentStatus/${id}`, data),
     getUserById: (id) => ApiManager.get(`/user/${id}`),
+    getRevenueWallet: (period) => ApiManager.get(`/doctor/wallet/revenue/${period}`),
+    fetchPatientBloodSugar: (userId, type, days) => ApiManager.post(`/doctor/patient/blood-sugar`, { userId, type, days }),
 }
 
 export default ApiDoctor;

@@ -34,6 +34,7 @@ import AttendanceTab from "./pages/doctor/AttendanceTab";
 import FormPatient from "./pages/patient/assistant/FormPatient";
 import { dbCall } from "../firebase";
 import VideoCallModal from './components/call/videoModalCall'
+import RevenueTab from "./pages/doctor/Revenue";
 import {
   ref,
   onValue,
@@ -257,6 +258,7 @@ function App() {
                       <Route path="/appointmentTab" element={<AppointmentTab />} />
                       <Route path="/informationTab" element={<InformationTab />} />
                       <Route path="/attendanceTab" element={<AttendanceTab />} />
+                      <Route path="/revenue" element={<RevenueTab />} />
                       <Route path="/payment" element={<E_wallet />} />
                       {/* Nếu user đã login mà truy cập đường dẫn không hợp lệ thì chuyển về /overviewTab */}
                       <Route path="*" element={<Navigate to="/overviewTab" replace />} />
