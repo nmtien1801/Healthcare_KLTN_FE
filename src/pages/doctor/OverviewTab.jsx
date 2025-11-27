@@ -255,7 +255,7 @@ const OverviewTab = () => {
           },
         },
       ],
-      grid: { left: "10%", right: "10%", bottom: "15%" },
+      grid: { left: "20%", right: "20%", bottom: "25%" },
     };
 
     myChart.setOption(option);
