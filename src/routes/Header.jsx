@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useState } from "react";
 import { Container, Row, Col, Image, Dropdown } from "react-bootstrap";
 import { FaHeartbeat } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
@@ -6,6 +6,7 @@ import { logout } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
+import ChangePassword from "../components/changePassword";
 
 const CustomToggle = forwardRef(({ onClick, user }, ref) => (
   <div
@@ -39,10 +40,11 @@ const CustomToggle = forwardRef(({ onClick, user }, ref) => (
 
 const Header = () => {
   const auth = getAuth();
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   let user = useSelector((state) => state.auth.userInfo);
+  const [isOpenChangePassword, setIsOpenChangePassword] = useState(false); // đổi mk
+
   const handleLogout = async () => {
     try {
       await signOut(auth); // Firebase sign out
@@ -57,7 +59,7 @@ const Header = () => {
   };
 
   const handleChangePassword = () => {
-    navigate("/forgot-password");
+    setIsOpenChangePassword(true);
   };
 
   const handleInfo = () => {
@@ -110,6 +112,10 @@ const Header = () => {
             </Dropdown>
           </Col>
         </Row>
+
+        {isOpenChangePassword && (
+          <ChangePassword toggleModalChangePassword={() => setIsOpenChangePassword(false)} />
+        )}
       </Container>
     </div>
   );
