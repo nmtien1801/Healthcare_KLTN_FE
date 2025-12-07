@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Camera, ChevronDown } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import { getPatientById } from '../../redux/patientSlice';
+import { getPatientById, updatePatientInfo } from '../../redux/patientSlice';
 
 const PersonalTabs = () => {
   const dispatch = useDispatch();
@@ -21,7 +21,7 @@ const PersonalTabs = () => {
   useEffect(() => {
     const fetchPatient = async () => {
       if (user?.userId) {
-        await dispatch(getPatientById(user.userId));
+        let res = await dispatch(getPatientById(user.userId));
       }
     };
 
@@ -32,6 +32,7 @@ const PersonalTabs = () => {
   useEffect(() => {
     if (user) {
       setFormData({
+        id: user.userId,
         username: user.username || "",
         dob: user.dob || "",
         gender: user.gender || "Nam",
@@ -46,10 +47,9 @@ const PersonalTabs = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleUpdateInfo = () => {
+  const handleUpdateInfo = async () => {
     console.log("Cập nhật thông tin:", formData);
-    // Dispatch action to update user info
-    // dispatch(updateUserInfo(formData));
+    let res = await dispatch(updatePatientInfo(formData));
   };
 
   // Format date for input[type="date"] (YYYY-MM-DD)
@@ -189,7 +189,7 @@ const PersonalTabs = () => {
       {/* Thông tin bệnh án */}
       <div style={{ backgroundColor: "#FFFFFF", borderRadius: 12, boxShadow: "0 2px 6px rgba(0,0,0,0.05)", padding: 20 }}>
         <h3 className="fw-semibold mb-3" style={{ color: "#4F46E5" }}>Thông tin bệnh án</h3>
-        
+
         {loading ? (
           <div className="text-center py-4">
             <div className="spinner-border text-primary" role="status">
