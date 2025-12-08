@@ -12,7 +12,7 @@
 }
 
 .navbar-item::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -47,8 +47,8 @@
 
 .navbar-item:focus,
 .navbar-item:active {
-  background: linear-gradient(135deg, #5f2c82, #3f55e0) !important; /* tím + xanh */
-  box-shadow: 0 4px 20px rgba(95, 44, 130, 0.5); /* tím đậm hơn */
+  background: linear-gradient(135deg, #5f2c82, #3f55e0) !important;
+  box-shadow: 0 4px 20px rgba(95, 44, 130, 0.5);
   color: white !important;
 }
 
@@ -61,7 +61,7 @@
   color: inherit !important;
 }
 
-/* Only highlight active item when sidebar is open */
+/* Active item highlighting */
 .navbar-show .navbar-item.active,
 .navbar-show .navbar-item[aria-current="page"] {
   background: linear-gradient(135deg, #5f2c82, #3f55e0) !important;
@@ -69,23 +69,17 @@
   box-shadow: 0 4px 16px rgba(63, 85, 224, 0.35);
 }
 
-/* Responsive fix */
-@media (max-width: 768px) {
-  .navbar-container {
-    width: 100% !important;
-  }
-}
-
-/* Nút toggle */
+/* Sidebar transitions */
 .navbar-slide {
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
-  z-index: 40;
+  z-index: 60;
   transition: transform 0.3s ease-in-out;
   width: 250px;
-  overflow-y: auto; /* Thêm dòng này để cho phép cuộn dọc */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .navbar-show {
@@ -96,37 +90,106 @@
   transform: translateX(-100%);
 }
 
+.transition-sidebar {
+  transition: transform 0.3s ease-in-out;
+  will-change: transform;
+}
+
+/* Toggle button */
 .toggle-btn {
   position: fixed;
   top: 80px;
-  z-index: 50;
+  left: 16px;
+  z-index: 70;
   padding: 0.75rem;
   border-radius: 9999px;
   background: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
   color: white;
+  border: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease-in-out;
-  opacity: 0.6; /* làm mờ ban đầu */
+  opacity: 0.6;
+  cursor: pointer;
 }
 
 .toggle-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-  opacity: 1; /* đậm hơn khi hover */
+  opacity: 1;
 }
 
-.transition-sidebar {
-  transition: transform 0.3s ease-in-out;
-}
-
-/* Ẩn nút toggle khi sidebar mở */
+/* Ẩn nút toggle khi sidebar mở (chỉ trên desktop) */
 .hidden {
- opacity: 0;
+  opacity: 0;
   pointer-events: none;
-  transition: opacity 1s ease;
+  transition: opacity 0.3s ease;
 }
 
 .parent:hover .toggle-btn.hidden {
-  opacity: 1;
+  opacity: 0.6;
   pointer-events: auto;
+}
+
+.parent:hover .toggle-btn.hidden:hover {
+  opacity: 1;
+}
+
+/* Backdrop */
+.sidebar-backdrop {
+  position: fixed;
+  /* place backdrop below header on mobile */
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1995; /* below sidebar (2000) but above content */
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .toggle-btn {
+    top: 16px !important;
+    left: 16px !important;
+    padding: 0.65rem;
+    opacity: 1 !important;
+  }
+
+  .toggle-btn.hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .navbar-gradient {
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Ensure proper scrolling on mobile */
+  .navbar-gradient {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent body scroll when sidebar is open */
+  body.sidebar-open {
+    overflow: hidden;
+    touch-action: none;
+    height: 100%;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .navbar-gradient {
+    width: 240px;
+  }
 }

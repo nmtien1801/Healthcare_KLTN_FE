@@ -1,6 +1,7 @@
 import React, { forwardRef, useState } from "react";
-import { Container, Row, Col, Image, Dropdown } from "react-bootstrap";
+import { Container, Row, Col, Image, Dropdown, Button } from "react-bootstrap";
 import { FaHeartbeat } from "react-icons/fa";
+import { Menu as MenuIcon } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
@@ -79,6 +80,16 @@ const Header = () => {
         <Row className="align-items-center justify-content-between">
           {/* Logo & Title */}
           <Col xs="auto" className="d-flex align-items-center">
+            {/* hamburger for mobile - toggles sidebar via custom event */}
+            <Button
+              variant="link"
+              className="p-0 me-2 d-md-none"
+              onClick={() => window.dispatchEvent(new Event('toggleSidebar'))}
+              aria-label="Mở menu"
+            >
+              <MenuIcon size={20} />
+            </Button>
+
             <FaHeartbeat size={24} className="text-primary me-2" />
             <span className="fs-5 fw-semibold text-primary">DiaTech</span>
           </Col>
@@ -86,11 +97,11 @@ const Header = () => {
           {/* Notifications & Info */}
           <Col xs="auto" className="d-flex align-items-center">
             {/* Notification Dropdown */}
-            <div className="me-4">
+            <div className="me-2 me-md-4">
               <NotificationDropdown />
             </div>
 
-            <div className="me-4 text-end">
+            <div className="me-4 text-end d-none d-md-block">
               <div className="fw-medium">{user.role === 'doctor' ? "BS. " + user.username : user.username}</div>
               <div className="text-muted small">{user.role === 'doctor' ? 'Bác sĩ tiểu đường' : ''}</div>
             </div>

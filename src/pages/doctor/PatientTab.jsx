@@ -437,33 +437,46 @@ export default function PatientTab({ handleStartCall }) {
       {/* Search and Filters */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <h3 className="mb-0">Quản lý bệnh nhân</h3>
-        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
-          <div className="position-relative">
-            <Select value={statusFilter} onChange={setStatusFilter} style={{ paddingLeft: "2rem" }}>
-              <option value="all">Tất cả tình trạng</option>
-              <option value="Cần theo dõi">Cần theo dõi</option>
-              <option value="Đang điều trị">Đang điều trị</option>
-              <option value="Ổn định">Ổn định</option>
+
+        {/* Khu vực Điều khiển/Bộ lọc: Sử dụng row/col để kiểm soát độ rộng trên thiết bị di động */}
+        <div className="flex-grow-1 flex-md-grow-0 d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+          <div className="flex-grow-1 flex-sm-grow-0" style={{ minWidth: "150px" }}>
+            {/* Bộ lọc Tình trạng */}
+            <div className="position-relative w-100">
+              <Select value={statusFilter} onChange={setStatusFilter} style={{ paddingLeft: "2rem", width: "100%" }}>
+                <option value="all">Tất cả tình trạng</option>
+                <option value="Cần theo dõi">Cần theo dõi</option>
+                <option value="Đang điều trị">Đang điều trị</option>
+                <option value="Ổn định">Ổn định</option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex-grow-1 flex-sm-grow-0" style={{ minWidth: "150px" }}>
+            {/* Bộ lọc Sắp xếp */}
+            <Select value={sortBy} onChange={setSortBy} style={{ width: "100%" }}>
+              <option value="name">Sắp xếp theo tên</option>
+              <option value="age">Sắp xếp theo tuổi</option>
+              <option value="lastVisit">Lần khám gần nhất</option>
+              <option value="status">Tình trạng</option>
             </Select>
           </div>
-          <Select value={sortBy} onChange={setSortBy}>
-            <option value="name">Sắp xếp theo tên</option>
-            <option value="age">Sắp xếp theo tuổi</option>
-            <option value="lastVisit">Lần khám gần nhất</option>
-            <option value="status">Tình trạng</option>
-          </Select>
-          <div className="position-relative">
-            <Search
-              className="position-absolute top-50 translate-middle-y text-muted"
-              size={16}
-              style={{ left: "12px", zIndex: 10 }}
-            />
-            <Input
-              placeholder="Tìm kiếm bệnh nhân..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: "2.5rem" }}
-            />
+
+          <div className="flex-grow-1" style={{ minWidth: "200px" }}>
+            {/* Thanh Tìm kiếm */}
+            <div className="position-relative w-100">
+              <Search
+                className="position-absolute top-50 translate-middle-y text-muted"
+                size={16}
+                style={{ left: "12px", zIndex: 10 }}
+              />
+              <Input
+                placeholder="Tìm kiếm bệnh nhân..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ paddingLeft: "2.5rem", width: "100%" }}
+              />
+            </div>
           </div>
         </div>
       </div>

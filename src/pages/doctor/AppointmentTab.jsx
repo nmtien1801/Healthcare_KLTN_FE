@@ -365,32 +365,42 @@ export default function AppointmentTab() {
       <Card className="shadow-sm mb-4">
         <Card.Body>
           <div className="row mb-3 justify-content-between align-items-center">
-            <div className="col-12 col-lg-6">
+
+            {/* Tiêu đề & Thông tin số lượng */}
+            <div className="col-12 col-md-6 mb-2 mb-md-0">
               <h5>Lịch hẹn hôm nay</h5>
               <div className="text-primary small">{filteredToday.length} cuộc hẹn</div>
             </div>
-            <div className="row col-12 col-lg-6">
-              <div className="col-4 col-lg-4">
-                <InputGroup>
-                  <Form.Control placeholder="Tìm kiếm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                  <InputGroup.Text><Search size={16} /></InputGroup.Text>
-                </InputGroup>
-              </div>
-              <div className="col-4 col-lg-4">
-                <div className="d-flex">
-                  <DatePicker
-                    selected={filterDate}
-                    onChange={(date) => setFilterDate(date)}
-                    dateFormat="dd/MM/yyyy"
-                    className="form-control"
-                    placeholderText="Chọn ngày"
-                    locale={vi}
-                  />
-                </div>
-              </div>
-              <div className="col-4 col-lg-4">
-                <Button onClick={() => setShowAddModal(true)}><Plus size={16} /> Thêm</Button>
-              </div>
+
+            <div className="col-12 col-md-6">
+              <Row className="g-2">
+
+                {/* Thanh Tìm kiếm */}
+                <Col xs={12} sm={6}>
+                  <InputGroup>
+                    <Form.Control
+                      placeholder="Tìm kiếm..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <InputGroup.Text><Search size={16} /></InputGroup.Text>
+                  </InputGroup>
+                </Col>
+
+                {/* Bộ lọc Ngày */}
+                <Col xs={12} sm={6}>
+                  <div className="d-flex">
+                    <DatePicker
+                      selected={filterDate}
+                      onChange={(date) => setFilterDate(date)}
+                      dateFormat="dd/MM/yyyy"
+                      className="form-control"
+                      placeholderText="Chọn ngày"
+                      locale={vi}
+                    />
+                  </div>
+                </Col>
+              </Row>
             </div>
           </div>
           {renderTable(todayAppointments, paginate(filteredToday, todayPage), Math.ceil(filteredToday.length / itemsPerPage), todayPage, setTodayPage)}
