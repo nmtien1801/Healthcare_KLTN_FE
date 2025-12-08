@@ -11,7 +11,7 @@ import { InsertFoods, GetListFood } from '../../redux/foodSlice';
 import ApiNotification from "../../apis/ApiNotification";
 import { sendStatus } from "../../utils/SetupSignFireBase";
 
-const Following = ({ user, nearestAppointment, warning }) => {
+const Following = ({ user, nearestAppointment, warning, isNewInput, setIsNewInput }) => {
   let bloodSugar = useSelector((state) => state.patient.bloodSugar);
   const latestReading = bloodSugar?.DT?.bloodSugarData[0]?.value;
   const safeWarning = Array.isArray(warning) ? warning : [];
@@ -26,7 +26,7 @@ const Following = ({ user, nearestAppointment, warning }) => {
   };
 
   useEffect(() => {
-    if (warningCount > 1) {
+    if (warningCount > 1 && isNewInput) {
       const fetchWarning = async () => {
         try {
           await ApiNotification.createNotification({
@@ -41,6 +41,9 @@ const Following = ({ user, nearestAppointment, warning }) => {
           });
           // alert("Cảnh báo: Chỉ số đường huyết của bạn vượt mức nguy hiểm. Vui lòng tham khảo ý kiến bác sĩ!");
           await sendStatus(user?.uid, user?.uid, "warning");
+
+          setIsNewInput(false);
+
         } catch (err) {
           console.error("Lỗi khi gửi cảnh báo:", err);
         }
@@ -48,7 +51,7 @@ const Following = ({ user, nearestAppointment, warning }) => {
 
       fetchWarning();
     }
-  }, [warningCount, safeWarning, user]);
+  }, [warningCount, isNewInput]);
 
   return <div className="py-3">
     {/* Header */}
@@ -474,6 +477,7 @@ const HealthTabs = () => {
   const [bloodSugar, setBloodSugar] = useState([]);
   const [nearestAppointment, setNearestAppointment] = useState(null);
   const [warning, setWarning] = useState();   // chỉ số cảnh báo
+  const [isNewInput, setIsNewInput] = useState(false);
 
 
   let fetchBloodSugarData = async () => {
@@ -602,6 +606,7 @@ const HealthTabs = () => {
 
       // Refresh blood sugar data để hiển thị trên chart
       await fetchBloodSugarData();
+      setIsNewInput(true);
 
     } catch (err) {
       console.error('API error:', err);
@@ -614,7 +619,14 @@ const HealthTabs = () => {
   return (
     <div className="d-flex flex-column gap-4">
       {/* tiêu đề */}
-      <Following user={user} nearestAppointment={nearestAppointment} warning={warning} />
+      <Following
+        user={user}
+        nearestAppointment={nearestAppointment}
+        warning={warning}
+        isNewInput={isNewInput}
+        setIsNewInput={setIsNewInput}
+      />
+
 
       {/* Biểu đồ */}
       <Chart bloodSugar={bloodSugar} setWarning={setWarning} />
