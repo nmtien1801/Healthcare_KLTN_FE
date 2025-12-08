@@ -116,7 +116,7 @@ Hồ sơ bệnh nhân:
         setQuestion("");
 
         try {
-            const res = await api.post("/ask", { query: question });
+            const res = await api.post("/ask", { query: question }, { timeout: 30000 });
             setMessages((prev) => [...prev, { sender: "bot", text: res.data.answer }]);
         } catch (err) {
             console.error(err);
