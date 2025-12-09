@@ -394,33 +394,55 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
   // kiểm tra calo hiện tại
   useEffect(() => {
     const fetchFood = async () => {
-      // Check cache trước
-      const cached = await dispatch(GetListFood(user.userId));
+      try {
+        const cached = await dispatch(GetListFood(user.userId));
 
-      if (cached && cached?.payload?.DT && cached?.payload?.DT.length > 0) {
-        setFood(cached.payload.DT);
-        return;
-      }
-      let dailyBloodSugar = bloodSugarDaily({ bloodSugar })
-      let yesterday = getYesterdayAvg({ dailyBloodSugar });
+        if (cached && cached?.payload?.DT && cached?.payload?.DT.length > 0) {
+          setFood(cached.payload.DT);
+          return;
+        }
 
-      // Lấy calo từ server
-      const res = await dispatch(GetCaloFood(user.userId));
-      const data = res?.payload?.DT?.menuFood;
+        let dailyBloodSugar = bloodSugarDaily({ bloodSugar });
+        let yesterday = getYesterdayAvg({ dailyBloodSugar });
 
-      if (data && yesterday) {
-        const response = await dispatch(suggestFoodsByAi({ min: data.caloMin, max: data.caloMax, mean: yesterday.avg, currentCalo: data.caloCurrent, menuFoodId: data._id }));
+        const res = await dispatch(GetCaloFood(user.userId));
+        const data = res?.payload?.DT?.menuFood;
+
+        if (!data) {
+          console.error('Không lấy được dữ liệu menuFood');
+          return;
+        }
+
+        if (!yesterday) {
+          console.error('Không có dữ liệu đường huyết ngày hôm qua');
+          return;
+        }
+
+        const response = await dispatch(suggestFoodsByAi({
+          min: data.caloMin,
+          max: data.caloMax,
+          mean: yesterday.avg,
+          currentCalo: data.caloCurrent,
+          menuFoodId: data._id
+        }));
 
         if (response?.payload?.result) {
-          await dispatch(InsertFoods({ userId: user.userId, data: response?.payload?.result.chosen }));
+          await dispatch(InsertFoods({
+            userId: user.userId,
+            data: response?.payload?.result.chosen
+          }));
+          setFood(response.payload.result);
         }
-        setFood(response.payload.result);
+      } catch (error) {
+        console.error('Error fetching food:', error);
+        // Có thể set state lỗi để hiển thị cho user
       }
     };
 
-    fetchFood();
+    if (user.userId && bloodSugar && bloodSugar.length > 0) {
+      fetchFood();
+    }
   }, [bloodSugar, user.userId]);
-
 
   return (
     <>
