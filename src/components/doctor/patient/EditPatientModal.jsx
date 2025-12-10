@@ -59,7 +59,13 @@ const EditPatientModal = ({ show, onHide, patient, onSave }) => {
         const fetchMedicine = async () => {
             const today = new Date();
 
-            const res = await dispatch(fetchMedicines({ userId: patient.userId._id, date: today }));
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
+
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            const res = await dispatch(fetchMedicines({ userId: patient.userId._id, date: todayStr }));
 
             if (res?.payload?.DT) {
                 const data = res.payload.DT;
