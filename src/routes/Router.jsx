@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
-import Dropdown from 'react-bootstrap/Dropdown';
+import { FaHeartbeat } from "react-icons/fa";
 import {
   LayoutDashboard,
   Users,
@@ -14,8 +14,6 @@ import {
   HeartPulse,
   CalendarPlus,
   User,
-  Menu,
-  ChevronLeft,
   Utensils,
   CalendarDays,
   Banknote,
@@ -26,17 +24,15 @@ import {
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import "./Router.css";
+import { useNavigate } from "react-router-dom";
 
 const Router = (props) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const user = useSelector((state) => state.auth.userInfo);
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [showNutrition, setShowNutrition] = useState(false);
-
-  const toggleNavbar = () => {
-    setIsOpen(!isOpen);
-  };
 
   // detect mobile and close sidebar by default on small screens
   useEffect(() => {
@@ -69,35 +65,14 @@ const Router = (props) => {
   }, [isMobile, isOpen]);
 
   return (
-    <div className="d-flex parent">
-      {/* Nút bật tắt */}
-      <button
-        onClick={toggleNavbar}
-        className={`toggle-btn ${isOpen && !isMobile ? 'hidden' : ''}`}
-        style={
-          isMobile
-            ? {
-              position: "fixed",
-              left: "16px",
-              top: "16px",
-              zIndex: 70,
-            }
-            : {
-              left: isOpen ? "220px" : "-20px", // di chuyển theo sidebar
-              transition: "left 0.3s ease-in-out",
-            }
-        }
-        aria-label={isOpen ? "Đóng menu" : "Mở menu"}
-      >
-        {isOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
-      </button>
+    <div className="d-flex parent h-100">
 
       {/* Thanh điều hướng Sidebar */}
       {isOpen && (
         <>
           {isMobile && <div className="sidebar-backdrop" onClick={() => setIsOpen(false)} />}
           <Navbar
-            className={`d-flex flex-column navbar-gradient h-100 py-2 transition-sidebar ${isOpen ? 'navbar-show' : 'navbar-hide'}`}
+            className={`d-flex flex-column navbar-gradient py-2 transition-sidebar ${isOpen ? 'navbar-show' : 'navbar-hide'}`}
             style={{
               width: isMobile ? "80vw" : "250px",
               maxWidth: isMobile ? "320px" : "250px",
@@ -113,6 +88,10 @@ const Router = (props) => {
             }}
           >
             <Container fluid className="d-flex flex-column align-items-center">
+              <div className="d-flex align-items-center justify-content-center w-100 py-3 mb-2" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
+                <FaHeartbeat size={24} className="text-primary me-2" />
+                <span className="fs-5 fw-bold text-primary">DiaTech</span>
+              </div>
               {/* Nội dung Menu */}
               <Nav className="d-flex flex-column w-100 gap-2">
                 {user && user.role === "doctor" ? (
@@ -201,4 +180,3 @@ const Router = (props) => {
 };
 
 export default Router;
-

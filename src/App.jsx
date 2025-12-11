@@ -224,20 +224,22 @@ function App() {
 
   return (
     <Router>
-      <div className="d-flex flex-column vh-100 w-100 bg-gray-50 text-gray-800 font-sans">
-        {/* Header */}
-        {user && <div className="header bg-white shadow-sm w-100 fixed top-0"
-          style={{ zIndex: 1050 }}>
-          <Header />
+      <div className="d-flex vh-100 w-100 bg-gray-50 text-gray-800 font-sans">
+        {/* NavbarLeft - sidebar bên trái */}
+        {user && <div className="navbar-sidebar" style={{ flex: '0 0 auto' }}>
+          <NavbarLeft />
         </div>}
 
-        {/* NavbarLeft */}
-        <div className="d-flex flex-grow-1 overflow-hidden"
-          style={{ marginTop: user ? "80px" : "0px" }}>
-          {user && <NavbarLeft />}
+        {/* Content area - bên phải với header và nội dung */}
+        <div className="d-flex flex-column flex-grow-1 overflow-hidden">
+          {/* Header */}
+          {user && <div className="header bg-white shadow-sm w-100 "
+            style={{ zIndex: 1050 }}>
+            <Header />
+          </div>}
 
           {/* Nội dung chính */}
-          <div className="content flex-grow-1 overflow-auto p-3">
+          <div className="content flex-grow-1 overflow-auto">
             <Routes>
               {!user ? (
                 <>

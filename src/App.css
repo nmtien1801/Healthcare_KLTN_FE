@@ -5,14 +5,27 @@ html, body, #root {
   margin: 0;
 }
 
+/* Navbar sidebar bên trái */
+.navbar-sidebar {
+  position: relative;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 30;
+}
+
+.header {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  z-index: 1050;
+}
+
 .content {
   flex-grow: 1;
   overflow-y: auto;
   padding: 1rem;
-  height: calc(100vh - 80px);
-  width: 100%;
-  transition: width 0.3s ease-in-out;
-  z-index: 10; /* Thêm z-index thấp hơn header nhưng cao hơn lớp phủ */
+  z-index: 10;
 }
 
 .gradient-color-parent{

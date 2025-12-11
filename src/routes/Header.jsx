@@ -1,6 +1,5 @@
 import React, { forwardRef, useState } from "react";
 import { Container, Row, Col, Image, Dropdown, Button } from "react-bootstrap";
-import { FaHeartbeat } from "react-icons/fa";
 import { Menu as MenuIcon } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
@@ -73,7 +72,7 @@ const Header = () => {
 
   return (
     <div
-      className="shadow-sm py-3 px-4 bg-white w-100 position-fixed top-0"
+      className="shadow-sm py-3 px-4 bg-white w-100"
       style={{ zIndex: 1050 }}
     >
       <Container fluid>
@@ -83,15 +82,12 @@ const Header = () => {
             {/* hamburger for mobile - toggles sidebar via custom event */}
             <Button
               variant="link"
-              className="p-0 me-2 d-md-none"
+              className="p-0 me-2"
               onClick={() => window.dispatchEvent(new Event('toggleSidebar'))}
               aria-label="Mở menu"
             >
               <MenuIcon size={20} />
             </Button>
-
-            <FaHeartbeat size={24} className="text-primary me-2" />
-            <span className="fs-5 fw-semibold text-primary">DiaTech</span>
           </Col>
 
           {/* Notifications & Info */}
