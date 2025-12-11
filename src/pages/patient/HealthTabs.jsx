@@ -385,7 +385,7 @@ const getYesterdayAvg = ({ dailyBloodSugar }) => {
 };
 
 const Plan = ({ aiPlan, user, bloodSugar }) => {
-  const [food, setFood] = useState([]);
+  const foods = useSelector((state) => state.food.foods || []);
   const totalCalo = useSelector((state) => state.food.totalCalo);
   const [showAllFood, setShowAllFood] = useState(false);
   const dispatch = useDispatch();
@@ -393,56 +393,66 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
 
   // kiểm tra calo hiện tại
   useEffect(() => {
-    const fetchFood = async () => {
+    const initData = async () => {
+      // 1. Kiểm tra xem Redux đã có món ăn chưa. Nếu có rồi thì DỪNG LẠI ngay, không gọi API nữa.
+      if (foods && foods.length > 0) {
+        return;
+      }
+
+      // 2. Nếu Redux chưa có, thử gọi API lấy danh sách món ăn đã lưu trong DB
+      const cachedRes = await dispatch(GetListFood(user.userId));
+      const cachedFoods = cachedRes?.payload?.DT;
+
+      // 3. Nếu DB có dữ liệu, Redux sẽ tự update (nhờ slice), ta dừng ở đây.
+      if (cachedFoods && cachedFoods.length > 0) {
+        return;
+      }
+
+      // ============================================================
+      // 4. Chỉ chạy logic AI khi và chỉ khi:
+      //    - Redux chưa có món.
+      //    - DB cũng chưa lưu món nào (người dùng mới hoặc ngày mới).
+      // ============================================================
+
       try {
-        const cached = await dispatch(GetListFood(user.userId));
-
-        if (cached && cached?.payload?.DT && cached?.payload?.DT.length > 0) {
-          setFood(cached.payload.DT);
-          return;
-        }
-
+        // Chuẩn bị dữ liệu cho AI
         let dailyBloodSugar = bloodSugarDaily({ bloodSugar });
         let yesterday = getYesterdayAvg({ dailyBloodSugar });
 
-        const res = await dispatch(GetCaloFood(user.userId));
-        const data = res?.payload?.DT?.menuFood;
-
-        if (!data) {
-          console.error('Không lấy được dữ liệu menuFood');
-          return;
-        }
-
         if (!yesterday) {
-          console.error('Không có dữ liệu đường huyết ngày hôm qua');
+          console.log("Chưa đủ dữ liệu đường huyết hôm qua để AI gợi ý");
           return;
         }
 
-        const response = await dispatch(suggestFoodsByAi({
-          min: data.caloMin,
-          max: data.caloMax,
+        // Lấy thông tin Calo mục tiêu (Min/Max/Current)
+        const resCalo = await dispatch(GetCaloFood(user.userId));
+        const dataCalo = resCalo?.payload?.DT?.menuFood;
+
+        if (!dataCalo) return;
+
+        const aiResponse = await dispatch(suggestFoodsByAi({
+          min: dataCalo.caloMin,
+          max: dataCalo.caloMax,
           mean: yesterday.avg,
-          currentCalo: data.caloCurrent,
-          menuFoodId: data._id
+          currentCalo: dataCalo.caloCurrent,
+          menuFoodId: dataCalo._id
         }));
 
-        if (response?.payload?.result) {
+        if (aiResponse?.payload?.result) {
           await dispatch(InsertFoods({
             userId: user.userId,
-            data: response?.payload?.result.chosen
+            data: aiResponse?.payload?.result.chosen
           }));
-          setFood(response.payload.result);
         }
       } catch (error) {
-        console.error('Error fetching food:', error);
-        // Có thể set state lỗi để hiển thị cho user
+        console.error("Lỗi trong quá trình tạo thực đơn AI:", error);
       }
     };
 
-    if (user.userId && bloodSugar && bloodSugar.length > 0) {
-      fetchFood();
+    if (user.userId && bloodSugar.length > 0) {
+      initData();
     }
-  }, [bloodSugar, user.userId]);
+  }, [user.userId, bloodSugar, dispatch, foods.length]);
 
   return (
     <>
@@ -458,24 +468,24 @@ const Plan = ({ aiPlan, user, bloodSugar }) => {
       {/* KẾ HOẠCH DINH DƯỠNG */}
       <div className="bg-warning bg-opacity-10 p-3 rounded mt-3">
         <h5 className="fw-medium text-warning mb-2">🥗 Kế hoạch dinh dưỡng</h5>
-        {food && food && food.length > 0 ? (
+        {foods?.length > 0 ? (
           <>
             <div className="mb-2"><strong>Calo/ngày:</strong> {totalCalo} calo</div>
             <ul className="list-unstyled mt-2 small">
-              {food.slice(0, showAllFood ? undefined : 5).map((item, idx) => (
+              {foods.slice(0, showAllFood ? undefined : 5).map((item, idx) => (
                 <li key={idx} className="mb-1">
                   <strong>{item.name}:</strong> ({item.calo} calo) - {item.weight}g
                 </li>
               ))}
             </ul>
 
-            {food.length > 5 && (
+            {foods.length > 5 && (
               <div className="mt-2 d-flex justify-content-end">
                 <button
                   className="btn btn-sm btn-warning border-0"
                   onClick={() => setShowAllFood(!showAllFood)}
                 >
-                  {showAllFood ? 'Thu gọn' : `Xem thêm (${food.length - 5} món)`}
+                  {showAllFood ? 'Thu gọn' : `Xem thêm (${foods.length - 5} món)`}
                 </button>
               </div>
             )}
