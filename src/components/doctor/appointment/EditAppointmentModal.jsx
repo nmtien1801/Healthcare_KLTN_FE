@@ -4,7 +4,7 @@ import { Button, Input, Select } from "../common-ui-components";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { vi } from "date-fns/locale";
-import { TYPE_OPTIONS, STATUS_OPTIONS } from "../../../utils/appointmentConstants";
+import { TYPE_OPTIONS, STATUS_OPTIONS_BS } from "../../../utils/appointmentConstants";
 import { book_appointment } from "../../../apis/assistant";
 import { useSelector, useDispatch } from "react-redux";
 
@@ -265,7 +265,7 @@ const EditAppointmentModal = ({ show, onHide, appointment, onSave }) => {
                                         value={formData.status}
                                         onChange={(value) => handleChange("status", value)}
                                     >
-                                        {STATUS_OPTIONS.map((opt) => (
+                                        {STATUS_OPTIONS_BS.map((opt) => (
                                             <option key={opt.value} value={opt.value}>
                                                 {opt.label}
                                             </option>
