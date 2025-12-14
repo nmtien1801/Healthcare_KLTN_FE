@@ -36,7 +36,7 @@ const banks = [
 // Thêm mapping QR cho từng phương thức
 const qrImages = {
     bank: "/qrMb.png",
-    // qr: "https://github.com/nmtien1801/Healthcare_KLTN_FE/blob/develop/public/qrMomo.png?raw=true",
+    qr: "/qrMb.png",
 }
 
 const paymentMethods = [
