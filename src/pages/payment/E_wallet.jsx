@@ -25,17 +25,16 @@ import ApiDoctor from "../../apis/ApiDoctor";
 import RevenueTab from "../doctor/Revenue";
 
 const transactionHistory = [
-    { id: 1, description: "Thanh toán hóa đơn Internet", date: "12/05/2025", amount: "- 180.000 đ", type: "expense" },
-    { id: 2, description: "Nạp tiền từ Vietcombank", date: "10/05/2025", amount: "+ 500.000 đ", type: "income" },
-    { id: 3, description: "Rút tiền về MBBank", date: "09/05/2025", amount: "- 1,000.000 đ", type: "expense" },
-    { id: 4, description: "Mua sắm tại Shopee", date: "08/05/2025", amount: "- 250.000 đ", type: "expense" },
-    { id: 5, description: "Hoàn tiền ưu đãi", date: "07/05/2025", amount: "+ 50.000 đ", type: "income" },
-    { id: 6, description: "Chuyển tiền cho bạn A", date: "06/05/2025", amount: "- 120.000 đ", type: "expense" },
-    { id: 7, description: "Nạp tiền từ Techcombank", date: "05/05/2025", amount: "+ 750.000 đ", type: "income" },
-    { id: 8, description: "Thanh toán Google Ads", date: "04/05/2025", amount: "- 400.000 đ", type: "expense" },
-    { id: 9, description: "Nạp tiền điện thoại", date: "03/05/2025", amount: "- 100.000 đ", type: "expense" },
-    { id: 10, description: "Thanh toán tiền nước", date: "02/05/2025", amount: "- 150.000 đ", type: "expense" },
-    // Thêm nhiều giao dịch hơn để đảm bảo cuộn
+    // { id: 1, description: "Thanh toán hóa đơn Internet", date: "12/05/2025", amount: "- 180.000 đ", type: "expense" },
+    // { id: 2, description: "Nạp tiền từ Vietcombank", date: "10/05/2025", amount: "+ 500.000 đ", type: "income" },
+    // { id: 3, description: "Rút tiền về MBBank", date: "09/05/2025", amount: "- 1,000.000 đ", type: "expense" },
+    // { id: 4, description: "Mua sắm tại Shopee", date: "08/05/2025", amount: "- 250.000 đ", type: "expense" },
+    // { id: 5, description: "Hoàn tiền ưu đãi", date: "07/05/2025", amount: "+ 50.000 đ", type: "income" },
+    // { id: 6, description: "Chuyển tiền cho bạn A", date: "06/05/2025", amount: "- 120.000 đ", type: "expense" },
+    // { id: 7, description: "Nạp tiền từ Techcombank", date: "05/05/2025", amount: "+ 750.000 đ", type: "income" },
+    // { id: 8, description: "Thanh toán Google Ads", date: "04/05/2025", amount: "- 400.000 đ", type: "expense" },
+    // { id: 9, description: "Nạp tiền điện thoại", date: "03/05/2025", amount: "- 100.000 đ", type: "expense" },
+    // { id: 10, description: "Thanh toán tiền nước", date: "02/05/2025", amount: "- 150.000 đ", type: "expense" },
 ]
 
 export default function WalletUIDesktop() {
@@ -189,8 +188,6 @@ export default function WalletUIDesktop() {
                                 <History size={20} className="me-2 text-secondary" />
                                 <h6 className="fw-bold mb-0 text-secondary">Giao dịch Gần đây</h6>
                             </div>
-
-                            {/* Cuộn auto */}
                             <div className="flex-grow-1 overflow-auto pe-2">
                                 <ListGroup variant="flush">
                                     {transactionHistory.map((item) => (
