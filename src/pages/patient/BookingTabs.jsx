@@ -735,6 +735,9 @@ const BookingNew = ({ handleSubmit }) => {
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false); // New modal state
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [bookedAppointments, setBookedAppointments] = useState([]);
+  const [loadingTimes, setLoadingTimes] = useState(false);
+
   const user = useSelector((state) => state.auth.userInfo);
   const navigate = useNavigate();
   const BOOKING_FEE = 200000; // Phí đặt lịch (200,000 VND)
@@ -776,6 +779,68 @@ const BookingNew = ({ handleSubmit }) => {
 
     fetchDoctors();
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (!selectedDoctor || !selectedDate) {
+      setBookedAppointments([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchBookedTimes = async () => {
+      try {
+        setLoadingTimes(true);
+        setBookedAppointments([]);
+
+        const res = await ApiBooking.getUpcomingAppointments();
+        const data = Array.isArray(res) ? res : res?.data || [];
+
+        const filtered = data.filter(b =>
+          b.doctorId?._id === selectedDoctor &&
+          formatDate(b.date) === selectedDate &&
+          (b.status === "pending" || b.status === "confirmed")
+        );
+
+        if (isMounted) setBookedAppointments(filtered);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setLoadingTimes(false);
+      }
+    };
+
+    fetchBookedTimes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDoctor, selectedDate]);
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const bookedTimes = bookedAppointments
+    .filter(b =>
+      b.doctorId?._id === selectedDoctor &&
+      formatDate(b.date) === selectedDate &&
+      (b.status === "pending" || b.status === "confirmed")
+    )
+    .map(b => b.time);
+
+  const isPastTime = (time) => {
+    if (!selectedDate) return false;
+
+    const now = new Date();
+
+    const [hour, minute] = time.split(":").map(Number);
+    const slotTime = new Date(`${selectedDate}T00:00:00`);
+    slotTime.setHours(hour, minute, 0, 0);
+
+    return slotTime < now;
+  };
+
   const onSubmit = useCallback(async () => {
     if (!user?.uid) {
       console.log("Error: User not logged in", user);
@@ -1085,11 +1150,17 @@ const BookingNew = ({ handleSubmit }) => {
               <div className="d-flex flex-wrap gap-2">
                 {allTimeSlots.map((time) => {
                   const isInWorkingHours = isTimeInWorkingHours(time);
-                  const canSelect = selectedDoctor && isInWorkingHours;
+                  const isBooked = bookedTimes.includes(time);
+                  const isPast = isPastTime(time);
 
-                  // kiểm tra nút đang được chọn
+                  const canSelect =
+                    selectedDoctor &&
+                    isInWorkingHours &&
+                    !isBooked &&
+                    !isPast;
+
                   const isSelected = selectedTime === time;
-
+                  const isDisabled = isBooked || isPast || !canSelect;
                   return (
                     <button
                       key={time}
@@ -1100,15 +1171,19 @@ const BookingNew = ({ handleSubmit }) => {
                         padding: "8px 12px",
                         borderRadius: "5px",
                         border: "none",
-                        cursor: canSelect ? "pointer" : "not-allowed",
                         fontWeight: "500",
+
+                        cursor: isDisabled ? "not-allowed" : "pointer",
+
                         color: isSelected ? "white" : "black",
-                        background: isSelected
-                          ? "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)" // gradient khi chọn
-                          : canSelect
-                            ? "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)" // nền xám nhạt đẹp
-                            : "#f0f0f0", // disabled
-                        opacity: canSelect ? 1 : 0.5,
+
+                        background: isDisabled
+                          ? "#f0f0f0"
+                          : isSelected
+                            ? "linear-gradient(135deg, #4fc9feff 0%, #ff66f0ff 100%)" // khi chọn
+                            : "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", // chưa chọn
+
+                        opacity: isDisabled ? 0.5 : 1,
                         transition: "all 0.3s ease",
                       }}
                     >
@@ -1116,6 +1191,7 @@ const BookingNew = ({ handleSubmit }) => {
                     </button>
                   );
                 })}
+
               </div>
             );
 
@@ -1217,7 +1293,7 @@ const BookingNew = ({ handleSubmit }) => {
           </div>
         </Modal>
       </div>
-    </div>
+    </div >
   );
 };
 
