@@ -61,6 +61,35 @@ const Home = () => {
     fetchNearestAppointment();
   }, []);
 
+  useEffect(() => {
+    if (!bloodSugar || !bloodSugar.DT) {
+      console.log("Đang fetch lại dữ liệu đường huyết...");
+    }
+  }, [dispatch, bloodSugar, user.userId]);
+
+  // Hàm tìm dữ liệu đường huyết mới nhất
+  const getLatestBloodSugarData = (bloodSugar) => {
+    const bloodSugarData = bloodSugar?.DT?.bloodSugarData;
+    if (!bloodSugarData) return null;
+
+    // Chuyển đối tượng { key: { value: X, time: Y } } thành mảng các item
+    const dataArray = Object.values(bloodSugarData);
+
+    if (dataArray.length === 0) return null;
+
+    // Tìm item có time (thời gian) lớn nhất
+    const latestItem = dataArray.reduce((latest, current) => {
+      // Chuyển chuỗi thời gian thành đối tượng Date để so sánh
+      const timeLatest = new Date(latest.time).getTime();
+      const timeCurrent = new Date(current.time).getTime();
+
+      return timeCurrent > timeLatest ? current : latest;
+    });
+
+    return latestItem;
+  };
+  const latestBloodSugar = getLatestBloodSugarData(bloodSugar);
+  
   const userData = {
     name: user.username,
     age: calculateAge(user),
@@ -68,9 +97,8 @@ const Home = () => {
     condition: "Tiểu đường type 2",
     doctor: nearestAppointment?.doctorId?.userId?.username ?? "",
     nextAppointment: nearestAppointment?.date ? new Date(nearestAppointment.date).toLocaleDateString('vi-VN') : "13/09/2025",
-    bloodSugar: bloodSugar?.DT?.bloodSugarData
-      ? Object.values(bloodSugar.DT.bloodSugarData).map(item => item.value)
-      : [],
+    latestValue: latestBloodSugar?.value,
+    latestTime: latestBloodSugar?.time,
   };
 
   // thuốc
@@ -87,7 +115,7 @@ const Home = () => {
   useEffect(() => {
     const fetchMedicine = async () => {
       try {
-        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date()}));
+        let res = await dispatch(fetchMedicines({ userId: user.userId, date: new Date() }));
         setMedications(res.payload.DT);
       } catch (error) {
         console.error('Lỗi khi lấy lịch hẹn:', error);
@@ -155,11 +183,13 @@ const Home = () => {
                 </button>
               </div>
               <div className="bg-light rounded-3 p-3 text-center">
-                <h4 className="text-primary fw-bold mb-1">{userData.bloodSugar.slice(-1)[0]} mmol/L</h4>
-                <small className="text-muted">23/06/2025</small>
-                <div className="mt-2">
-                  <span className="badge bg-warning text-dark">Cao hơn bình thường</span>
-                </div>
+                <h4 className="text-primary fw-bold mb-1">{userData.latestValue ?? '--'} mmol/L</h4>
+                <small className="text-muted">
+                  {userData.latestTime
+                    ? moment(userData.latestTime).format("HH:mm - DD/MM/YYYY")
+                    : 'Không có dữ liệu'}
+                </small>
+                
               </div>
             </div>
           </div>

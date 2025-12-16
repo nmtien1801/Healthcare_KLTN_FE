@@ -216,7 +216,7 @@ export default function LoginForm() {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Address"
+                placeholder="Địa chỉ"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
@@ -297,7 +297,7 @@ export default function LoginForm() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Gender"
+                  placeholder="Giới tính"
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}

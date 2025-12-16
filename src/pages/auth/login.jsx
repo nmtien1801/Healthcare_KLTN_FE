@@ -41,7 +41,7 @@ export default function LoginForm() {
             navigate("/overviewTab");
 
           } else if (res.payload.DT.role === "patient") {
-            navigate("/home");
+            navigate("/healthTabs");
           }
           localStorage.setItem("access_Token", user.accessToken);
           localStorage.setItem("userInfo", JSON.stringify(res.payload.DT));
@@ -78,7 +78,7 @@ export default function LoginForm() {
             navigate("/overviewTab");
 
           } else if (res.payload.DT.role === "patient") {
-            navigate("/home");
+            navigate("/healthTabs");
           }
           localStorage.setItem("access_Token", user.accessToken);
           localStorage.setItem("userInfo", JSON.stringify(res.payload.DT));
@@ -176,17 +176,6 @@ export default function LoginForm() {
               </a>
             </div>
           </form>
-
-          {/* QR Code Login Link */}
-          <div className="text-center mb-3">
-            <a
-              href="/login-qr"
-              className="text-decoration-none"
-              style={{ color: "#2962ff" }}
-            >
-              Đăng nhập qua mã QR
-            </a>
-          </div>
 
           <div className="text-center">
             <a

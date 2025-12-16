@@ -83,13 +83,6 @@ const PersonalTabs = () => {
             style={{ width: 100, height: 100, objectFit: 'cover' }}
           />
           <h3 className="fw-semibold fs-5 mt-3">{user?.username || "Tên người dùng"}</h3>
-          <button
-            type="button"
-            className="btn p-0 mt-2 d-inline-flex align-items-center gap-1"
-            style={{ color: "#4F46E5", fontSize: 14, fontWeight: 500, border: "none", background: "none" }}
-          >
-            <Camera size={16} /> Thay đổi ảnh
-          </button>
         </div>
       </div>
 
