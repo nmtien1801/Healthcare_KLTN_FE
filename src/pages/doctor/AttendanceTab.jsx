@@ -3,7 +3,6 @@ import { useSelector } from "react-redux";
 import {
     Calendar,
     Clock,
-    CheckCircle,
     Trash2,
     Edit,
     Info,
@@ -12,7 +11,6 @@ import {
     Shield,
     Award,
     Clock as Clock24,
-    LogOut,
 } from "lucide-react";
 import ApiWorkShift from "../../apis/ApiWorkShift";
 import ApiDoctor from "../../apis/ApiDoctor";
@@ -21,7 +19,7 @@ import { listenStatusByReceiver, sendStatus } from "../../utils/SetupSignFireBas
 
 // Shift options
 const shiftOptions = [
-    { key: "morning", label: "Sáng (08:00 - 12:00)", start: "08:00", end: "12:00" },
+    { key: "morning", label: "Sáng (08:00 - 12:30)", start: "08:00", end: "12:30" },
     { key: "afternoon", label: "Chiều (13:00 - 17:00)", start: "13:00", end: "17:00" },
     { key: "evening", label: "Tối (18:00 - 21:00)", start: "18:00", end: "21:00" },
 ];
@@ -147,7 +145,6 @@ const ScheduleFormModal = ({
     show,
     onClose,
     weekStartDate,
-    setWeekStartDate,
     handleWeekStartChange,
     handleSelectCurrentWeek,
     weeklySchedule,
@@ -156,7 +153,6 @@ const ScheduleFormModal = ({
     resetScheduleForm,
     handleSaveOrUpdateSchedule,
     workType,
-    setWorkType,
     handleWorkTypeChange,
 }) => (
     <div
@@ -538,10 +534,7 @@ const CurrentSchedule = ({ currentShift, user, doctorInfo, loadingDoctor }) => {
 const AttendanceTab = () => {
     const [savedSchedules, setSavedSchedules] = useState([]);
     const [currentShift, setCurrentShift] = useState(null);
-    const [checkInTime, setCheckInTime] = useState(null);
-    const [checkOutTime, setCheckOutTime] = useState(null);
     const [attendanceHistory, setAttendanceHistory] = useState([]);
-    const [currentTime, setCurrentTime] = useState(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [infoModalMessage, setInfoModalMessage] = useState("");
     const [infoModalTitle, setInfoModalTitle] = useState("");
@@ -549,8 +542,6 @@ const AttendanceTab = () => {
     const [showSavedSchedulesModal, setShowSavedSchedulesModal] = useState(false);
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [scheduleToDelete, setScheduleToDelete] = useState([]);
-    const [filterType, setFilterType] = useState("week");
-    const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
     const [weekStartDate, setWeekStartDate] = useState(getCurrentWeekStart());
     const [weeklySchedule, setWeeklySchedule] = useState({});
     const [isEditing, setIsEditing] = useState(false);
@@ -961,213 +952,12 @@ const AttendanceTab = () => {
         setScheduleToDelete([]);
     };
 
-    const handleCheckIn = async () => {
-        try {
-            const now = new Date();
-            const checkInTimeStr = now.toLocaleTimeString("vi-VN", {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
-            const shift = await ApiWorkShift.checkInWorkShift("webcam");
-            sendStatus(senderId, receiverId, "checkInWorkShift");
-
-            setCheckInTime(checkInTimeStr);
-            setAttendanceHistory((prev) => {
-                const todayDate = now.toISOString().split("T")[0];
-                const existingEntryIndex = prev.findIndex((entry) => entry.date === todayDate);
-                if (existingEntryIndex > -1) {
-                    const updatedHistory = [...prev];
-                    updatedHistory[existingEntryIndex] = {
-                        ...updatedHistory[existingEntryIndex],
-                        checkIn: checkInTimeStr,
-                        checkOut: null,
-                        status: "Online",
-                    };
-                    return updatedHistory;
-                }
-                return [
-                    ...prev,
-                    { date: todayDate, checkIn: checkInTimeStr, checkOut: null, status: "Online" },
-                ];
-            });
-
-            setInfoModalTitle("Chấm công");
-            setInfoModalMessage(`Bạn đã chấm công vào lúc: ${checkInTimeStr}`);
-            setShowInfoModal(true);
-            setCheckOutTime(null);
-
-            const updatedShifts = await ApiWorkShift.getTodayWorkShifts();
-            const current = updatedShifts.find(
-                (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
-            );
-            setCurrentShift(current || null);
-        } catch (error) {
-            setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`${error.response?.data?.message || error.message}`);
-            setShowInfoModal(true);
-        }
-    };
-
-    const handleCheckOut = async () => {
-        if (!checkInTime) {
-            setInfoModalTitle("Thông báo");
-            setInfoModalMessage("Bạn phải chấm công vào trước khi chấm công ra.");
-            setShowInfoModal(true);
-            return;
-        }
-
-        try {
-            const now = new Date();
-            const checkOutTimeStr = now.toLocaleTimeString("vi-VN", {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
-            const shift = await ApiWorkShift.checkOutWorkShift("webcam");
-            sendStatus(senderId, receiverId, "checkOutWorkShift");
-
-            setCheckOutTime(checkOutTimeStr);
-            setAttendanceHistory((prev) => {
-                const todayDate = now.toISOString().split("T")[0];
-                const existingEntryIndex = prev.findIndex((entry) => entry.date === todayDate);
-                const existingCheckIn = prev[existingEntryIndex]?.checkIn;
-                let status = "-";
-                if (existingCheckIn) {
-                    const [inHour, inMinute] = existingCheckIn.split(":").map(Number);
-                    status = inHour < 8 || (inHour === 8 && inMinute === 0) ? "Đúng giờ" : "Đi trễ";
-                }
-
-                if (existingEntryIndex > -1) {
-                    const updatedHistory = [...prev];
-                    updatedHistory[existingEntryIndex] = {
-                        ...updatedHistory[existingEntryIndex],
-                        checkOut: checkOutTimeStr,
-                        status,
-                    };
-                    return updatedHistory;
-                }
-                return [
-                    ...prev,
-                    { date: todayDate, checkIn: checkInTime, checkOut: checkOutTimeStr, status },
-                ];
-            });
-
-            setInfoModalTitle("Chấm công");
-            setInfoModalMessage(`Bạn đã chấm công ra lúc: ${checkOutTimeStr}`);
-            setShowInfoModal(true);
-            setCheckInTime(null);
-            setCheckOutTime(null);
-
-            const updatedShifts = await ApiWorkShift.getTodayWorkShifts();
-            const current = updatedShifts.find(
-                (s) => !s.attendance.checkedIn || (s.attendance.checkedIn && !s.attendance.checkedOut)
-            );
-            setCurrentShift(current || null);
-        } catch (error) {
-            setInfoModalTitle("Thông báo");
-            setInfoModalMessage(`${error.response?.data?.message || error.message}`);
-            setShowInfoModal(true);
-        }
-    };
-
-    const getFilteredHistory = () => {
-        const selectedDate = new Date(filterDate);
-        if (filterType === "week") {
-            const day = selectedDate.getDay();
-            const offset = day === 0 ? -6 : 1 - day;
-            const weekStart = new Date(selectedDate);
-            weekStart.setDate(selectedDate.getDate() + offset);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            return attendanceHistory.filter((entry) => {
-                const entryDate = new Date(entry.date);
-                return entryDate >= weekStart && entryDate <= weekEnd;
-            });
-        } else {
-            const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-            const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-            return attendanceHistory.filter((entry) => {
-                const entryDate = new Date(entry.date);
-                return entryDate >= monthStart && entryDate <= monthEnd;
-            });
-        }
-    };
-
-    const filteredHistory = getFilteredHistory();
-
     return (
         <div>
             <CurrentSchedule currentShift={currentShift} user={doctorInfo} loadingDoctor={loadingDoctor} />
             <div className="m-2">
                 <div className="bg-white rounded shadow border p-4">
-                    <h2 className="h5 mb-2">Chấm công</h2>
                     <p className="text-muted mb-4">Quản lý thời gian làm việc của bạn</p>
-
-                    <div className="text-center mb-4">
-                        <h5 className="fw-bold text-dark d-flex align-items-center justify-content-center gap-2">
-                            <Clock size={20} className="text-primary" />
-                            {currentTime.toLocaleTimeString("vi-VN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                second: "2-digit",
-                            })}
-                        </h5>
-                    </div>
-
-                    <div className="d-flex justify-content-center gap-3 mb-4">
-                        <button
-                            className="btn px-3 py-2 text-white fw-medium"
-                            style={{
-                                background: "#3A3DF7",
-                                border: "none",
-                                borderRadius: "8px",
-                                fontSize: "14px",
-                                boxShadow: "0 2px 8px rgba(40, 167, 69, 0.3)",
-                                transition: "all 0.2s ease",
-                                minWidth: "120px",
-                            }}
-                            onClick={handleCheckIn}
-                            disabled={checkInTime && !checkOutTime}
-                            onMouseEnter={(e) => {
-                                if (!e.target.disabled) {
-                                    e.target.style.transform = "translateY(-1px)";
-                                    e.target.style.boxShadow = "0 4px 12px rgba(40, 167, 69, 0.4)";
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.transform = "translateY(0)";
-                                e.target.style.boxShadow = "0 2px 8px rgba(40, 167, 69, 0.3)";
-                            }}
-                        >
-                            <CheckCircle size={16} className="me-1" /> Chấm vào
-                        </button>
-                        <button
-                            className="btn px-3 py-2 text-white fw-medium"
-                            style={{
-                                background: "#ff0019ff",
-                                border: "none",
-                                borderRadius: "8px",
-                                fontSize: "14px",
-                                boxShadow: "0 2px 8px rgba(220, 53, 69, 0.3)",
-                                transition: "all 0.2s ease",
-                                minWidth: "120px",
-                            }}
-                            onClick={handleCheckOut}
-                            disabled={!checkInTime || checkOutTime}
-                            onMouseEnter={(e) => {
-                                if (!e.target.disabled) {
-                                    e.target.style.transform = "translateY(-1px)";
-                                    e.target.style.boxShadow = "0 4px 12px rgba(249, 8, 32, 0.4)";
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.transform = "translateY(0)";
-                                e.target.style.boxShadow = "0 2px 8px rgba(227, 23, 43, 0.3)";
-                            }}
-                        >
-                            <LogOut size={16} className="me-1" /> Chấm ra
-                        </button>
-                    </div>
-
                     <div className="d-flex justify-content-start gap-3 mb-4">
                         <button
                             className="btn px-3 py-2 text-white fw-medium d-flex align-items-center"
@@ -1213,65 +1003,6 @@ const AttendanceTab = () => {
                         >
                             <List size={16} className="me-1" /> Lịch đã lưu
                         </button>
-                    </div>
-
-                    <div className="mt-4">
-                        <h5 className="mb-3 fw-semibold">Lịch sử chấm công</h5>
-                        <div className="d-flex gap-2 mb-3">
-                            <select
-                                className="form-select w-auto"
-                                value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
-                            >
-                                <option value="week">Theo tuần</option>
-                                <option value="month">Theo tháng</option>
-                            </select>
-                            <input
-                                type="date"
-                                className="form-control w-auto"
-                                value={filterDate}
-                                onChange={(e) => setFilterDate(e.target.value)}
-                            />
-                        </div>
-                        {filteredHistory.length === 0 ? (
-                            <div className="alert alert-info text-center">
-                                Chưa có lịch sử chấm công trong khoảng thời gian này.
-                            </div>
-                        ) : (
-                            <div className="table-responsive">
-                                <table className="table table-bordered table-hover">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th>Ngày</th>
-                                            <th>Giờ vào</th>
-                                            <th>Giờ ra</th>
-                                            <th>Trạng thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredHistory.map((entry, idx) => (
-                                            <tr key={idx}>
-                                                <td>{formatDate(entry.date)}</td>
-                                                <td>{entry.checkIn || "-"}</td>
-                                                <td>{entry.checkOut || "-"}</td>
-                                                <td>
-                                                    <span
-                                                        className={`badge rounded-pill ${entry.status === "Đúng giờ"
-                                                            ? "bg-success"
-                                                            : entry.status === "Đi trễ"
-                                                                ? "bg-warning text-dark"
-                                                                : "bg-info"
-                                                            } text-white px-3 py-1`}
-                                                    >
-                                                        {entry.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
