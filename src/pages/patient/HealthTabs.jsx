@@ -24,7 +24,6 @@ const Following = ({ user, nearestAppointment, warning, isNewInput, setIsNewInpu
     border: warningCount > 1 ? 'border-danger' : 'border-success',
     content: warningCount > 1 ? safeWarning.join('\n\n') + '\n\n Vui lòng tham khảo ý kiến bác sĩ!' : "Chỉ số đường huyết trong mức bình thường"
   };
-console.log('sssss ',user);
 
   useEffect(() => {
     if (warningCount > 1 && isNewInput) {
