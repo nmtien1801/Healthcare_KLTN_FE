@@ -110,7 +110,7 @@ const Router = (props) => {
                     </Nav.Link>
                     <Nav.Link as={NavLink} to="/attendanceTab" className="d-flex align-items-center gap-2 nav-link ms-3 navbar-item">
                       <CalendarDays size={20} />
-                      <span>Chấm công</span>
+                      <span>Lịch làm việc</span>
                     </Nav.Link>
                   </>
                 ) : (
