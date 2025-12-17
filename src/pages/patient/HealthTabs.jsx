@@ -102,6 +102,7 @@ const Following = ({ user, nearestAppointment, warning, isNewInput, setIsNewInpu
               </span>
             </li>
             <li className="d-flex justify-content-between mb-2"><span className="text-muted">Giới tính:</span><span>{user.gender}</span></li>
+            <li className="d-flex justify-content-between"><span className="text-muted">Bác sĩ:</span><span>{nearestAppointment?.doctorId?.userId?.username ?? "Chưa có"}</span></li>
           </ul>
         </div>
       </div>
