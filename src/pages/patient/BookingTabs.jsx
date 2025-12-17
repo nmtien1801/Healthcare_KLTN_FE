@@ -401,7 +401,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                         </div>
                         <div>
                           <h5 className="mb-1 fw-bold text-dark">
-                            {appointment.doctorId?.userId.username || "Bác sĩ Trần Thị B"}
+                            {appointment.doctorId?.userId.username || ""}
                           </h5>
                           <p className="mb-0 text-muted" style={{ fontSize: "12px" }}>
                             {appointment.doctorId?.hospital || "Chuyên khoa Nội tiết"}
@@ -435,7 +435,7 @@ const UpcomingAppointment = ({ handleStartCall, refreshTrigger, onNewAppointment
                                 user,
                                 {
                                   uid: "1HwseYsBwxby5YnsLUWYzvRtCw53",
-                                  name: appointment.doctorId?.name || "Bác sĩ Trần Thị B",
+                                  name: appointment.doctorId?.name || "",
                                   role: "doctor",
                                 },
                                 "patient"
