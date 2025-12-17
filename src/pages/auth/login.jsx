@@ -165,16 +165,6 @@ export default function LoginForm() {
               </button>
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="text-center mb-3">
-              <a
-                href="/forgot-password"
-                className="text-decoration-none"
-                style={{ color: "#2962ff" }}
-              >
-                Quên mật khẩu?
-              </a>
-            </div>
           </form>
 
           <div className="text-center">

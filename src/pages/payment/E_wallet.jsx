@@ -182,7 +182,7 @@ export default function WalletUIDesktop() {
                     </Card>
 
                     {/* 3. Giao dịch Gần đây */}
-                    <Card className="shadow-sm border-0 flex-grow-1 d-flex flex-column">
+                    {/* <Card className="shadow-sm border-0 flex-grow-1 d-flex flex-column">
                         <Card.Body className="p-3 d-flex flex-column">
                             <div className="d-flex align-items-center mb-3">
                                 <History size={20} className="me-2 text-secondary" />
@@ -234,7 +234,7 @@ export default function WalletUIDesktop() {
                                 </ListGroup>
                             </div>
                         </Card.Body>
-                    </Card>
+                    </Card> */}
                 </Col>
 
                 {/* Phần nội dung chính 9/12 */}
